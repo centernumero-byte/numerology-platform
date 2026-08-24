@@ -144,7 +144,7 @@ function calculate(type) {
   document.getElementById("result").innerHTML = `
     <h2>Данные приняты</h2>
     <p>Имя: ${name}</p>
-    <p>Дата рождения: ${birthDate}</p>
+    <p>Дата рождения: ${birthDate.split("-").reverse().join(".")}</p>
   `;
 }
 </script>
