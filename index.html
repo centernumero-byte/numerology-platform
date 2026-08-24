@@ -95,3 +95,56 @@ Markup
     Открыть
   </button>
 </div>
+<script>
+function openCalculator(type) {
+  const names = {
+    adult: "Взрослая матрица",
+    child: "Детская матрица",
+    compatibility: "Матрица совместимости",
+    vedic: "Ведическая нумерология",
+    pythagoras: "Квадрат Пифагора"
+  };
+
+  const title = names[type] || "Расчёт";
+
+  document.body.innerHTML = `
+    <div style="max-width:600px;margin:50px auto;padding:30px;font-family:Arial">
+      <h1>${title}</h1>
+
+      <label>Имя</label>
+      <input id="name" type="text"
+        style="display:block;width:100%;padding:12px;margin:8px 0 20px">
+
+      <label>Дата рождения</label>
+      <input id="birthDate" type="date"
+        style="display:block;width:100%;padding:12px;margin:8px 0 20px">
+
+      <button onclick="calculate('${type}')">
+        Рассчитать
+      </button>
+
+      <button onclick="location.reload()">
+        Назад
+      </button>
+
+      <div id="result" style="margin-top:30px"></div>
+    </div>
+  `;
+}
+
+function calculate(type) {
+  const name = document.getElementById("name").value;
+  const birthDate = document.getElementById("birthDate").value;
+
+  if (!name || !birthDate) {
+    alert("Заполните имя и дату рождения");
+    return;
+  }
+
+  document.getElementById("result").innerHTML = `
+    <h2>Данные приняты</h2>
+    <p>Имя: ${name}</p>
+    <p>Дата рождения: ${birthDate}</p>
+  `;
+}
+</script>
