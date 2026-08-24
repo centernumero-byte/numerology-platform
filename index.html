@@ -95,8 +95,16 @@ Markup
     Открыть
   </button>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-function openCalculator(type) {
+const SUPABASE_URL = "https://skvprhqsxnlacshucncq.supabase.co";
+const SUPABASE_KEY = "sb_publishable_N0pKMmzNOonoInimmkding_GJnMwsRd";
+
+const supabaseClient = supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+  function openCalculator(type) {
   const names = {
     adult: "Взрослая матрица",
     child: "Детская матрица",
