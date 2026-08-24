@@ -1,357 +1,97 @@
-<h1>Академия нумерологии</h1>
-
-<div class="auth-subtitle">
-  Обучение, тесты, материалы и нумерологические калькуляторы
-</div>
-
-<div class="tabs">
-  <button id="loginTab" class="tab active">Вход</button>
-  <button id="registerTab" class="tab">Регистрация</button>
-</div>
-
-
-<!-- LOGIN -->
-
-<form id="loginForm">
-
-  <label>Email</label>
-  <input
-    id="loginEmail"
-    type="email"
-    required
-    placeholder="Введите email"
-  >
-
-  <label>Пароль</label>
-  <input
-    id="loginPassword"
-    type="password"
-    required
-    placeholder="Введите пароль"
-  >
-
-  <button class="primary-btn" type="submit">
-    Войти
+<div class="card">
+  <h3>Взрослая матрица</h3>
+  <p>
+    Расчёт и расшифровка Матрицы судьбы для взрослого человека.
+  </p>
+  <button onclick="openCalculator('adult')">
+    Открыть
   </button>
+</div>
 
-</form>
-
-
-<!-- REGISTER -->
-
-<form id="registerForm" class="hidden">
-
-  <label>Имя</label>
-  <input
-    id="registerName"
-    type="text"
-    required
-    placeholder="Ваше имя"
-  >
-
-  <label>Email</label>
-  <input
-    id="registerEmail"
-    type="email"
-    required
-    placeholder="Введите email"
-  >
-
-  <label>Пароль</label>
-  <input
-    id="registerPassword"
-    type="password"
-    required
-    minlength="6"
-    placeholder="Не менее 6 символов"
-  >
-
-  <button class="primary-btn" type="submit">
-    Зарегистрироваться
+<div class="card">
+  <h3>Детская матрица</h3>
+  <p>
+    Расчёт и расшифровка Матрицы судьбы ребёнка.
+  </p>
+  <button onclick="openCalculator('child')">
+    Открыть
   </button>
-
-</form>
-
-<div id="authMessage" class="message"></div>
-<div class="sidebar-title">Меню</div>
-
-<button class="nav-btn active" data-page="dashboard">
-  Главная
-</button>
-
-<button class="nav-btn" data-page="directions">
-  Направления
-</button>
-
-<button class="nav-btn" data-page="tests">
-  Тесты
-</button>
-
-<button class="nav-btn" data-page="materials">
-  Материалы
-</button>
-
-<button class="nav-btn" data-page="videos">
-  Видео
-</button>
-
-<button class="nav-btn" data-page="access">
-  Доступы
-</button>
-
-<button class="nav-btn" data-page="students">
-  Ученицы
-</button>
-
-<button class="nav-btn" data-page="school">
-  Школа / центр
-</button>
-
-<button class="nav-btn" data-page="admin">
-  Администрирование
-</button>
-<!-- DASHBOARD -->
-
-<div id="page-dashboard" class="page">
-
-  <h1 class="page-title">Добро пожаловать</h1>
-
-  <div id="dashboardSubtitle" class="page-subtitle">
-    Личный кабинет Академии нумерологии
-  </div>
-
-  <div class="cards">
-
-    <div class="card">
-      <h3>Мой тариф</h3>
-      <p id="dashboardTariff">
-        Информация о тарифе будет отображаться здесь.
-      </p>
-    </div>
-
-    <div class="card">
-      <h3>Моя школа</h3>
-      <p id="dashboardSchool">
-        Информация о школе будет отображаться здесь.
-      </p>
-    </div>
-
-    <div class="card">
-      <h3>Доступ</h3>
-      <p id="dashboardAccess">
-        Срок доступа будет отображаться здесь.
-      </p>
-    </div>
-
-  </div>
-
 </div>
 
-
-<!-- DIRECTIONS -->
-
-<div id="page-directions" class="page hidden">
-
-  <h1 class="page-title">Направления</h1>
-
-  <div class="page-subtitle">
-    Основные направления Академии нумерологии
-  </div>
-
-  <div class="cards">
-
-    <div class="card direction-card">
-      <div>
-        <h3>Матрица судьбы</h3>
-        <p>
-          Взрослая матрица, детская матрица и матрица совместимости.
-        </p>
-      </div>
-      <button class="card-btn">Открыть</button>
-    </div>
-
-    <div class="card direction-card">
-      <div>
-        <h3>Ведическая нумерология</h3>
-        <p>
-          Обучающие материалы, тесты и автоматизированные расчёты.
-        </p>
-      </div>
-      <button class="card-btn">Открыть</button>
-    </div>
-
-    <div class="card direction-card">
-      <div>
-        <h3>Пифагор</h3>
-        <p>
-          Материалы, тесты и инструменты по системе Пифагора.
-        </p>
-      </div>
-      <button class="card-btn">Открыть</button>
-    </div>
-
-  </div>
-
+<div class="card">
+  <h3>Матрица совместимости</h3>
+  <p>
+    Расчёт совместимости двух людей по Матрице судьбы.
+  </p>
+  <button onclick="openCalculator('compatibility')">
+    Открыть
+  </button>
+</div>
+Markup
+
+
+<div class="card">
+  <h3>Ведическая нумерология</h3>
+  <p>
+    Расчёты и интерпретации по системе ведической нумерологии.
+  </p>
+  <button onclick="openCalculator('vedic')">
+    Открыть
+  </button>
+</div>
+Markup
+
+
+<div class="card">
+  <h3>Квадрат Пифагора</h3>
+  <p>
+    Расчёт психоматрицы и основные характеристики по системе Пифагора.
+  </p>
+  <button onclick="openCalculator('pythagoras')">
+    Открыть
+  </button>
+</div>
+Markup
+
+
+<div class="test-item">
+  <h3>Тесты по Матрице судьбы</h3>
+  <p>
+    Проверка знаний по взрослой, детской матрице и матрице совместимости.
+  </p>
+  <button onclick="openTest('matrix')">
+    Открыть тесты
+  </button>
 </div>
 
-
-<!-- TESTS -->
-
-<div id="page-tests" class="page hidden">
-
-  <h1 class="page-title">Тесты</h1>
-
-  <div class="page-subtitle">
-    Тесты и проверка знаний по доступным направлениям.
-  </div>
-
-  <div class="empty">
-    Доступные тесты будут отображаться здесь.
-  </div>
-
+<div class="test-item">
+  <h3>Тесты по ведической нумерологии</h3>
+  <p>
+    Вопросы для обучения и проверки знаний.
+  </p>
+  <button onclick="openTest('vedic')">
+    Открыть тесты
+  </button>
 </div>
 
-
-<!-- MATERIALS -->
-
-<div id="page-materials" class="page hidden">
-
-  <h1 class="page-title">Учебные материалы</h1>
-
-  <div class="page-subtitle">
-    Уроки, документы, изображения и другие материалы.
-  </div>
-
-  <div class="empty">
-    Доступные учебные материалы будут отображаться здесь.
-  </div>
-
+<div class="test-item">
+  <h3>Тесты по Пифагору</h3>
+  <p>
+    Вопросы по психоматрице и системе Пифагора.
+  </p>
+  <button onclick="openTest('pythagoras')">
+    Открыть тесты
+  </button>
 </div>
-
-
-<!-- VIDEOS -->
-
-<div id="page-videos" class="page hidden">
-
-  <h1 class="page-title">Видео</h1>
-
-  <div class="page-subtitle">
-    Обучающие видео по доступным направлениям.
-  </div>
-
-  <div class="empty">
-    Доступные видео будут отображаться здесь.
-  </div>
-
-</div>
-
-
-<!-- ACCESS -->
-
-<div id="page-access" class="page hidden">
-
-  <h1 class="page-title">Доступы</h1>
-
-  <div class="page-subtitle">
-    Начало и окончание доступа к платформе и материалам.
-  </div>
-
-  <div class="cards">
-
-    <div class="card">
-      <h3>Начало доступа</h3>
-      <p id="accessStart">—</p>
-    </div>
-
-    <div class="card">
-      <h3>Окончание доступа</h3>
-      <p id="accessEnd">—</p>
-    </div>
-
-    <div class="card">
-      <h3>Статус</h3>
-      <p id="accessStatus">—</p>
-    </div>
-
-  </div>
-
-</div>
-
-
-<!-- STUDENTS -->
-
-<div id="page-students" class="page hidden">
-
-  <h1 class="page-title">Ученицы</h1>
-
-  <div class="page-subtitle">
-    Здесь будут отображаться только ученицы текущего преподавателя.
-  </div>
-
-  <div id="studentsContent" class="empty">
-    Загрузка данных...
-  </div>
-
-</div>
-
-
-<!-- SCHOOL -->
-
-<div id="page-school" class="page hidden">
-
-  <h1 class="page-title">Школа / центр</h1>
-
-  <div id="schoolContent" class="empty">
-    Информация о школе или обучающем центре.
-  </div>
-
-</div>
-
-
-<!-- ADMIN -->
-
-<div id="page-admin" class="page hidden">
-
-  <h1 class="page-title">Администрирование</h1>
-
-  <div class="page-subtitle">
-    Управление платформой доступно только администратору.
-  </div>
-
-  <div class="cards">
-
-    <div class="card">
-      <h3>Пользователи</h3>
-      <p>
-        Управление пользователями, ролями и статусами.
-      </p>
-      <button class="card-btn">Открыть</button>
-    </div>
-
-    <div class="card">
-      <h3>Школы и центры</h3>
-      <p>
-        Создание школ, назначение владельцев и управление центрами.
-      </p>
-      <button class="card-btn">Открыть</button>
-    </div>
-
-    <div class="card">
-      <h3>Тарифы</h3>
-      <p>
-        Самостоятельный и Бизнес-тарифы, сроки и доступы.
-      </p>
-      <button class="card-btn">Открыть</button>
-    </div>
-
-    <div class="card">
-      <h3>Материалы</h3>
-      <p>
-        Управление тестами, видео, уроками и учебными материалами.
-      </p>
-      <button class="card-btn">Открыть</button>
-    </div>
-
-  </div>
-
+Markup
+
+
+<div class="card">
+  <h3>Материалы</h3>
+  <p>
+    Видео, уроки, инструкции и другие учебные материалы.
+  </p>
+  <button onclick="openMaterials()">
+    Открыть
+  </button>
 </div>
