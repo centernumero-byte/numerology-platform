@@ -637,17 +637,15 @@ function showSection(section) {
 
     if (!contentCards) return;
 // Подсветка выбранного раздела
-    document.querySelectorAll('.nav-item').forEach(btn => {
+    document.querySelectorAll('.nav-item').forEach(function(btn) {
         btn.classList.remove('active');
+
+        const clickAction = btn.getAttribute('onclick') || '';
+
+        if (clickAction.includes("showSection('" + section + "')")) {
+            btn.classList.add('active');
+        }
     });
-
-    const activeButton = document.querySelector(
-        .nav-item[onclick*="showSection('${section}')"]
-    );
-
-    if (activeButton) {
-        activeButton.classList.add('active');
-    }
     // КАЛЬКУЛЯТОРЫ
     if (section === 'calculators') {
 
