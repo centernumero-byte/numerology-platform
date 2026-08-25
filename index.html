@@ -472,44 +472,59 @@
     </div>
 
 
-    <div class="nav">
+    
 
-      <button class="nav-item active">
-        <span class="nav-icon">⌂</span>
-        Главная
-      </button>
+     <div class="nav">
 
-      <button class="nav-item">
+    <button class="nav-item active" onclick="showSection('calculators')">
         <span class="nav-icon">▦</span>
         Калькуляторы
-      </button>
-
-      <button class="nav-item">
-        <span class="nav-icon">♧</span>
-        Тесты
-      </button>
-
-      <button class="nav-item">
-        <span class="nav-icon">♧</span>
-        Материалы
-      </button>
-
-      <button class="nav-item">
-        <span class="nav-icon">☆</span>
-        Мои расчёты
-      </button>
-
-    </div>
-
-
-    <button
-      class="nav-item logout"
-      onclick="supabaseClient.auth.signOut().then(() => location.reload())"
-    >
-      <span class="nav-icon">↪️</span>
-      Выйти
     </button>
 
+    <button class="nav-item" onclick="showSection('manuals')">
+        <span class="nav-icon">📖</span>
+        Методические пособия
+    </button>
+
+    <button class="nav-item" onclick="showSection('videos')">
+        <span class="nav-icon">▶</span>
+        Видео
+    </button>
+
+    <button class="nav-item" onclick="showSection('tests')">
+        <span class="nav-icon">✎</span>
+        Тесты
+    </button>
+
+    <button class="nav-item" onclick="showSection('library')">
+        <span class="nav-icon">📚</span>
+        Библиотека нумеролога
+    </button>
+
+    <button class="nav-item" onclick="showSection('my-calculations')">
+        <span class="nav-icon">▤</span>
+        Мои расчёты
+    </button>
+
+    <button class="nav-item" onclick="showSection('access')">
+        <span class="nav-icon">🔑</span>
+        Доступы
+    </button>
+
+    <button class="nav-item" onclick="showSection('statistics')">
+        <span class="nav-icon">▥</span>
+        Отчёты и статистика
+    </button>
+
+</div>
+
+<button
+    class="nav-item logout"
+    onclick="supabaseClient.auth.signOut().then(() => location.reload())"
+>
+    <span class="nav-icon">🚪</span>
+    Выйти
+</button>
   </aside>
 
 
@@ -550,74 +565,56 @@
     </div>
 
 
-   <div class="cards">
+  <div class="cards" id="contentCards">
 
-  <!-- ВЗРОСЛАЯ МАТРИЦА -->
-  <div class="card" onclick="openCalculator('adult')">
-    <div class="card-icon">✦</div>
-    <div class="card-content">
-      <h3>Взрослая<br>матрица</h3>
-      <p>Полный расчёт<br>по дате рождения</p>
+    <!-- ВЗРОСЛАЯ МАТРИЦА -->
+    <div class="card" onclick="openCalculator('adult')">
+        <div class="card-icon">✦</div>
+        <div class="card-content">
+            <h3>Взрослая<br>матрица</h3>
+            <p>Полный расчёт<br>по дате рождения</p>
+        </div>
     </div>
-  </div>
 
-  <!-- ДЕТСКАЯ МАТРИЦА -->
-  <div class="card" onclick="openCalculator('child')">
-    <div class="card-icon">♟</div>
-    <div class="card-content">
-      <h3>Детская<br>матрица</h3>
-      <p>Анализ и расчёт<br>детской матрицы</p>
+    <!-- ДЕТСКАЯ МАТРИЦА -->
+    <div class="card" onclick="openCalculator('child')">
+        <div class="card-icon">👶</div>
+        <div class="card-content">
+            <h3>Детская<br>матрица</h3>
+            <p>Анализ и расчёт<br>детской матрицы</p>
+        </div>
     </div>
-  </div>
 
-  <!-- СОВМЕСТИМОСТЬ -->
-  <div class="card" onclick="openCalculator('compatibility')">
-    <div class="card-icon">♡</div>
-    <div class="card-content">
-      <h3>Матрица<br>совместимости</h3>
-      <p>Анализ отношений<br>двух людей</p>
+    <!-- МАТРИЦА СОВМЕСТИМОСТИ -->
+    <div class="card" onclick="openCalculator('compatibility')">
+        <div class="card-icon">💕</div>
+        <div class="card-content">
+            <h3>Матрица<br>совместимости</h3>
+            <p>Анализ отношений<br>двух людей</p>
+        </div>
     </div>
-  </div>
 
-  <!-- ВЕДИЧЕСКАЯ НУМЕРОЛОГИЯ -->
-  <div class="card" onclick="openCalculator('vedic')">
-    <div class="card-icon">ॐ</div>
-    <div class="card-content">
-      <h3>Ведическая<br>нумерология</h3>
-      <p>Расчёт по ведической<br>системе</p>
+    <!-- ВЕДИЧЕСКАЯ НУМЕРОЛОГИЯ -->
+    <div class="card" onclick="openCalculator('vedic')">
+        <div class="card-icon">ॐ</div>
+        <div class="card-content">
+            <h3>Ведическая<br>нумерология</h3>
+            <p>Расчёт по ведической<br>системе</p>
+        </div>
     </div>
-  </div>
 
-  <!-- КВАДРАТ ПИФАГОРА -->
-  <div class="card" onclick="openCalculator('pythagoras')">
-    <div class="card-icon pythagoras-icon">
-      <span>1</span><span>4</span><span>7</span>
-      <span>2</span><span>5</span><span>8</span>
-      <span>3</span><span>6</span><span>9</span>
+    <!-- КВАДРАТ ПИФАГОРА -->
+    <div class="card" onclick="openCalculator('pythagoras')">
+        <div class="card-icon pythagoras-icon">
+            <span>1</span><span>4</span><span>7</span>
+            <span>2</span><span>5</span><span>8</span>
+            <span>3</span><span>6</span><span>9</span>
+        </div>
+        <div class="card-content">
+            <h3>Квадрат<br>Пифагора</h3>
+            <p>Психоматрица<br>по Пифагору</p>
+        </div>
     </div>
-    <div class="card-content">
-      <h3>Квадрат<br>Пифагора</h3>
-      <p>Психоматрица<br>по Пифагору</p>
-    </div>
-  </div>
-
-  <!-- ТЕСТЫ -->
-  <div class="card" onclick="openTest('matrix')">
-    <div class="card-icon">✿</div>
-    <div class="card-content">
-      <h3>Тесты и<br>практики</h3>
-      <p>Тесты, практики,<br>самопознание</p>
-    </div>
-  </div>
-
-  <!-- МАТЕРИАЛЫ -->
-  <div class="card" onclick="openMaterials()">
-    <div class="card-icon">♧</div>
-    <div class="card-content">
-      <h3>Материалы<br>и знания</h3>
-      <p>Статьи, книги,<br>методики</p>
-    </div>
-  </div>
 
 </div>
 
@@ -633,7 +630,283 @@ const supabaseClient = supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY
 );
-  async function openCalculator(type) {
+// НОВОЕ МЕНЮ РАЗДЕЛОВ
+function showSection(section) {
+
+    const contentCards = document.getElementById('contentCards');
+
+    if (!contentCards) return;
+
+    // КАЛЬКУЛЯТОРЫ
+    if (section === 'calculators') {
+
+        contentCards.innerHTML = `
+            <div class="card" onclick="openCalculator('adult')">
+                <div class="card-icon">✦</div>
+                <div class="card-content">
+                    <h3>Взрослая<br>матрица</h3>
+                    <p>Полный расчёт<br>по дате рождения</p>
+                </div>
+            </div>
+
+            <div class="card" onclick="openCalculator('child')">
+                <div class="card-icon">👶</div>
+                <div class="card-content">
+                    <h3>Детская<br>матрица</h3>
+                    <p>Анализ и расчёт<br>детской матрицы</p>
+                </div>
+            </div>
+
+            <div class="card" onclick="openCalculator('compatibility')">
+                <div class="card-icon">💕</div>
+                <div class="card-content">
+                    <h3>Матрица<br>совместимости</h3>
+                    <p>Анализ отношений<br>двух людей</p>
+                </div>
+            </div>
+
+            <div class="card" onclick="openCalculator('vedic')">
+                <div class="card-icon">ॐ</div>
+                <div class="card-content">
+                    <h3>Ведическая<br>нумерология</h3>
+                    <p>Расчёт по ведической<br>системе</p>
+                </div>
+            </div>
+
+            <div class="card" onclick="openCalculator('pythagoras')">
+                <div class="card-icon pythagoras-icon">
+                    <span>1</span><span>4</span><span>7</span>
+                    <span>2</span><span>5</span><span>8</span>
+                    <span>3</span><span>6</span><span>9</span>
+                </div>
+                <div class="card-content">
+                    <h3>Квадрат<br>Пифагора</h3>
+                    <p>Психоматрица<br>по Пифагору</p>
+                </div>
+            </div>
+        `;
+
+        return;
+    }
+
+
+    // МЕТОДИЧЕСКИЕ ПОСОБИЯ
+    if (section === 'manuals') {
+
+        contentCards.innerHTML = `
+            <div class="card" onclick="openManual('adult')">
+                <div class="card-icon">✦</div>
+                <div class="card-content">
+                    <h3>Взрослая<br>матрица</h3>
+                    <p>Методическое<br>пособие</p>
+                </div>
+            </div>
+
+            <div class="card" onclick="openManual('child')">
+                <div class="card-icon">👶</div>
+                <div class="card-content">
+                    <h3>Детская<br>матрица</h3>
+                    <p>Методическое<br>пособие</p>
+                </div>
+            </div>
+
+            <div class="card" onclick="openManual('compatibility')">
+                <div class="card-icon">💕</div>
+                <div class="card-content">
+                    <h3>Матрица<br>совместимости</h3>
+                    <p>Методическое<br>пособие</p>
+                </div>
+            </div>
+
+            <div class="card" onclick="openManual('vedic')">
+                <div class="card-icon">ॐ</div>
+                <div class="card-content">
+                    <h3>Ведическая<br>нумерология</h3>
+                    <p>Методическое<br>пособие</p>
+                </div>
+            </div>
+
+            <div class="card" onclick="openManual('pythagoras')">
+                <div class="card-icon pythagoras-icon">
+                    <span>1</span><span>4</span><span>7</span>
+                    <span>2</span><span>5</span><span>8</span>
+                    <span>3</span><span>6</span><span>9</span>
+                </div>
+                <div class="card-content">
+                    <h3>Квадрат<br>Пифагора</h3>
+                    <p>Методическое<br>пособие</p>
+                </div>
+            </div>
+        `;
+
+        return;
+    }
+
+
+    // ВИДЕО
+    if (section === 'videos') {
+
+        contentCards.innerHTML = `
+            <div class="card" onclick="openVideo('adult')">
+                <div class="card-icon">✦</div>
+                <div class="card-content">
+                    <h3>Взрослая<br>матрица</h3>
+                    <p>Видео по методу</p>
+                </div>
+            </div>
+
+            <div class="card" onclick="openVideo('child')">
+                <div class="card-icon">👶</div>
+                <div class="card-content">
+                    <h3>Детская<br>матрица</h3>
+                    <p>Видео по методу</p>
+                </div>
+            </div>
+
+            <div class="card" onclick="openVideo('compatibility')">
+                <div class="card-icon">💕</div>
+                <div class="card-content">
+                    <h3>Матрица<br>совместимости</h3>
+                    <p>Видео по методу</p>
+                </div>
+            </div>
+
+            <div class="card" onclick="openVideo('vedic')">
+                <div class="card-icon">ॐ</div>
+                <div class="card-content">
+                    <h3>Ведическая<br>нумерология</h3>
+                    <p>Видео по методу</p>
+                </div>
+            </div>
+
+            <div class="card" onclick="openVideo('pythagoras')">
+                <div class="card-icon pythagoras-icon">
+                    <span>1</span><span>4</span><span>7</span>
+                    <span>2</span><span>5</span><span>8</span>
+                    <span>3</span><span>6</span><span>9</span>
+                </div>
+                <div class="card-content">
+                    <h3>Квадрат<br>Пифагора</h3>
+                    <p>Видео по методу</p>
+                </div>
+            </div>
+        `;
+
+        return;
+    }
+
+
+    // ТЕСТЫ
+    if (section === 'tests') {
+
+        contentCards.innerHTML = `
+            <div class="card" onclick="openTest('adult')">
+                <div class="card-icon">✎</div>
+                <div class="card-content">
+                    <h3>Взрослая<br>матрица</h3>
+                    <p>Тесты и практики</p>
+                </div>
+            </div>
+
+            <div class="card" onclick="openTest('child')">
+                <div class="card-icon">✎</div>
+                <div class="card-content">
+                    <h3>Детская<br>матрица</h3>
+                    <p>Тесты и практики</p>
+                </div>
+            </div>
+
+            <div class="card" onclick="openTest('compatibility')">
+                <div class="card-icon">✎</div>
+                <div class="card-content">
+                    <h3>Матрица<br>совместимости</h3>
+                    <p>Тесты и практики</p>
+                </div>
+            </div>
+
+            <div class="card" onclick="openTest('vedic')">
+                <div class="card-icon">✎</div>
+                <div class="card-content">
+                    <h3>Ведическая<br>нумерология</h3>
+                    <p>Тесты и практики</p>
+                </div>
+            </div>
+
+            <div class="card" onclick="openTest('pythagoras')">
+                <div class="card-icon">✎</div>
+                <div class="card-content">
+                    <h3>Квадрат<br>Пифагора</h3>
+                    <p>Тесты и практики</p>
+                </div>
+            </div>
+        `;
+
+        return;
+    }
+
+
+    // БИБЛИОТЕКА НУМЕРОЛОГА
+    if (section === 'library') {
+
+        contentCards.innerHTML = `
+            <div class="card" onclick="openLibrary()">
+                <div class="card-icon">📚</div>
+                <div class="card-content">
+                    <h3>Библиотека<br>нумеролога</h3>
+                    <p>Книги и материалы</p>
+                </div>
+            </div>
+        `;
+
+        return;
+    }
+
+
+    // МОИ РАСЧЁТЫ
+    if (section === 'my-calculations') {
+
+        contentCards.innerHTML = `
+            <div class="section-placeholder">
+                <h2>Мои расчёты</h2>
+                <p>Здесь будут сохранены ваши предыдущие расчёты.</p>
+            </div>
+        `;
+
+        return;
+    }
+
+
+    // ДОСТУПЫ
+    if (section === 'access') {
+
+        contentCards.innerHTML = `
+            <div class="section-placeholder">
+                <h2>Доступы</h2>
+                <p>Здесь будет управление доступами пользователей и тарифами.</p>
+            </div>
+        `;
+
+        return;
+    }
+
+
+    // ОТЧЁТЫ И СТАТИСТИКА
+    if (section === 'statistics') {
+
+        contentCards.innerHTML = `
+            <div class="section-placeholder">
+                <h2>Отчёты и статистика</h2>
+                <p>Здесь будет отображаться статистика по нумерологам и ученицам.</p>
+            </div>
+        `;
+
+        return;
+    }
+}
+
+
+
+ async function openCalculator(type) {
     const { data: { session } } = await supabaseClient.auth.getSession();
 
     if (!session) {
