@@ -359,17 +359,65 @@ async function loginUser() {
   location.reload();
 }
 function showForgotPassword() {
-    const box = document.getElementById("forgotPasswordBox");
-    const message = document.getElementById("resetMessage");
+    document.body.innerHTML = `
+        <div style="
+            max-width:400px;
+            margin:80px auto;
+            padding:30px;
+            font-family:Arial;
+            text-align:center;
+        ">
+            <h2>Восстановление пароля</h2>
 
-    box.style.display = "block";
-    message.textContent = "";
-    message.style.color = "";
+            <input
+                id="resetEmail"
+                type="email"
+                placeholder="Введите ваш Email"
+                style="
+                    width:100%;
+                    padding:12px;
+                    box-sizing:border-box;
+                    margin:15px 0;
+                "
+            >
+
+            <button
+                type="button"
+                onclick="sendPasswordReset()"
+                style="padding:12px 25px;cursor:pointer;"
+            >
+                Отправить ссылку
+            </button>
+
+            <div
+                id="resetMessage"
+                style="margin-top:15px;"
+            ></div>
+
+            <button
+                type="button"
+                onclick="showLogin()"
+                style="
+                    margin-top:20px;
+                    border:none;
+                    background:none;
+                    color:#555;
+                    text-decoration:underline;
+                    cursor:pointer;
+                "
+            >
+                ← Вернуться ко входу
+            </button>
+        </div>
+    `;
+
+    resetSent = false;
 }
 
 
-async function sendPasswordReset() {
+let resetSent = false;
 
+async function sendPasswordReset() {
     const email = document.getElementById("resetEmail").value.trim();
     const message = document.getElementById("resetMessage");
 
@@ -382,15 +430,27 @@ async function sendPasswordReset() {
         return;
     }
 
-    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + window.location.pathname
-    });
+    if (resetSent) {
+        message.textContent =
+            "Ссылка уже была отправлена. Проверьте вашу почту.";
+        message.style.color = "green";
+        return;
+    }
+
+    const { error } =
+        await supabaseClient.auth.resetPasswordForEmail(email, {
+            redirectTo:
+                window.location.origin + window.location.pathname
+        });
 
     if (error) {
-        message.textContent = "Не удалось отправить письмо. Попробуйте ещё раз.";
+        message.textContent =
+            "Не удалось отправить письмо. Попробуйте ещё раз.";
         message.style.color = "red";
         return;
     }
+
+    resetSent = true;
 
     message.textContent =
         "Ссылка для восстановления пароля отправлена на вашу почту.";
