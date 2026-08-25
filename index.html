@@ -298,7 +298,37 @@ function showLogin() {
       >
         Войти
       </button>
+<div style="margin-top:15px;">
+    <button
+        type="button"
+        onclick="showForgotPassword()"
+        style="border:none;background:none;color:#555;text-decoration:underline;cursor:pointer;"
+    >
+        Забыли пароль?
+    </button>
+</div>
 
+<div id="forgotPasswordBox" style="display:none;margin-top:20px;">
+    <input
+        id="resetEmail"
+        type="email"
+        placeholder="Введите ваш Email"
+        style="width:100%;padding:12px;box-sizing:border-box;margin-bottom:10px;"
+    >
+
+    <button
+        type="button"
+        onclick="sendPasswordReset()"
+        style="padding:12px 25px;cursor:pointer;"
+    >
+        Отправить ссылку
+    </button>
+
+    <div
+        id="resetMessage"
+        style="margin-top:15px;"
+    ></div>
+</div>
       <div id="loginError" style="color:red;margin-top:15px;"></div>
     </div>
   `;
@@ -328,6 +358,43 @@ async function loginUser() {
 
   location.reload();
 }
+function showForgotPassword() {
+    const box = document.getElementById("forgotPasswordBox");
+    const message = document.getElementById("resetMessage");
 
+    box.style.display = "block";
+    message.textContent = "";
+    message.style.color = "";
+}
+
+
+async function sendPasswordReset() {
+
+    const email = document.getElementById("resetEmail").value.trim();
+    const message = document.getElementById("resetMessage");
+
+    message.textContent = "";
+    message.style.color = "";
+
+    if (!email) {
+        message.textContent = "Введите ваш Email.";
+        message.style.color = "red";
+        return;
+    }
+
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + window.location.pathname
+    });
+
+    if (error) {
+        message.textContent = "Не удалось отправить письмо. Попробуйте ещё раз.";
+        message.style.color = "red";
+        return;
+    }
+
+    message.textContent =
+        "Ссылка для восстановления пароля отправлена на вашу почту.";
+    message.style.color = "green";
+}
 checkAuth();
 </script>
