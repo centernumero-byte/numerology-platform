@@ -636,7 +636,18 @@ function showSection(section) {
     const contentCards = document.getElementById('contentCards');
 
     if (!contentCards) return;
+// Подсветка выбранного раздела
+    document.querySelectorAll('.nav-item').forEach(btn => {
+        btn.classList.remove('active');
+    });
 
+    const activeButton = document.querySelector(
+        .nav-item[onclick*="showSection('${section}')"]
+    );
+
+    if (activeButton) {
+        activeButton.classList.add('active');
+    }
     // КАЛЬКУЛЯТОРЫ
     if (section === 'calculators') {
 
