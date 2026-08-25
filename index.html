@@ -331,7 +331,13 @@ async function checkAuth() {
 startInactivityTimer();
   document.body.style.visibility = "visible";
 }
-
+const logoutButton = document.createElement("button");
+logoutButton.textContent = "Выйти";
+logoutButton.onclick = async () => {
+  await supabaseClient.auth.signOut();
+  showLogin();
+};
+document.body.appendChild(logoutButton);
 function showLogin() {
   document.body.style.visibility = "visible";
 
