@@ -349,7 +349,103 @@
     .account {
       margin-top: 20px;
     }
+     }
+ /* ===== КОМПАКТНЫЕ КАРТОЧКИ ПЛАТФОРМЫ ===== */
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  width: 100%;
+  margin-top: 18px;
+  align-items: stretch;
+}
+
+.cards .card {
+  height: 175px;
+  min-height: 175px;
+  box-sizing: border-box;
+  padding: 16px 12px;
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.cards .card-icon {
+  font-size: 42px;
+  line-height: 1;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.cards .card-content h3 {
+  margin: 0 0 7px 0;
+  font-size: 20px;
+  line-height: 1.08;
+}
+
+.cards .card-content p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.pythagoras-icon {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px 6px;
+  width: 82px;
+  height: 48px !important;
+  font-size: 15px !important;
+  line-height: 1 !important;
+}
+
+.pythagoras-icon span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Чтобы 7-я карточка не растягивалась */
+.cards .card:nth-child(5),
+.cards .card:nth-child(6),
+.cards .card:nth-child(7) {
+  height: 175px;
+}
+
+/* На небольших экранах */
+@media (max-width: 1100px) {
+  .cards {
+    gap: 10px;
   }
+
+  .cards .card {
+    height: 160px;
+    min-height: 160px;
+    padding: 12px 8px;
+  }
+
+  .cards .card-icon {
+    font-size: 34px;
+    height: 40px;
+  }
+
+  .cards .card-content h3 {
+    font-size: 17px;
+  }
+
+  .cards .card-content p {
+    font-size: 11px;
+  }
+}
 </style>
 
 
@@ -454,194 +550,76 @@
     </div>
 
 
-    <div class="cards">
+   <div class="cards">
 
-      <!-- ВЗРОСЛАЯ МАТРИЦА -->
-
-      <div
-        class="card"
-        onclick="openCalculator('adult')"
-      >
-
-        <div class="card-icon">
-          ✧
-        </div>
-
-        <h3>
-          Взрослая<br>
-          матрица
-        </h3>
-
-        <p>
-          Полный расчёт<br>
-          по дате рождения
-        </p>
-
-      </div>
-
-
-      <!-- ДЕТСКАЯ МАТРИЦА -->
-
-      <div
-        class="card"
-        onclick="openCalculator('child')"
-      >
-
-        <div class="card-icon">
-          ♡
-        </div>
-
-        <h3>
-          Детская<br>
-          матрица
-        </h3>
-
-        <p>
-          Анализ и расчёт<br>
-          детской матрицы
-        </p>
-
-      </div>
-
-
-      <!-- СОВМЕСТИМОСТЬ -->
-
-      <div
-        class="card"
-        onclick="openCalculator('compatibility')"
-      >
-
-        <div class="card-icon">
-          ♡
-        </div>
-
-        <h3>
-          Матрица<br>
-          совместимости
-        </h3>
-
-        <p>
-          Анализ отношений<br>
-          двух людей
-        </p>
-
-      </div>
-
-
-      <!-- ВЕДИЧЕСКАЯ -->
-
-      <div
-        class="card"
-        onclick="openCalculator('vedic')"
-      >
-
-        <div class="card-icon">
-          ॐ
-        </div>
-
-        <h3>
-          Ведическая<br>
-          нумерология
-        </h3>
-
-        <p>
-          Расчёт по ведической<br>
-          системе
-        </p>
-
-      </div>
-
-
-      <!-- ПИФАГОР -->
-
-      <div
-        class="card wide-card"
-        onclick="openCalculator('pythagoras')"
-      >
-
-        <div class="card-icon">
-          <span>1 4 7<br>2 5 8<br>3 6 9</span>
-        </div>
-
-        <div class="card-content">
-
-          <h3>
-            Квадрат<br>
-            Пифагора
-          </h3>
-
-          <p>
-            Психоматрица<br>
-            по Пифагору
-          </p>
-
-        </div>
-
-      </div>
-
-
-      <!-- ТЕСТЫ -->
-
-      <div
-        class="card wide-card"
-        onclick="openTest('matrix')"
-      >
-
-        <div class="card-icon">
-          ❀
-        </div>
-
-        <div class="card-content">
-
-          <h3>
-            Тесты и практики
-          </h3>
-
-          <p>
-            Тесты, практики,<br>
-            самопознание
-          </p>
-
-        </div>
-
-        <div class="arrow">
-          ›
-        </div>
-
-      </div>
-
-
-      <!-- МАТЕРИАЛЫ -->
-
-      <div
-        class="card wide-card"
-        onclick="openMaterials()"
-      >
-
-        <div class="card-icon">
-          ♧
-        </div>
-
-        <div class="card-content">
-
-          <h3>
-            Материалы и знания
-          </h3>
-
-          <p>
-            Статьи, книги,<br>
-            методики
-          </p>
-
-        </div>
-
-        <div class="arrow">
-          ›
-        </div>
-
-      </div>
-
+  <!-- ВЗРОСЛАЯ МАТРИЦА -->
+  <div class="card" onclick="openCalculator('adult')">
+    <div class="card-icon">✦</div>
+    <div class="card-content">
+      <h3>Взрослая<br>матрица</h3>
+      <p>Полный расчёт<br>по дате рождения</p>
     </div>
+  </div>
+
+  <!-- ДЕТСКАЯ МАТРИЦА -->
+  <div class="card" onclick="openCalculator('child')">
+    <div class="card-icon">♟</div>
+    <div class="card-content">
+      <h3>Детская<br>матрица</h3>
+      <p>Анализ и расчёт<br>детской матрицы</p>
+    </div>
+  </div>
+
+  <!-- СОВМЕСТИМОСТЬ -->
+  <div class="card" onclick="openCalculator('compatibility')">
+    <div class="card-icon">♡</div>
+    <div class="card-content">
+      <h3>Матрица<br>совместимости</h3>
+      <p>Анализ отношений<br>двух людей</p>
+    </div>
+  </div>
+
+  <!-- ВЕДИЧЕСКАЯ НУМЕРОЛОГИЯ -->
+  <div class="card" onclick="openCalculator('vedic')">
+    <div class="card-icon">ॐ</div>
+    <div class="card-content">
+      <h3>Ведическая<br>нумерология</h3>
+      <p>Расчёт по ведической<br>системе</p>
+    </div>
+  </div>
+
+  <!-- КВАДРАТ ПИФАГОРА -->
+  <div class="card" onclick="openCalculator('pythagoras')">
+    <div class="card-icon pythagoras-icon">
+      <span>1</span><span>4</span><span>7</span>
+      <span>2</span><span>5</span><span>8</span>
+      <span>3</span><span>6</span><span>9</span>
+    </div>
+    <div class="card-content">
+      <h3>Квадрат<br>Пифагора</h3>
+      <p>Психоматрица<br>по Пифагору</p>
+    </div>
+  </div>
+
+  <!-- ТЕСТЫ -->
+  <div class="card" onclick="openTest('matrix')">
+    <div class="card-icon">✿</div>
+    <div class="card-content">
+      <h3>Тесты и<br>практики</h3>
+      <p>Тесты, практики,<br>самопознание</p>
+    </div>
+  </div>
+
+  <!-- МАТЕРИАЛЫ -->
+  <div class="card" onclick="openMaterials()">
+    <div class="card-icon">♧</div>
+    <div class="card-content">
+      <h3>Материалы<br>и знания</h3>
+      <p>Статьи, книги,<br>методики</p>
+    </div>
+  </div>
+
+</div>
 
   </main>
 
