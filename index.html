@@ -133,6 +133,7 @@ const supabaseClient = supabase.createClient(
     oninput="formatBirthDate(this)"
     style="display:block;width:100%;padding:12px;margin:8px 0 20px;box-sizing:border-box"
 >
+<div id="dateError" style="color:red;margin-top:-10px;margin-bottom:15px;"></div>
       <button onclick="calculate('${type}')">
         Рассчитать
       </button>
@@ -172,9 +173,20 @@ function calculate(type) {
 
     const name = document.getElementById("name").value.trim();
     const birthDate = document.getElementById("birthDate").value.trim();
+    const dateError = document.getElementById("dateError");
+    const result = document.getElementById("result");
 
-    if (!name || !birthDate) {
-        alert("Заполните имя и дату рождения.");
+    // Очищаем предыдущие сообщения
+    dateError.textContent = "";
+    result.innerHTML = "";
+
+    if (!name) {
+        dateError.textContent = "Введите имя.";
+        return;
+    }
+
+    if (!birthDate) {
+        dateError.textContent = "Введите дату рождения.";
         return;
     }
 
@@ -186,13 +198,18 @@ function calculate(type) {
         dateParts[1].length !== 2 ||
         dateParts[2].length !== 4
     ) {
-        alert("Введите дату рождения в формате ДД.ММ.ГГГГ.");
+        dateError.textContent = "Введите дату рождения в формате ДД.ММ.ГГГГ.";
         return;
     }
 
     const day = Number(dateParts[0]);
     const month = Number(dateParts[1]);
     const year = Number(dateParts[2]);
+
+    if (year < 1900 || year > new Date().getFullYear()) {
+        dateError.textContent = "Введите корректный год рождения.";
+        return;
+    }
 
     const date = new Date(year, month - 1, day);
 
@@ -201,16 +218,11 @@ function calculate(type) {
         date.getMonth() !== month - 1 ||
         date.getDate() !== day
     ) {
-        alert("Введите корректную дату рождения.");
+        dateError.textContent = "Введите корректную дату рождения.";
         return;
     }
 
-    if (year < 1900 || year > new Date().getFullYear()) {
-        alert("Введите корректный год рождения.");
-        return;
-    }
-
-    document.getElementById("result").innerHTML = `
+    result.innerHTML = `
         <h2>Данные приняты</h2>
         <p>Имя: ${name}</p>
         <p>Дата рождения: ${birthDate}</p>
