@@ -155,4 +155,106 @@ function calculate(type) {
     <p>Дата рождения: ${birthDate.split("-").reverse().join(".")}</p>
   `;
 }
+// ===== АВТОРИЗАЦИЯ И ПРОВЕРКА ДОСТУПА =====
+
+async function checkAuth() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+
+  if (!session) {
+    showLogin();
+    return;
+  }
+
+  const userId = session.user.id;
+
+  const { data: access, error } = await supabaseClient
+    .from("access_periods")
+    .select("id, access_kind, status, starts_at, ends_at, is_unlimited, payment_status")
+    .eq("profile_id", userId)
+    .eq("status", "active")
+    .eq("payment_status", "paid")
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    alert("Ошибка проверки доступа: " + error.message);
+    showLogin();
+    return;
+  }
+
+  if (!access) {
+    alert("У вас нет активного доступа к платформе.");
+    await supabaseClient.auth.signOut();
+    showLogin();
+    return;
+  }
+
+  document.body.style.visibility = "visible";
+}
+
+function showLogin() {
+  document.body.style.visibility = "visible";
+
+  document.body.innerHTML = `
+    <div style="
+      max-width:400px;
+      margin:80px auto;
+      padding:30px;
+      font-family:Arial;
+      text-align:center;
+    ">
+      <h2>Вход в Numerology Platform</h2>
+
+      <input
+        id="loginEmail"
+        type="email"
+        placeholder="Email"
+        style="width:100%;padding:12px;margin:10px 0;box-sizing:border-box;"
+      >
+
+      <input
+        id="loginPassword"
+        type="password"
+        placeholder="Пароль"
+        style="width:100%;padding:12px;margin:10px 0;box-sizing:border-box;"
+      >
+
+      <button
+        onclick="loginUser()"
+        style="padding:12px 25px;cursor:pointer;"
+      >
+        Войти
+      </button>
+
+      <div id="loginError" style="color:red;margin-top:15px;"></div>
+    </div>
+  `;
+}
+
+async function loginUser() {
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value;
+
+  const errorBox = document.getElementById("loginError");
+  errorBox.textContent = "";
+
+  if (!email || !password) {
+    errorBox.textContent = "Введите email и пароль.";
+    return;
+  }
+
+  const { error } = await supabaseClient.auth.signInWithPassword({
+    email: email,
+    password: password
+  });
+
+  if (error) {
+    errorBox.textContent = "Неверный email или пароль.";
+    return;
+  }
+
+  location.reload();
+}
+
+checkAuth();
 </script>
