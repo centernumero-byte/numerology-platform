@@ -423,7 +423,8 @@ async function loginUser() {
     return;
   }
 
-  location.reload();
+  updateLastActivity();
+location.reload();
 }
 function showForgotPassword() {
     document.body.innerHTML = `
