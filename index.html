@@ -416,8 +416,21 @@
 
 
 /* ===== КАРТОЧКИ НАПРАВЛЕНИЙ В РАЗДЕЛАХ ===== */
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(5, 150px);
+    gap: 20px;
+    justify-content: center;
+    align-items: start;
+}
+
 .method-card {
-    min-height: 175px !important;
+    width: 150px !important;
+    height: 220px !important;
+    min-height: 220px !important;
+    box-sizing: border-box;
+    cursor: pointer;
 }
 
 .method-card:active {
@@ -428,29 +441,27 @@
     cursor: pointer;
 }
 
-/* Чтобы 7-я карточка не растягивалась */
-.cards .card:nth-child(5),
-.cards .card:nth-child(6),
-.cards .card:nth-child(7) {
-  height: 175px;
+.cards .card {
+    height: 220px;
+    min-height: 220px;
+    padding: 14px 10px;
+    box-sizing: border-box;
 }
 
-/* На небольших экранах */
-@media (max-width: 1100px) {
-  .cards {
-    gap: 10px;
-  }
+.cards .card-icon {
+    font-size: 44px;
+    height: 52px;
+}
 
-  .cards .card {
-    height: 160px;
-    min-height: 160px;
-    padding: 12px 8px;
-  }
+.cards .card-content h3 {
+    font-size: 18px;
+}
 
-  .cards .card-icon {
-    font-size: 34px;
-    height: 40px;
-  }
+.cards .card-content p {
+    font-size: 12px;
+}
+
+
 
   .cards .card-content h3 {
     font-size: 17px;
