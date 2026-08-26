@@ -794,9 +794,7 @@
           <span id="clientName">Бибигуль</span>! ✨
         </h1>
 
-        <p>
-          Выберите нужный расчёт или раздел
-        </p>
+       
 
       </div>
 
@@ -1216,11 +1214,7 @@ async function loadMaterials(section, title) {
     }
 
     contentCards.innerHTML = `
-        <div class="section-title">
-            <h2>${title}</h2>
-        </div>
-
-        <div class="cards">
+    <div class="cards">
 
             ${directions.map(function(item) {
 
@@ -1453,7 +1447,12 @@ async function loadLibrary() {
             `;
         }).join('');
 
-        contentCards.innerHTML = libraryHeader + materialCards;
+       contentCards.innerHTML = `
+    <div class="cards">
+        ${libraryHeader}
+        ${materialCards}
+    </div>
+`;
 
     } catch (error) {
         console.error('Ошибка загрузки библиотеки:', error);
