@@ -751,11 +751,44 @@
 
     <button class="nav-item" data-section="library" onclick="showSection('library')">
         <span class="nav-icon">📚</span>
-        Библиотека нумеролога
-    </button>
+        // ===== БИБЛИОТЕКА НУМЕРОЛОГА =====
 
-    <button class="nav-item" data-section="my-calculations" onclick="showSection('my-calculations')">
-        <span class="nav-icon">▤</span>
+const NUMEROLOGY_LIBRARY_URL =
+    'https://drive.google.com/drive/folders/1pGjVPKtGeHm5NKrcg0JLvy5M_XDTAaOv?usp=sharing';
+
+function loadLibrary() {
+    const contentCards = document.getElementById('contentCards');
+    if (!contentCards) return;
+
+    contentCards.innerHTML = `
+        <div class="cards">
+            <div
+                class="card library-main-card"
+                onclick="openLibraryHome()"
+                role="button"
+                tabindex="0"
+            >
+                <div class="card-icon library-icon">📚</div>
+
+                <div class="card-content">
+                    <h3>Библиотека<br>нумеролога</h3>
+
+                    <p>
+                        Все книги и материалы
+                    </p>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function openLibraryHome() {
+    window.open(
+        NUMEROLOGY_LIBRARY_URL,
+        '_blank',
+        'noopener,noreferrer'
+    );
+}
         Мои расчёты
     </button>
 
