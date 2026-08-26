@@ -1400,77 +1400,33 @@ function openPlatformMaterial(section, direction) {
 }
 // ===== БИБЛИОТЕКА НУМЕРОЛОГА =====
 
-async function loadLibrary() {
-    const contentCards = document.getElementById('contentCards');
-    if (!contentCards) return;
+// ===== БИБЛИОТЕКА НУМЕРОЛОГА =====
 
-    contentCards.innerHTML = `
-        <div class="section-placeholder">
-            <h2>Библиотека нумеролога</h2>
-            <p>Загрузка материалов...</p>
-        </div>
-    `;
+const NUMEROLOGY_LIBRARY_URL =
+  'https://drive.google.com/drive/folders/1pGjVPKtGeHm5NKrcg0JLvy5M_XDTAaOv?usp=sharing';
 
-    try {
-        const { data, error } = await supabaseClient
-            .from('materials')
-            .select('id, section, title, type, method, description, external_url, file_url, created_at')
-            .eq('section', 'library')
-            .order('created_at', { ascending: false });
+function loadLibrary() {
+  const contentCards = document.getElementById('contentCards');
+  if (!contentCards) return;
 
-        if (error) throw error;
-
-        // Верхняя карточка библиотеки всегда присутствует.
-        const libraryHeader = `
-            <div class="card library-main-card" onclick="openLibraryHome()" role="button" tabindex="0">
-                <div class="card-icon library-icon">📚</div>
-                <div class="card-content">
-                    <h3>Библиотека<br>нумеролога</h3>
-                    <p>Книги, материалы и полезные ресурсы</p>
-                </div>
-            </div>
-        `;
-
-        const materialCards = (data || []).map(function(item) {
-            const link = item.external_url || item.file_url || '';
-            const title = item.title || 'Материал библиотеки';
-            const description = item.description || item.type || 'Полезный материал';
-
-            return `
-                <div class="card method-card" ${link ? `onclick="openMaterial(${JSON.stringify(String(link))})"` : ''}>
-                    <div class="card-icon library-icon">📚</div>
-                    <div class="card-content">
-                        <h3>${title}</h3>
-                        <p>${description}</p>
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-       contentCards.innerHTML = `
+  contentCards.innerHTML = `
     <div class="cards">
-        ${libraryHeader}
-        ${materialCards}
+      <div class="card library-main-card"
+           onclick="openLibraryHome()"
+           role="button"
+           tabindex="0">
+        <div class="card-icon library-icon">📚</div>
+        <div class="card-content">
+          <h3>Библиотека<br>нумеролога</h3>
+          <p>Все книги и материалы</p>
+        </div>
+      </div>
     </div>
-`;
-
-    } catch (error) {
-        console.error('Ошибка загрузки библиотеки:', error);
-
-        contentCards.innerHTML = `
-            <div class="card library-main-card">
-                <div class="card-icon library-icon">📚</div>
-                <div class="card-content">
-                    <h3>Библиотека<br>нумеролога</h3>
-                    <p>Материалы можно будет добавлять через Supabase</p>
-                </div>
-            </div>
-        `;
-    }
+  `;
 }
 
 function openLibraryHome() {
-    alert('Основная библиотека нумеролога готова. Добавляйте книги и материалы через таблицу materials в Supabase.');
+  window.open(NUMEROLOGY_LIBRARY_URL, '_blank');
 }
 
 // ===== МОИ РАСЧЁТЫ =====
