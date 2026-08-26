@@ -631,12 +631,13 @@ const supabaseClient = supabase.createClient(
   SUPABASE_KEY
 );
 // НОВОЕ МЕНЮ РАЗДЕЛОВ
-function showSection(section) {
+async function showSection(section) {
 
     const contentCards = document.getElementById('contentCards');
 
     if (!contentCards) return;
-// Подсветка выбранного раздела
+
+    // Подсветка выбранного раздела
     document.querySelectorAll('.nav-item').forEach(function(btn) {
         btn.classList.remove('active');
 
@@ -646,6 +647,7 @@ function showSection(section) {
             btn.classList.add('active');
         }
     });
+
     // КАЛЬКУЛЯТОРЫ
     if (section === 'calculators') {
 
@@ -697,6 +699,108 @@ function showSection(section) {
 
         return;
     }
+
+    // МЕТОДИЧЕСКИЕ ПОСОБИЯ
+    if (section === 'manuals') {
+        await loadMaterials('manuals', 'Методические пособия');
+        return;
+    }
+
+    // ВИДЕО
+    if (section === 'videos') {
+        await loadMaterials('videos', 'Видео');
+        return;
+    }
+
+    // БИБЛИОТЕКА НУМЕРОЛОГА
+    if (section === 'library') {
+        await loadMaterials('library', 'Библиотека нумеролога');
+        return;
+    }
+
+    // ПРОЧИЕ РАЗДЕЛЫ — пока заглушки
+    const titles = {
+        tests: 'Тесты',
+        mycalculations: 'Мои расчёты',
+        access: 'Доступы',
+        statistics: 'История прохождений'
+    };
+
+    if (titles[section]) {
+        contentCards.innerHTML = `
+            <div class="section-placeholder">
+                <h2>${titles[section]}</h2>
+                <p>Раздел находится в разработке.</p>
+            </div>
+        `;
+    }
+}
+
+
+// ЗАГРУЗКА МАТЕРИАЛОВ ИЗ SUPABASE
+async function loadMaterials(section, title) {
+
+    const contentCards = document.getElementById('contentCards');
+
+    contentCards.innerHTML = `
+        <div class="section-placeholder">
+            <h2>${title}</h2>
+            <p>Загрузка материалов...</p>
+        </div>
+    `;
+
+    try {
+
+        const { data, error } = await supabaseClient
+            .from('materials')
+            .select('*')
+            .eq('section', section)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            contentCards.innerHTML = `
+                <div class="section-placeholder">
+                    <h2>${title}</h2>
+                    <p>Материалы пока не добавлены.</p>
+                </div>
+            `;
+            return;
+        }
+
+        contentCards.innerHTML = data.map(function(item) {
+
+            const link = item.external_url || item.file_url || '#';
+
+            return `
+                <div class="card"
+                     onclick="${link !== '#' ? `window.open('${link}', '_blank')` : ''}">
+                    <div class="card-icon">
+                        ${item.type === 'video' ? '▶️' : '📚'}
+                    </div>
+
+                    <div class="card-content">
+                        <h3>${item.title}</h3>
+                        <p>${item.type || 'Материал'}</p>
+                    </div>
+                </div>
+            `;
+
+        }).join('');
+
+    } catch (error) {
+
+        console.error('Ошибка загрузки материалов:', error);
+
+        contentCards.innerHTML = `
+            <div class="section-placeholder">
+                <h2>${title}</h2>
+                <p>Не удалось загрузить материалы.</p>
+            </div>
+        `;
+    }
+}
 
 
     // МЕТОДИЧЕСКИЕ ПОСОБИЯ
