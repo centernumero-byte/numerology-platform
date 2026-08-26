@@ -928,7 +928,6 @@ function openMaterial(url, title) {
         window.open(cleanUrl, '_blank', 'noopener,noreferrer');
         return;
     }
-
     showMaterialManager(title || 'Материал');
 }
 
@@ -976,8 +975,7 @@ function showMaterialManager(title) {
     document.body.appendChild(box);
 }
 
-    showMaterialManager(title || 'Материал');
-}
+
 function showMaterialManager(title) {
     const old = document.getElementById('materialManager');
     if (old) old.remove();
