@@ -988,57 +988,245 @@ async function showSection(section) {
 
 // ===== МАТЕРИАЛЫ: SUPABASE =====
 
-async function loadMaterials(section, title, action) {
+// ===== МАТЕРИАЛЫ: SUPABASE =====
+
+async function loadMaterials(section, title) {
+
     const contentCards = document.getElementById('contentCards');
+
     if (!contentCards) return;
 
+    const directions = [
+        {
+            key: 'adult',
+            icon: '✦',
+            title: 'Взрослая матрица'
+        },
+        {
+            key: 'child',
+            icon: '👶',
+            title: 'Детская матрица'
+        },
+        {
+            key: 'compatibility',
+            icon: '💕',
+            title: 'Матрица совместимости'
+        },
+        {
+            key: 'vedic',
+            icon: 'ॐ',
+            title: 'Ведическая нумерология'
+        },
+        {
+            key: 'pythagoras',
+            icon: '🔢',
+            title: 'Квадрат Пифагора'
+        }
+    ];
+
+    let subtitle = 'Материал';
+
+    if (section === 'manuals') {
+        subtitle = 'Методическое пособие';
+    }
+
+    if (section === 'videos') {
+        subtitle = 'Видео';
+    }
+
+    if (section === 'tests') {
+        subtitle = 'Тесты и практики';
+    }
+
     contentCards.innerHTML = `
-        <div class="section-placeholder">
+        <div class="section-title">
             <h2>${title}</h2>
-            <p>Загрузка материалов...</p>
+        </div>
+
+        <div class="cards">
+
+            ${directions.map(function(item) {
+
+                let icon = item.icon;
+
+                if (item.key === 'pythagoras') {
+                    icon = `
+                        <div class="pythagoras-icon">
+                            <span>1</span><span>4</span><span>7</span>
+                            <span>2</span><span>5</span><span>8</span>
+                            <span>3</span><span>6</span><span>9</span>
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div
+                        class="card method-card"
+                        id="material-${section}-${item.key}"
+                        data-section="${section}"
+                        data-direction="${item.key}"
+                        onclick="openPlatformMaterial('${section}', '${item.key}')"
+                    >
+
+                        <div class="card-icon">
+                            ${icon}
+                        </div>
+
+                        <div class="card-content">
+
+                            <h3>${item.title}</h3>
+
+                            <p>${subtitle}</p>
+
+                        </div>
+
+                    </div>
+                `;
+
+            }).join('')}
+
         </div>
     `;
 
     try {
+
         const { data, error } = await supabaseClient
             .from('materials')
-            .select('id, section, title, type, method, calculator, type_key, slug, description, external_url, file_url, created_at')
+            .select('*')
             .eq('section', section)
             .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+            console.error('Ошибка загрузки материалов:', error);
+            return;
+        }
 
-        contentCards.innerHTML = renderMethodCards({
-            section: section,
-            action: action || 'material',
-            materials: data || [],
-            emptyText:
-                section === 'videos'
-                    ? 'Видео пока не добавлено'
-                    : section === 'tests'
-                        ? 'Тесты и практики'
-                        : 'Пособие пока не добавлено'
+        if (!data || data.length === 0) {
+            return;
+        }
+
+        data.forEach(function(item) {
+
+            const text = (
+                (item.title || '') + ' ' +
+                (item.name || '') + ' ' +
+                (item.slug || '') + ' ' +
+                (item.type_key || '') + ' ' +
+                (item.method || '')
+            ).toLowerCase();
+
+            let direction = null;
+
+            if (
+                text.includes('взросл') ||
+                text.includes('adult')
+            ) {
+                direction = 'adult';
+            }
+
+            else if (
+                text.includes('детск') ||
+                text.includes('child')
+            ) {
+                direction = 'child';
+            }
+
+            else if (
+                text.includes('совмест') ||
+                text.includes('compatibility')
+            ) {
+                direction = 'compatibility';
+            }
+
+            else if (
+                text.includes('ведичес') ||
+                text.includes('vedic')
+            ) {
+                direction = 'vedic';
+            }
+
+            else if (
+                text.includes('пифагор') ||
+                text.includes('pythagoras')
+            ) {
+                direction = 'pythagoras';
+            }
+
+            if (!direction) return;
+
+            const link =
+                item.external_url ||
+                item.file_url ||
+                '';
+
+            if (!link) return;
+
+            const card = document.getElementById(
+                `material-${section}-${direction}`
+            );
+
+            if (!card) return;
+
+            card.dataset.url = link;
+
+            card.classList.add('has-material');
+
         });
 
     } catch (error) {
-        console.error('Ошибка загрузки материалов [' + section + ']:', error);
 
-        // Карточки направлений остаются видимыми даже если таблица/RLS
-        // ещё не настроены. После настройки Supabase ссылки подхватятся автоматически.
-        contentCards.innerHTML = renderMethodCards({
-            section: section,
-            action: action || 'material',
-            materials: [],
-            emptyText:
-                section === 'videos'
-                    ? 'Видео пока не добавлено'
-                    : section === 'tests'
-                        ? 'Тесты и практики'
-                        : 'Пособие пока не добавлено'
-        });
+        console.error(
+            'Ошибка загрузки материалов:',
+            error
+        );
     }
 }
 
+
+/* ===== ОТКРЫТИЕ МАТЕРИАЛА ===== */
+
+function openPlatformMaterial(section, direction) {
+
+    const card = document.getElementById(
+        `material-${section}-${direction}`
+    );
+
+    if (!card) return;
+
+    const link = card.dataset.url || '';
+
+    if (link) {
+
+        window.open(
+            link,
+            '_blank',
+            'noopener,noreferrer'
+        );
+
+        return;
+    }
+
+    const names = {
+        adult: 'Взрослая матрица',
+        child: 'Детская матрица',
+        compatibility: 'Матрица совместимости',
+        vedic: 'Ведическая нумерология',
+        pythagoras: 'Квадрат Пифагора'
+    };
+
+    const types = {
+        manuals: 'методическое пособие',
+        videos: 'видео',
+        tests: 'тесты и практики'
+    };
+
+    alert(
+        names[direction] +
+        '\n\n' +
+        types[section] +
+        '\n\nСсылка пока не добавлена.'
+    );
+}
 // ===== БИБЛИОТЕКА НУМЕРОЛОГА =====
 
 async function loadLibrary() {
