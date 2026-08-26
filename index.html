@@ -414,6 +414,20 @@
   justify-content: center;
 }
 
+
+/* ===== КАРТОЧКИ НАПРАВЛЕНИЙ В РАЗДЕЛАХ ===== */
+.method-card {
+    min-height: 175px !important;
+}
+
+.method-card:active {
+    transform: translateY(-1px) scale(0.99);
+}
+
+.method-card[onclick] {
+    cursor: pointer;
+}
+
 /* Чтобы 7-я карточка не растягивалась */
 .cards .card:nth-child(5),
 .cards .card:nth-child(6),
@@ -632,10 +646,109 @@ const supabaseClient = supabase.createClient(
 );
 // ===== НАВИГАЦИЯ ПО РАЗДЕЛАМ =====
 
+const METHOD_CARDS = [
+    { key: 'adult', title: 'Взрослая<br>матрица', icon: '✦', description: 'Полный расчёт<br>по дате рождения' },
+    { key: 'child', title: 'Детская<br>матрица', icon: '👶', description: 'Анализ и расчёт<br>детской матрицы' },
+    { key: 'compatibility', title: 'Матрица<br>совместимости', icon: '💕', description: 'Анализ отношений<br>двух людей' },
+    { key: 'vedic', title: 'Ведическая<br>нумерология', icon: 'ॐ', description: 'Расчёт по ведической<br>системе' },
+    { key: 'pythagoras', title: 'Квадрат<br>Пифагора', icon: 'pythagoras', description: 'Психоматрица<br>по Пифагору' }
+];
+
 function setActiveSection(section) {
     document.querySelectorAll('.nav-item[data-section]').forEach(function(btn) {
         btn.classList.toggle('active', btn.dataset.section === section);
     });
+}
+
+function pythagorasIconHtml() {
+    return `
+        <div class="card-icon pythagoras-icon">
+            <span>1</span><span>4</span><span>7</span>
+            <span>2</span><span>5</span><span>8</span>
+            <span>3</span><span>6</span><span>9</span>
+        </div>
+    `;
+}
+
+function renderMethodCards(options) {
+    const {
+        section,
+        action,
+        materials = [],
+        emptyText = 'Материал пока не добавлен.'
+    } = options;
+
+    const materialMap = {};
+    materials.forEach(function(item) {
+        const key = item.method || item.calculator || item.type_key || item.slug;
+        if (key) materialMap[String(key).toLowerCase()] = item;
+    });
+
+    return METHOD_CARDS.map(function(card) {
+        const item = materialMap[card.key];
+        const icon = card.icon === 'pythagoras'
+            ? pythagorasIconHtml()
+            : `<div class="card-icon">${card.icon}</div>`;
+
+        let click = '';
+
+        if (action === 'calculator') {
+            click = `onclick="openCalculator('${card.key}')"`;
+        } else if (action === 'test') {
+            click = `onclick="openTest('${card.key}')"`;
+        } else if (action === 'material') {
+            if (item) {
+                const link = item.external_url || item.file_url || '';
+                if (link) {
+                    const safeLink = String(link).replace(/'/g, "\\'");
+                    click = `onclick="openMaterial('${safeLink}')"`;
+                }
+            }
+        }
+
+        const description = item
+            ? (item.description || item.type || (section === 'videos' ? 'Видео по методу' : 'Методическое пособие'))
+            : emptyText;
+
+        return `
+            <div class="card method-card" ${click}>
+                ${icon}
+                <div class="card-content">
+                    <h3>${card.title}</h3>
+                    <p>${action === 'calculator' || action === 'test' ? card.description : description}</p>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderCalculators() {
+    const contentCards = document.getElementById('contentCards');
+    if (!contentCards) return;
+
+    contentCards.innerHTML = renderMethodCards({
+        section: 'calculators',
+        action: 'calculator'
+    });
+}
+
+function renderTests() {
+    const contentCards = document.getElementById('contentCards');
+    if (!contentCards) return;
+
+    contentCards.innerHTML = renderMethodCards({
+        section: 'tests',
+        action: 'test',
+        emptyText: 'Тесты и практики'
+    });
+}
+
+function openMaterial(url) {
+    if (!url) {
+        alert('Ссылка на материал пока не добавлена.');
+        return;
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 async function showSection(section) {
@@ -644,86 +757,31 @@ async function showSection(section) {
 
     setActiveSection(section);
 
-    // КАЛЬКУЛЯТОРЫ
     if (section === 'calculators') {
-        contentCards.innerHTML = `
-            <div class="card" onclick="openCalculator('adult')">
-                <div class="card-icon">✦</div>
-                <div class="card-content">
-                    <h3>Взрослая<br>матрица</h3>
-                    <p>Полный расчёт<br>по дате рождения</p>
-                </div>
-            </div>
-
-            <div class="card" onclick="openCalculator('child')">
-                <div class="card-icon">👶</div>
-                <div class="card-content">
-                    <h3>Детская<br>матрица</h3>
-                    <p>Анализ и расчёт<br>детской матрицы</p>
-                </div>
-            </div>
-
-            <div class="card" onclick="openCalculator('compatibility')">
-                <div class="card-icon">💕</div>
-                <div class="card-content">
-                    <h3>Матрица<br>совместимости</h3>
-                    <p>Анализ отношений<br>двух людей</p>
-                </div>
-            </div>
-
-            <div class="card" onclick="openCalculator('vedic')">
-                <div class="card-icon">ॐ</div>
-                <div class="card-content">
-                    <h3>Ведическая<br>нумерология</h3>
-                    <p>Расчёт по ведической<br>системе</p>
-                </div>
-            </div>
-
-            <div class="card" onclick="openCalculator('pythagoras')">
-                <div class="card-icon pythagoras-icon">
-                    <span>1</span><span>4</span><span>7</span>
-                    <span>2</span><span>5</span><span>8</span>
-                    <span>3</span><span>6</span><span>9</span>
-                </div>
-                <div class="card-content">
-                    <h3>Квадрат<br>Пифагора</h3>
-                    <p>Психоматрица<br>по Пифагору</p>
-                </div>
-            </div>
-        `;
+        renderCalculators();
         return;
     }
 
-    // МЕТОДИЧЕСКИЕ ПОСОБИЯ
+    if (section === 'tests') {
+        renderTests();
+        return;
+    }
+
     if (section === 'manuals') {
         await loadMaterials('manuals', 'Методические пособия');
         return;
     }
 
-    // ВИДЕО
     if (section === 'videos') {
         await loadMaterials('videos', 'Видео');
         return;
     }
 
-    // ТЕСТЫ
-    if (section === 'tests') {
-        contentCards.innerHTML = `
-            <div class="section-placeholder">
-                <h2>Тесты</h2>
-                <p>Раздел тестов готовится.</p>
-            </div>
-        `;
-        return;
-    }
-
-    // БИБЛИОТЕКА НУМЕРОЛОГА
     if (section === 'library') {
         await loadMaterials('library', 'Библиотека нумеролога');
         return;
     }
 
-    // МОИ РАСЧЁТЫ
     if (section === 'my-calculations') {
         contentCards.innerHTML = `
             <div class="section-placeholder">
@@ -734,7 +792,6 @@ async function showSection(section) {
         return;
     }
 
-    // ДОСТУПЫ
     if (section === 'access') {
         contentCards.innerHTML = `
             <div class="section-placeholder">
@@ -745,7 +802,6 @@ async function showSection(section) {
         return;
     }
 
-    // ОТЧЁТЫ И СТАТИСТИКА
     if (section === 'statistics') {
         contentCards.innerHTML = `
             <div class="section-placeholder">
@@ -753,11 +809,10 @@ async function showSection(section) {
                 <p>Здесь будет отображаться статистика по нумерологам и ученицам.</p>
             </div>
         `;
-        return;
     }
 }
 
-// ===== ЗАГРУЗКА МАТЕРИАЛОВ ИЗ SUPABASE =====
+// ===== МАТЕРИАЛЫ: SUPABASE + 5 НАПРАВЛЕНИЙ =====
 
 async function loadMaterials(section, title) {
     const contentCards = document.getElementById('contentCards');
@@ -773,12 +828,27 @@ async function loadMaterials(section, title) {
     try {
         const { data, error } = await supabaseClient
             .from('materials')
-            .select('*')
+            .select('id, section, title, type, method, calculator, type_key, slug, description, external_url, file_url, created_at')
             .eq('section', section)
             .order('created_at', { ascending: false });
 
         if (error) throw error;
 
+        // Для методических пособий и видео всегда показываем 5 направлений.
+        // Если ссылка уже есть в Supabase — карточка становится кликабельной.
+        if (section === 'manuals' || section === 'videos') {
+            contentCards.innerHTML = renderMethodCards({
+                section: section,
+                action: 'material',
+                materials: data || [],
+                emptyText: section === 'videos'
+                    ? 'Видео пока не добавлено'
+                    : 'Пособие пока не добавлено'
+            });
+            return;
+        }
+
+        // Библиотека остаётся свободным списком материалов из Supabase.
         if (!data || data.length === 0) {
             contentCards.innerHTML = `
                 <div class="section-placeholder">
@@ -790,16 +860,15 @@ async function loadMaterials(section, title) {
         }
 
         contentCards.innerHTML = data.map(function(item) {
-            const link = item.external_url || item.file_url || '#';
+            const link = item.external_url || item.file_url || '';
 
             return `
-                <div class="card"
-                     onclick="${link !== '#' ? `window.open('${link}', '_blank')` : ''}">
+                <div class="card" ${link ? `onclick="openMaterial('${String(link).replace(/'/g, "\\'")}')"` : ''}>
                     <div class="card-icon">
                         ${item.type === 'video' ? '▶️' : '📚'}
                     </div>
                     <div class="card-content">
-                        <h3>${item.title}</h3>
+                        <h3>${item.title || 'Материал'}</h3>
                         <p>${item.type || 'Материал'}</p>
                     </div>
                 </div>
@@ -809,10 +878,24 @@ async function loadMaterials(section, title) {
     } catch (error) {
         console.error('Ошибка загрузки материалов:', error);
 
+        // Даже если Supabase пока не настроен или таблица закрыта RLS,
+        // пользователь всё равно увидит структуру раздела.
+        if (section === 'manuals' || section === 'videos') {
+            contentCards.innerHTML = renderMethodCards({
+                section: section,
+                action: 'material',
+                materials: [],
+                emptyText: section === 'videos'
+                    ? 'Видео пока не добавлено'
+                    : 'Пособие пока не добавлено'
+            });
+            return;
+        }
+
         contentCards.innerHTML = `
             <div class="section-placeholder">
                 <h2>${title}</h2>
-                <p>Не удалось загрузить материалы.</p>
+                <p>Материалы пока не добавлены.</p>
             </div>
         `;
     }
@@ -1087,6 +1170,8 @@ async function checkAuth() {
   }
 startInactivityTimer();
   document.body.style.visibility = "visible";
+  setActiveSection('calculators');
+  renderCalculators();
 }
 
 function showLogin() {
