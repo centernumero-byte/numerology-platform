@@ -872,10 +872,10 @@ if (action === 'calculator') {
     click = `onclick="openCalculator('${card.key}')"`;
 } else if (action === 'material') {
     click = `onclick="openMaterial(${JSON.stringify(String(link || ''))}, ${JSON.stringify(card.title)})"`;
-} else if (action === 'test') {
-    click = `onclick="openTest('${card.key}', ${JSON.stringify(card.title)})"`;
 } else if (action === 'video') {
     click = `onclick="openMaterial(${JSON.stringify(String(link || ''))}, ${JSON.stringify(card.title)})"`;
+} else if (action === 'test') {
+    click = `onclick="openTest('${card.key}', ${JSON.stringify(card.title)})"`;
 }
 
         let description = card.description;
@@ -917,6 +917,53 @@ function openMaterial(url, title) {
         window.open(cleanUrl, '_blank', 'noopener,noreferrer');
         return;
     }
+
+    showMaterialManager(title || 'Материал');
+}
+
+function showMaterialManager(title) {
+    const old = document.getElementById('materialManager');
+    if (old) old.remove();
+
+    const box = document.createElement('div');
+    box.id = 'materialManager';
+
+    box.innerHTML = `
+        <div class="material-manager-overlay">
+            <div class="material-manager">
+                <button class="material-manager-close"
+                    onclick="document.getElementById('materialManager').remove()">×</button>
+
+                <h2>${title}</h2>
+
+                <label>Вставить ссылку:</label>
+                <input id="materialUrlInput"
+                    type="url"
+                    placeholder="https://..."
+                    class="material-manager-input">
+
+                <button class="material-manager-button"
+                    onclick="saveMaterialUrl()">
+                    Сохранить ссылку
+                </button>
+
+                <div class="material-manager-or">или</div>
+
+                <label>Загрузить файл:</label>
+                <input id="materialFileInput"
+                    type="file"
+                    class="material-manager-input">
+
+                <button class="material-manager-button"
+                    onclick="uploadMaterialFile()">
+                    Загрузить
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(box);
+}
 
     showMaterialManager(title || 'Материал');
 }
