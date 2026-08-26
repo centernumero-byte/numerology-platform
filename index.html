@@ -866,15 +866,17 @@ function renderMethodCards(options) {
             ? pythagorasIconHtml()
             : `<div class="card-icon">${card.icon}</div>`;
 
-        let click = '';
+     let click = '';
 
-        if (action === 'calculator') {
-            click = `onclick="openCalculator('${card.key}')"`;
-        } else if (link) {
-            click = `onclick="openMaterial(${JSON.stringify(String(link))})"`;
-        } else if (action === 'test') {
-            click = `onclick="openTest('${card.key}')"`;
-        }
+if (action === 'calculator') {
+    click = `onclick="openCalculator('${card.key}')"`;
+} else if (action === 'material') {
+    click = `onclick="openMaterial(${JSON.stringify(String(link || ''))}, ${JSON.stringify(card.title)})"`;
+} else if (action === 'test') {
+    click = `onclick="openTest('${card.key}', ${JSON.stringify(card.title)})"`;
+} else if (action === 'video') {
+    click = `onclick="openMaterial(${JSON.stringify(String(link || ''))}, ${JSON.stringify(card.title)})"`;
+}
 
         let description = card.description;
         if (item && item.description) description = item.description;
@@ -908,31 +910,63 @@ async function renderTests() {
     await loadMaterials('tests', 'Тесты', 'test');
 }
 
-function openMaterial(url) {
-    if (!url) return;
+function openMaterial(url, title) {
+    const cleanUrl = String(url || '').trim();
 
-    const cleanUrl = String(url).trim();
+    if (cleanUrl) {
+        window.open(cleanUrl, '_blank', 'noopener,noreferrer');
+        return;
+    }
 
-    if (!cleanUrl) return;
-
-    window.open(cleanUrl, '_blank', 'noopener,noreferrer');
+    showMaterialManager(title || 'Материал');
 }
+function showMaterialManager(title) {
+    const old = document.getElementById('materialManager');
+    if (old) old.remove();
 
-async function openTest(type) {
-    const { data, error } = await supabaseClient
-        .from('materials')
-        .select('external_url, file_url')
-        .eq('section', 'tests')
-        .eq('type_key', type)
-        .limit(1);
+    const box = document.createElement('div');
+    box.id = 'materialManager';
 
-    if (error || !data || !data.length) return;
+    box.innerHTML = `
+        <div class="material-manager-overlay">
+            <div class="material-manager">
+                <button class="material-manager-close" onclick="document.getElementById('materialManager').remove()">×</button>
 
-    const url = data[0].external_url || data[0].file_url;
+                <h2>${title}</h2>
 
-    if (!url) return;
+                <button class="material-manager-button"
+                        onclick="document.getElementById('materialFileInput').click()">
+                    📁 Загрузить файл
+                </button>
 
-    window.open(String(url).trim(), '_blank', 'noopener,noreferrer');
+                <input
+                    id="materialFileInput"
+                    type="file"
+                    style="display:none"
+                    onchange="uploadMaterialFile(this.files[0], '${String(title).replace(/'/g, "\\'")}')"
+                >
+
+                <div class="material-manager-or">или</div>
+
+                <input
+                    id="materialUrlInput"
+                    class="material-manager-input"
+                    type="url"
+                    placeholder="Вставьте ссылку"
+                >
+
+                <button class="material-manager-button"
+                        onclick="saveMaterialUrl('${String(title).replace(/'/g, "\\'")}')">
+                    🔗 Сохранить ссылку
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(box);
+}
+function openTest(type, title) {
+    showMaterialManager(title || 'Тест');
 }
 
 async function showSection(section) {
