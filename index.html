@@ -476,42 +476,42 @@
 
      <div class="nav">
 
-    <button class="nav-item" onclick="showSection('calculators')">
+    <button class="nav-item active" data-section="calculators" onclick="showSection('calculators')">
         <span class="nav-icon">▦</span>
         Калькуляторы
     </button>
 
-    <button class="nav-item" onclick="showSection('manuals')">
+    <button class="nav-item" data-section="manuals" onclick="showSection('manuals')">
         <span class="nav-icon">📖</span>
         Методические пособия
     </button>
 
-    <button class="nav-item" onclick="showSection('videos')">
+    <button class="nav-item" data-section="videos" onclick="showSection('videos')">
         <span class="nav-icon">▶</span>
         Видео
     </button>
 
-    <button class="nav-item" onclick="showSection('tests')">
+    <button class="nav-item" data-section="tests" onclick="showSection('tests')">
         <span class="nav-icon">✎</span>
         Тесты
     </button>
 
-    <button class="nav-item" onclick="showSection('library')">
+    <button class="nav-item" data-section="library" onclick="showSection('library')">
         <span class="nav-icon">📚</span>
         Библиотека нумеролога
     </button>
 
-    <button class="nav-item" onclick="showSection('my-calculations')">
+    <button class="nav-item" data-section="my-calculations" onclick="showSection('my-calculations')">
         <span class="nav-icon">▤</span>
         Мои расчёты
     </button>
 
-    <button class="nav-item" onclick="showSection('access')">
+    <button class="nav-item" data-section="access" onclick="showSection('access')">
         <span class="nav-icon">🔑</span>
         Доступы
     </button>
 
-    <button class="nav-item" onclick="showSection('statistics')">
+    <button class="nav-item" data-section="statistics" onclick="showSection('statistics')">
         <span class="nav-icon">▥</span>
         Отчёты и статистика
     </button>
@@ -520,7 +520,7 @@
 
 <button
     class="nav-item logout"
-    onclick="supabaseClient.auth.signOut().then(() => location.reload())"
+    onclick="logoutUser()"
 >
     <span class="nav-icon">🚪</span>
     Выйти
@@ -630,27 +630,22 @@ const supabaseClient = supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY
 );
-// НОВОЕ МЕНЮ РАЗДЕЛОВ
+// ===== НАВИГАЦИЯ ПО РАЗДЕЛАМ =====
+
+function setActiveSection(section) {
+    document.querySelectorAll('.nav-item[data-section]').forEach(function(btn) {
+        btn.classList.toggle('active', btn.dataset.section === section);
+    });
+}
+
 async function showSection(section) {
-
     const contentCards = document.getElementById('contentCards');
-
     if (!contentCards) return;
 
-    // Подсветка выбранного раздела
-    document.querySelectorAll('.nav-item').forEach(function(btn) {
-        btn.classList.remove('active');
-
-        const clickAction = btn.getAttribute('onclick') || '';
-
-        if (clickAction.includes("showSection('" + section + "')")) {
-            btn.classList.add('active');
-        }
-    });
+    setActiveSection(section);
 
     // КАЛЬКУЛЯТОРЫ
     if (section === 'calculators') {
-
         contentCards.innerHTML = `
             <div class="card" onclick="openCalculator('adult')">
                 <div class="card-icon">✦</div>
@@ -696,7 +691,6 @@ async function showSection(section) {
                 </div>
             </div>
         `;
-
         return;
     }
 
@@ -712,35 +706,62 @@ async function showSection(section) {
         return;
     }
 
+    // ТЕСТЫ
+    if (section === 'tests') {
+        contentCards.innerHTML = `
+            <div class="section-placeholder">
+                <h2>Тесты</h2>
+                <p>Раздел тестов готовится.</p>
+            </div>
+        `;
+        return;
+    }
+
     // БИБЛИОТЕКА НУМЕРОЛОГА
     if (section === 'library') {
         await loadMaterials('library', 'Библиотека нумеролога');
         return;
     }
 
-    // ПРОЧИЕ РАЗДЕЛЫ — пока заглушки
-    const titles = {
-        tests: 'Тесты',
-        mycalculations: 'Мои расчёты',
-        access: 'Доступы',
-        statistics: 'История прохождений'
-    };
-
-    if (titles[section]) {
+    // МОИ РАСЧЁТЫ
+    if (section === 'my-calculations') {
         contentCards.innerHTML = `
             <div class="section-placeholder">
-                <h2>${titles[section]}</h2>
-                <p>Раздел находится в разработке.</p>
+                <h2>Мои расчёты</h2>
+                <p>Здесь будут сохранены ваши предыдущие расчёты.</p>
             </div>
         `;
+        return;
+    }
+
+    // ДОСТУПЫ
+    if (section === 'access') {
+        contentCards.innerHTML = `
+            <div class="section-placeholder">
+                <h2>Доступы</h2>
+                <p>Здесь будет управление доступами пользователей и тарифами.</p>
+            </div>
+        `;
+        return;
+    }
+
+    // ОТЧЁТЫ И СТАТИСТИКА
+    if (section === 'statistics') {
+        contentCards.innerHTML = `
+            <div class="section-placeholder">
+                <h2>Отчёты и статистика</h2>
+                <p>Здесь будет отображаться статистика по нумерологам и ученицам.</p>
+            </div>
+        `;
+        return;
     }
 }
 
+// ===== ЗАГРУЗКА МАТЕРИАЛОВ ИЗ SUPABASE =====
 
-// ЗАГРУЗКА МАТЕРИАЛОВ ИЗ SUPABASE
 async function loadMaterials(section, title) {
-
     const contentCards = document.getElementById('contentCards');
+    if (!contentCards) return;
 
     contentCards.innerHTML = `
         <div class="section-placeholder">
@@ -750,7 +771,6 @@ async function loadMaterials(section, title) {
     `;
 
     try {
-
         const { data, error } = await supabaseClient
             .from('materials')
             .select('*')
@@ -770,7 +790,6 @@ async function loadMaterials(section, title) {
         }
 
         contentCards.innerHTML = data.map(function(item) {
-
             const link = item.external_url || item.file_url || '#';
 
             return `
@@ -779,18 +798,15 @@ async function loadMaterials(section, title) {
                     <div class="card-icon">
                         ${item.type === 'video' ? '▶️' : '📚'}
                     </div>
-
                     <div class="card-content">
                         <h3>${item.title}</h3>
                         <p>${item.type || 'Материал'}</p>
                     </div>
                 </div>
             `;
-
         }).join('');
 
     } catch (error) {
-
         console.error('Ошибка загрузки материалов:', error);
 
         contentCards.innerHTML = `
@@ -802,54 +818,21 @@ async function loadMaterials(section, title) {
     }
 }
 
+// ===== ВЫХОД =====
 
-    
-
-
-   
-
-        contentCards.innerHTML = `
-            <div class="section-placeholder">
-                <h2>Мои расчёты</h2>
-                <p>Здесь будут сохранены ваши предыдущие расчёты.</p>
-            </div>
-        `;
-
-        return;
+async function logoutUser() {
+    try {
+        await supabaseClient.auth.signOut();
+    } catch (error) {
+        console.error('Ошибка выхода:', error);
     }
 
-
-    // ДОСТУПЫ
-    if (section === 'access') {
-
-        contentCards.innerHTML = `
-            <div class="section-placeholder">
-                <h2>Доступы</h2>
-                <p>Здесь будет управление доступами пользователей и тарифами.</p>
-            </div>
-        `;
-
-        return;
-    }
-
-
-    // ОТЧЁТЫ И СТАТИСТИКА
-    if (section === 'statistics') {
-
-        contentCards.innerHTML = `
-            <div class="section-placeholder">
-                <h2>Отчёты и статистика</h2>
-                <p>Здесь будет отображаться статистика по нумерологам и ученицам.</p>
-            </div>
-        `;
-
-        return;
-    }
+    localStorage.removeItem(LAST_ACTIVITY_KEY);
+    clearTimeout(inactivityTimer);
+    showLogin();
 }
 
-
-
- async function openCalculator(type) {
+async function openCalculator(type) {
     const { data: { session } } = await supabaseClient.auth.getSession();
 
     if (!session) {
