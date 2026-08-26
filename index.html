@@ -803,57 +803,7 @@ async function loadMaterials(section, title) {
 }
 
 
-    // МЕТОДИЧЕСКИЕ ПОСОБИЯ
-    if (section === 'manuals') {
-
-        contentCards.innerHTML = `
-            <div class="card" onclick="openManual('adult')">
-                <div class="card-icon">✦</div>
-                <div class="card-content">
-                    <h3>Взрослая<br>матрица</h3>
-                    <p>Методическое<br>пособие</p>
-                </div>
-            </div>
-
-            <div class="card" onclick="openManual('child')">
-                <div class="card-icon">👶</div>
-                <div class="card-content">
-                    <h3>Детская<br>матрица</h3>
-                    <p>Методическое<br>пособие</p>
-                </div>
-            </div>
-
-            <div class="card" onclick="openManual('compatibility')">
-                <div class="card-icon">💕</div>
-                <div class="card-content">
-                    <h3>Матрица<br>совместимости</h3>
-                    <p>Методическое<br>пособие</p>
-                </div>
-            </div>
-
-            <div class="card" onclick="openManual('vedic')">
-                <div class="card-icon">ॐ</div>
-                <div class="card-content">
-                    <h3>Ведическая<br>нумерология</h3>
-                    <p>Методическое<br>пособие</p>
-                </div>
-            </div>
-
-            <div class="card" onclick="openManual('pythagoras')">
-                <div class="card-icon pythagoras-icon">
-                    <span>1</span><span>4</span><span>7</span>
-                    <span>2</span><span>5</span><span>8</span>
-                    <span>3</span><span>6</span><span>9</span>
-                </div>
-                <div class="card-content">
-                    <h3>Квадрат<br>Пифагора</h3>
-                    <p>Методическое<br>пособие</p>
-                </div>
-            </div>
-        `;
-
-        return;
-    }
+    
 
 
     // ВИДЕО
