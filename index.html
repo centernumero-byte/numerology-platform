@@ -350,155 +350,250 @@
       margin-top: 20px;
     }
      }
- /* ===== КОМПАКТНЫЕ КАРТОЧКИ ПЛАТФОРМЫ ===== */
+/* =========================================================
+   НОРМАЛЬНЫЙ РАЗМЕР КАРТОЧЕК И РАЗДЕЛОВ
+   ========================================================= */
 
-.cards {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-  width: 100%;
-  margin-top: 18px;
-  align-items: stretch;
-}
-
-.cards .card {
-  height: 175px;
-  min-height: 175px;
-  box-sizing: border-box;
-  padding: 16px 12px;
-  border-radius: 18px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  cursor: pointer;
-  overflow: hidden;
-}
-
-.cards .card-icon {
-  font-size: 42px;
-  line-height: 1;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 8px;
-}
-
-.cards .card-content h3 {
-  margin: 0 0 7px 0;
-  font-size: 20px;
-  line-height: 1.08;
-}
-
-.cards .card-content p {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.25;
-}
-
-.pythagoras-icon {
-  display: grid !important;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1px 6px;
-  width: 82px;
-  height: 48px !important;
-  font-size: 15px !important;
-  line-height: 1 !important;
-}
-
-.pythagoras-icon span {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-
-/* ===== КАРТОЧКИ НАПРАВЛЕНИЙ В РАЗДЕЛАХ ===== */
-
+/* Основная сетка карточек */
 .cards {
     display: grid;
-    grid-template-columns: repeat(5, 150px);
-    gap: 20px;
-    justify-content: center;
+    grid-template-columns: repeat(5, 170px);
+    gap: 18px;
+    justify-content: start;
     align-items: start;
+    width: 100%;
+    margin-top: 18px;
 }
 
+/* Карточки калькуляторов / пособий / видео / тестов */
+.cards .card,
 .method-card {
-    width: 150px !important;
-    height: 220px !important;
-    min-height: 220px !important;
+    width: 170px;
+    height: 240px;
+    min-height: 240px;
+
     box-sizing: border-box;
+
+    padding: 16px 12px;
+
+    border-radius: 18px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    text-align: center;
+
     cursor: pointer;
+    overflow: hidden;
 }
 
-.method-card:active {
-    transform: translateY(-1px) scale(0.99);
-}
-
-.method-card[onclick] {
-    cursor: pointer;
-}
-
-.cards .card {
-    height: 220px;
-    min-height: 220px;
-    padding: 14px 10px;
-    box-sizing: border-box;
-}
-
+/* Иконки */
 .cards .card-icon {
-    font-size: 44px;
-    height: 52px;
-}
+    height: 58px;
+    margin-bottom: 10px;
 
-.cards .card-content h3 {
-    font-size: 18px;
-}
-
-.cards .card-content p {
-    font-size: 12px;
-}
-
-
-
-  .cards .card-content h3 {
-    font-size: 17px;
-  }
-
-  .cards .card-content p {
-    font-size: 11px;
-  }
-}
-
-  .library-icon {
-    font-size: 54px;
-    line-height: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-  }
 
-  .method-card {
-    cursor: pointer;
-  }
-
-  .method-card:not([onclick]) {
-    cursor: default;
-  }
-
-
-/* ===== БИБЛИОТЕКА И ЛИЧНЫЕ РАЗДЕЛЫ ===== */
-.library-main-card {
-  border-width: 2px;
+    font-size: 48px;
+    line-height: 1;
 }
+
+/* Пифагор */
+.pythagoras-icon {
+    display: grid !important;
+
+    grid-template-columns: repeat(3, 1fr);
+
+    gap: 2px 7px;
+
+    width: 82px;
+    height: 58px !important;
+
+    font-size: 16px !important;
+    line-height: 1 !important;
+}
+
+.pythagoras-icon span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Заголовок карточки */
+.cards .card-content h3 {
+    margin: 0 0 8px 0;
+
+    font-family: Georgia, serif;
+
+    font-size: 19px;
+    line-height: 1.12;
+}
+
+/* Описание карточки */
+.cards .card-content p {
+    margin: 0;
+
+    font-size: 13px;
+    line-height: 1.3;
+}
+
+/* Заголовок раздела */
+.section-title {
+    width: 100%;
+    margin: 0 0 18px 0;
+}
+
+.section-title h2 {
+    margin: 0;
+
+    font-family: Georgia, serif;
+
+    font-size: 31px;
+    font-weight: 500;
+
+    color: #f6d66c;
+}
+
+/* =========================================================
+   ЛЕВОЕ МЕНЮ — СРЕДНИЙ АККУРАТНЫЙ РАЗМЕР
+   ========================================================= */
+
+.nav {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.nav-item {
+    width: 100%;
+
+    padding: 15px 16px;
+
+    min-height: 52px;
+
+    border-radius: 12px;
+
+    border: 1px solid transparent;
+
+    background: transparent;
+
+    color: #f5f0df;
+
+    font-size: 18px;
+    line-height: 1.2;
+
+    text-align: left;
+
+    cursor: pointer;
+
+    transition: 0.25s;
+
+    display: flex;
+    align-items: center;
+}
+
+/* Иконки меню */
+.nav-icon {
+    display: inline-flex;
+
+    width: 32px;
+    min-width: 32px;
+
+    align-items: center;
+    justify-content: center;
+
+    margin-right: 2px;
+
+    color: #f2c84d;
+
+    font-size: 22px;
+}
+
+/* Активный пункт */
+.nav-item.active {
+    background:
+        linear-gradient(
+            90deg,
+            rgba(113, 49, 153, 0.55),
+            rgba(93, 39, 137, 0.35)
+        );
+
+    border-color: #d7aa31;
+
+    color: #f8d96d;
+
+    box-shadow:
+        0 0 15px rgba(212, 164, 43, 0.12);
+}
+
+/* Наведение */
+.nav-item:hover {
+    background: rgba(126, 66, 164, 0.25);
+    border-color: rgba(218, 173, 49, 0.55);
+}
+
+/* =========================================================
+   БИБЛИОТЕКА
+   ========================================================= */
 
 .library-icon {
-  font-size: 52px !important;
-  height: 58px !important;
+    font-size: 52px !important;
+    line-height: 1;
+
+    height: 58px !important;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
+.method-card {
+    cursor: pointer;
+}
+
+.method-card:not([onclick]) {
+    cursor: default;
+}
+
+/* =========================================================
+   АДАПТАЦИЯ
+   ========================================================= */
+
+@media (max-width: 1200px) {
+
+    .cards {
+        grid-template-columns: repeat(3, 170px);
+        justify-content: start;
+    }
+
+}
+
+@media (max-width: 800px) {
+
+    .cards {
+        grid-template-columns: repeat(2, 170px);
+        justify-content: start;
+    }
+
+}
+
+@media (max-width: 520px) {
+
+    .cards {
+        grid-template-columns: 1fr;
+    }
+
+    .cards .card,
+    .method-card {
+        width: 100%;
+        max-width: 320px;
+    }
+
+}
 .dashboard-wrap {
   width: 100%;
 }
