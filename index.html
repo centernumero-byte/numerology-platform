@@ -909,34 +909,30 @@ async function renderTests() {
 }
 
 function openMaterial(url) {
-    if (!url) {
-        alert('Ссылка на материал пока не добавлена.');
-        return;
-    }
+    if (!url) return;
 
     const cleanUrl = String(url).trim();
 
-    if (!/^https?:\/\//i.test(cleanUrl)) {
-        alert('У материала указана некорректная ссылка. Добавьте ссылку, начинающуюся с https://');
-        return;
-    }
+    if (!cleanUrl) return;
 
     window.open(cleanUrl, '_blank', 'noopener,noreferrer');
 }
 
-function openTest(type) {
-    const names = {
-        adult: 'Взрослая матрица',
-        child: 'Детская матрица',
-        compatibility: 'Матрица совместимости',
-        vedic: 'Ведическая нумерология',
-        pythagoras: 'Квадрат Пифагора'
-    };
+async function openTest(type) {
+    const { data, error } = await supabaseClient
+        .from('materials')
+        .select('external_url, file_url')
+        .eq('section', 'tests')
+        .eq('type_key', type)
+        .limit(1);
 
-    alert(
-        'Ссылка на тест «' + (names[type] || 'по выбранному методу') +
-        '» пока не добавлена. Добавьте её в таблицу materials.'
-    );
+    if (error || !data || !data.length) return;
+
+    const url = data[0].external_url || data[0].file_url;
+
+    if (!url) return;
+
+    window.open(String(url).trim(), '_blank', 'noopener,noreferrer');
 }
 
 async function showSection(section) {
