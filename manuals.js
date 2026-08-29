@@ -28,5 +28,5 @@ async function loadManuals() {
 }
 
 async function openManuals(direction) {
-    alert('Здесь будет раздел методических пособий.');
+    console.log('Методическое пособие:', direction);
 }
