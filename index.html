@@ -1125,10 +1125,10 @@ async function showSection(section) {
         return;
     }
 
-    if (section === 'manuals') {
-        await loadMaterials('manuals', 'Методические пособия', 'material');
-        return;
-    }
+   if (section === 'manuals') {
+    await loadManuals();
+    return;
+}
 
     if (section === 'videos') {
         await loadMaterials('videos', 'Видео', 'material');
