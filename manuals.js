@@ -1,192 +1,175 @@
-// ===== МЕТОДИЧЕСКИЕ ПОСОБИЯ =====
+// =========================================================
+// manuals.gs — РАЗДЕЛ «МЕТОДИЧЕСКИЕ ПОСОБИЯ»
+// Загружать материалы могут: admin, numerologist.
+// Ученицы — только просматривают/скачивают открытые им направления.
+// =========================================================
 
-function loadManuals() {
-    const contentCards = document.getElementById('contentCards');
-    if (!contentCards) return;
+async function renderManuals() {
+  await renderMaterialSection({
+    section: 'manuals',
+    contentType: 'manual',
+    subtitle: 'Методическое пособие'
+  });
+}
 
-    const directions = [
-        { key: 'adult', icon: '✦', title: 'Взрослая матрица' },
-        { key: 'child', icon: '👶', title: 'Детская матрица' },
-        { key: 'compatibility', icon: '💕', title: 'Матрица совместимости' },
-        { key: 'vedic', icon: 'ॐ', title: 'Ведическая нумерология' },
-        { key: 'pythagoras', icon: '🔢', title: 'Квадрат Пифагора' }
-    ];
+// Общая функция отрисовки карточек направления для раздела материалов
+// (используется manuals.gs и videos.gs)
+async function renderMaterialSection(options) {
+  const { section, contentType, subtitle } = options;
+  const contentCards = document.getElementById('contentCards');
+  if (!contentCards) return;
 
-    contentCards.innerHTML = `
-        <div class="cards">
-            ${directions.map(item => `
-                <div
-                    class="card method-card"
-                    onclick="openManual('${item.key}', '${item.title}')"
-                >
-                    <div class="card-icon">${item.icon}</div>
+  contentCards.innerHTML = 'Загрузка...';
 
-                    <div class="card-content">
-                        <h3>${item.title}</h3>
-                        <p>${item.title}<br>Методическое пособие</p>
-                    </div>
-                </div>
-            `).join('')}
+  const [accessMap, materialsResult] = await Promise.all([
+    getAccessMap(CURRENT_PROFILE.id),
+    supabaseClient.from('materials').select('*').eq('section', section)
+  ]);
+
+  const materials = materialsResult.data || [];
+  const canUpload = CURRENT_PROFILE.role === 'admin' || CURRENT_PROFILE.role === 'numerologist';
+
+  contentCards.innerHTML = DIRECTIONS.map(d => {
+    const open = CURRENT_PROFILE.role === 'admin' || accessMap[contentType][d.key];
+    const item = findMaterialForDirection(materials, d.key);
+    const link = item ? (item.external_url || item.file_url || '') : '';
+    const icon = d.icon === 'pythagoras' ? pythagorasIconHtml() : `<div class="card-icon">${d.icon}</div>`;
+
+    let description = subtitle;
+    if (!open) description = 'Нет доступа';
+    else if (!link) description = canUpload ? 'Материал не добавлен — нажмите, чтобы добавить' : 'Материал пока не добавлен';
+
+    return `
+      <div class="card method-card ${open ? '' : 'locked'}" style="position:relative"
+           onclick="onMaterialCardClick('${section}', '${contentType}', '${d.key}', ${open}, ${JSON.stringify(link)}, ${JSON.stringify(d.title)}, ${canUpload})">
+        ${open ? '' : '<span class="card-lock-icon">🔒</span>'}
+        ${icon}
+        <div class="card-content">
+          <h3>${d.title}</h3>
+          <p>${description}</p>
         </div>
+      </div>
     `;
+  }).join('');
 }
 
-
-function openManual(direction, title) {
-
-    const old = document.getElementById('manualWindow');
-    if (old) old.remove();
-
-    const box = document.createElement('div');
-
-    box.id = 'manualWindow';
-
-    box.innerHTML = `
-        <div style="
-            position:fixed;
-            inset:0;
-            background:rgba(0,0,0,.65);
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            z-index:99999;
-        ">
-
-            <div style="
-                width:520px;
-                max-width:90%;
-                padding:30px;
-                border-radius:20px;
-                background:#21163f;
-                border:1px solid #d7aa31;
-                color:#f8e7a8;
-                text-align:center;
-            ">
-
-                <button
-                    onclick="document.getElementById('manualWindow').remove()"
-                    style="
-                        float:right;
-                        background:none;
-                        border:none;
-                        color:#f6d66c;
-                        font-size:28px;
-                        cursor:pointer;
-                    "
-                >×</button>
-
-                <h2 style="
-                    font-family:Georgia,serif;
-                    color:#f6d66c;
-                    margin-top:10px;
-                ">
-                    ${title}
-                </h2>
-
-                <p style="margin:25px 0 10px;">
-                    Методическое пособие
-                </p>
-
-                <input
-                    id="manualUrlInput"
-                    type="url"
-                    placeholder="Вставьте ссылку"
-                    style="
-                        width:100%;
-                        box-sizing:border-box;
-                        padding:14px;
-                        border-radius:10px;
-                        border:1px solid #d7aa31;
-                        background:#17112f;
-                        color:white;
-                        margin-bottom:15px;
-                    "
-                >
-
-                <button
-                    onclick="saveManualLink('${direction}', '${title}')"
-                    style="
-                        padding:13px 25px;
-                        border-radius:10px;
-                        border:1px solid #d7aa31;
-                        background:#6b3b8f;
-                        color:#f8e7a8;
-                        cursor:pointer;
-                        font-size:16px;
-                    "
-                >
-                    🔗 Сохранить ссылку
-                </button>
-
-                <div style="
-                    margin:22px 0;
-                    color:#cfc4b0;
-                ">
-                    или
-                </div>
-
-                <input
-                    id="manualFileInput"
-                    type="file"
-                    accept=".pdf,.doc,.docx"
-                    style="
-                        width:100%;
-                        margin-bottom:15px;
-                    "
-                >
-
-                <button
-                    onclick="uploadManualFile('${direction}', '${title}')"
-                    style="
-                        padding:13px 25px;
-                        border-radius:10px;
-                        border:1px solid #d7aa31;
-                        background:#6b3b8f;
-                        color:#f8e7a8;
-                        cursor:pointer;
-                        font-size:16px;
-                    "
-                >
-                    📁 Загрузить файл
-                </button>
-
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(box);
+function findMaterialForDirection(materials, directionKey) {
+  return (materials || []).find(item => {
+    const fields = [item.method, item.direction_key, item.type_key, item.slug, item.title].filter(Boolean).map(normalizeKey);
+    return fields.includes(normalizeKey(directionKey));
+  }) || null;
 }
 
-
-async function saveManualLink(direction, title) {
-
-    const input = document.getElementById('manualUrlInput');
-
-    const url = input ? input.value.trim() : '';
-
-    if (!url) {
-        return;
-    }
-
-    console.log('Методическое пособие:', direction);
-    console.log('Ссылка:', url);
-
-    alert('Ссылка сохранена');
+function normalizeKey(value) {
+  return String(value || '').toLowerCase().trim().replace(/ё/g, 'е').replace(/[«»"'`]/g, '').replace(/\s+/g, ' ');
 }
 
+async function onMaterialCardClick(section, contentType, directionKey, open, link, title, canUpload) {
+  if (!open) {
+    showNoAccessMessage(title);
+    return;
+  }
 
-async function uploadManualFile(direction, title) {
+  await logUsage(contentType, directionKey, link ? 'open' : 'view');
 
-    const input = document.getElementById('manualFileInput');
+  if (link) {
+    window.open(link, '_blank', 'noopener,noreferrer');
+    return;
+  }
 
-    if (!input || !input.files.length) {
-        return;
-    }
+  if (canUpload) {
+    showMaterialManager(section, directionKey, title);
+  } else {
+    alert(title + '\n\nМатериал пока не добавлен.');
+  }
+}
 
-    const file = input.files[0];
+// ---------- ЗАГРУЗКА МАТЕРИАЛА (ссылка или файл) ----------
 
-    console.log('Файл:', file.name);
-    console.log('Раздел:', direction);
+function showMaterialManager(section, directionKey, title) {
+  const old = document.getElementById('materialManager');
+  if (old) old.remove();
 
-    alert('Файл выбран: ' + file.name);
+  const box = document.createElement('div');
+  box.id = 'materialManager';
+
+  box.innerHTML = `
+    <div class="material-manager-overlay">
+      <div class="material-manager">
+        <button class="material-manager-close" onclick="document.getElementById('materialManager').remove()">×</button>
+        <h2>${title}</h2>
+
+        <label>Вставить ссылку:</label>
+        <input id="materialUrlInput" type="url" placeholder="https://..." class="material-manager-input">
+        <button class="material-manager-button" onclick="saveMaterialUrl('${section}', '${directionKey}', ${JSON.stringify(title)})">
+          🔗 Сохранить ссылку
+        </button>
+
+        <div class="material-manager-or">или</div>
+
+        <label>Загрузить файл:</label>
+        <input id="materialFileInput" type="file" class="material-manager-input">
+        <button class="material-manager-button" onclick="uploadMaterialFile('${section}', '${directionKey}', ${JSON.stringify(title)})">
+          📁 Загрузить
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(box);
+}
+
+async function saveMaterialUrl(section, directionKey, title) {
+  const input = document.getElementById('materialUrlInput');
+  const url = input ? input.value.trim() : '';
+  if (!url) return;
+
+  const { error } = await supabaseClient.from('materials').insert({
+    section,
+    method: directionKey,
+    title,
+    external_url: url,
+    uploaded_by: CURRENT_PROFILE.id
+  });
+
+  if (error) {
+    alert('Не удалось сохранить ссылку: ' + error.message);
+    return;
+  }
+
+  document.getElementById('materialManager').remove();
+  showSection(section === 'manuals' ? 'manuals' : section);
+}
+
+async function uploadMaterialFile(section, directionKey, title) {
+  const input = document.getElementById('materialFileInput');
+  if (!input || !input.files.length) return;
+
+  const file = input.files[0];
+  const path = `${section}/${directionKey}/${Date.now()}_${file.name}`;
+
+  const { error: uploadError } = await supabaseClient.storage.from('materials').upload(path, file);
+
+  if (uploadError) {
+    alert('Не удалось загрузить файл: ' + uploadError.message);
+    return;
+  }
+
+  const { data: publicUrlData } = supabaseClient.storage.from('materials').getPublicUrl(path);
+
+  const { error } = await supabaseClient.from('materials').insert({
+    section,
+    method: directionKey,
+    title,
+    file_url: publicUrlData ? publicUrlData.publicUrl : null,
+    uploaded_by: CURRENT_PROFILE.id
+  });
+
+  if (error) {
+    alert('Файл загружен, но не удалось сохранить запись: ' + error.message);
+    return;
+  }
+
+  document.getElementById('materialManager').remove();
+  showSection(section);
 }
