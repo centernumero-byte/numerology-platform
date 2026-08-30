@@ -994,11 +994,11 @@ function renderMethodCards(options) {
 if (action === 'calculator') {
     click = `onclick="openCalculator('${card.key}')"`;
 } else if (action === 'material') {
-    click = `onclick="openMaterial(${JSON.stringify(String(link || ''))}, ${JSON.stringify(card.title)})"`;
+    click = `onclick='openMaterial(${JSON.stringify(String(link || ''))}, ${JSON.stringify(card.title)})'`;
 } else if (action === 'video') {
-    click = `onclick="openMaterial(${JSON.stringify(String(link || ''))}, ${JSON.stringify(card.title)})"`;
+    click = `onclick='openMaterial(${JSON.stringify(String(link || ''))}, ${JSON.stringify(card.title)})'`;
 } else if (action === 'test') {
-    click = `onclick="openTest('${card.key}', ${JSON.stringify(card.title)})"`;
+    click = `onclick="openTest('${card.key}')"`;
 }
 
         let description = card.description;
@@ -1139,8 +1139,9 @@ function showMaterialManager(title) {
 
     document.body.appendChild(box);
 }
-function openTest(type, title) {
-    showMaterialManager(title || 'Тест');
+function openTest(type) {
+    const card = METHOD_CARDS.find(function(item) { return item.key === type; });
+    showMaterialManager(card ? card.title : 'Тест');
 }
 
 function renderLockedSection(section) {
