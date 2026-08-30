@@ -791,7 +791,7 @@
 
         <h1>
           Добро пожаловать,
-          <span id="clientName">Бибигуль</span>! ✨
+          <span id="clientName">Центр Нумера</span>! ✨
         </h1>
 
        
@@ -823,7 +823,7 @@
         <div class="card-icon">✦</div>
         <div class="card-content">
             <h3>Взрослая<br>матрица</h3>
-            <p>Полный расчёт<br>по дате рождения</p>
+            <p>Калькулятор</p>
         </div>
     </div>
 
@@ -832,7 +832,7 @@
         <div class="card-icon">👶</div>
         <div class="card-content">
             <h3>Детская<br>матрица</h3>
-            <p>Анализ и расчёт<br>детской матрицы</p>
+            <p>Калькулятор</p>
         </div>
     </div>
 
@@ -841,7 +841,7 @@
         <div class="card-icon">💕</div>
         <div class="card-content">
             <h3>Матрица<br>совместимости</h3>
-            <p>Анализ отношений<br>двух людей</p>
+            <p>Калькулятор</p>
         </div>
     </div>
 
@@ -850,7 +850,7 @@
         <div class="card-icon">ॐ</div>
         <div class="card-content">
             <h3>Ведическая<br>нумерология</h3>
-            <p>Расчёт по ведической<br>нумерологии</p>
+            <p>Калькулятор</p>
         </div>
     </div>
 
@@ -863,7 +863,7 @@
         </div>
         <div class="card-content">
             <h3>Квадрат<br>Пифагора</h3>
-            <p>Психоматрица<br>по Пифагору</p>
+            <p>Калькулятор</p>
         </div>
     </div>
 
@@ -998,7 +998,7 @@ if (action === 'calculator') {
 } else if (action === 'video') {
     click = `onclick="openMaterial(${JSON.stringify(String(link || ''))}, ${JSON.stringify(card.title)})"`;
 } else if (action === 'test') {
-    click = `onclick="openTest('${card.key}', '${String(card.title).replace(/'/g, \"\\'\")}')"`;
+    click = `onclick="openTest('${card.key}', ${JSON.stringify(card.title)})"`;
 }
 
         let description = card.description;
@@ -1184,8 +1184,24 @@ async function showSection(section) {
 
     setActiveSection(section);
 
+    // Центр Нумера всегда имеет права администратора.
+    const adminEmail = 'centernumero@gmail.com';
+    let isAdmin = window.currentUserIsManager === true;
+
+    try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (String(session?.user?.email || '').trim().toLowerCase() === adminEmail) {
+            isAdmin = true;
+            window.currentUserIsManager = true;
+            window.currentUserHasAccess = true;
+            window.currentUserRole = 'admin';
+        }
+    } catch (e) {
+        console.error('Ошибка проверки администратора:', e);
+    }
+
     const protectedSections = ['calculators', 'manuals', 'videos', 'tests', 'library', 'my-calculations'];
-    if (!window.currentUserIsManager && protectedSections.includes(section) && !window.currentUserHasAccess) {
+    if (!isAdmin && protectedSections.includes(section) && !window.currentUserHasAccess) {
         renderLockedSection(section);
         return;
     }
@@ -1196,22 +1212,30 @@ async function showSection(section) {
     }
 
     if (section === 'manuals') {
-        await loadManuals();
+        if (typeof loadManuals === 'function') {
+            await loadManuals();
+        } else {
+            contentCards.innerHTML = '<div class="empty-table">Методические пособия пока не подключены.</div>';
+        }
         return;
     }
 
     if (section === 'videos') {
-        await loadVideos();
+        if (typeof loadVideos === 'function') {
+            await loadVideos();
+        } else {
+            contentCards.innerHTML = '<div class="empty-table">Видео пока не подключены.</div>';
+        }
         return;
     }
 
     if (section === 'tests') {
-        await renderTests();
+        renderTests();
         return;
     }
 
     if (section === 'library') {
-        await loadLibrary();
+        loadLibrary();
         return;
     }
 
