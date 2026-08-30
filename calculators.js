@@ -1,154 +1,128 @@
-// ============================================================
-// CALCULATORS.JS
-// ============================================================
+// ===== КАЛЬКУЛЯТОРЫ =====
 
-const CALCULATOR_NAMES = {
-    adult: 'Взрослая матрица',
-    child: 'Детская матрица',
-    compatibility: 'Матрица совместимости',
-    vedic: 'Ведическая нумерология',
-    pythagoras: 'Квадрат Пифагора'
-};
+const METHOD_CARDS = [
+    {
+        key: 'adult',
+        title: 'Взрослая<br>матрица',
+        icon: '✦',
+        description: 'Методическое пособие'
+    },
+    {
+        key: 'child',
+        title: 'Детская<br>матрица',
+        icon: '👶',
+        description: 'Методическое пособие'
+    },
+    {
+        key: 'compatibility',
+        title: 'Матрица<br>совместимости',
+        icon: '💕',
+        description: 'Методическое пособие'
+    },
+    {
+        key: 'vedic',
+        title: 'Ведическая<br>нумерология',
+        icon: 'ॐ',
+        description: 'Методическое пособие'
+    },
+    {
+        key: 'pythagoras',
+        title: 'Нумерология<br>по Пифагору',
+        icon: 'pythagoras',
+        description: 'Методическое пособие'
+    }
+];
 
 
-// ============================================================
-// КАРТОЧКИ КАЛЬКУЛЯТОРОВ
-// ============================================================
+function pythagorasIconHtml() {
+
+    return `
+        <div class="card-icon pythagoras-icon">
+            <span>1</span>
+            <span>4</span>
+            <span>7</span>
+
+            <span>2</span>
+            <span>5</span>
+            <span>8</span>
+
+            <span>3</span>
+            <span>6</span>
+            <span>9</span>
+        </div>
+    `;
+}
+
+
+function normalizeKey(value) {
+
+    return String(value || '')
+        .toLowerCase()
+        .trim()
+        .replace(/ё/g, 'е')
+        .replace(/[«»"'`]/g, '')
+        .replace(/\s+/g, ' ');
+}
+
+
+function renderMethodCards() {
+
+    return METHOD_CARDS.map(function(card) {
+
+        const icon =
+            card.icon === 'pythagoras'
+                ? pythagorasIconHtml()
+                : `
+                    <div class="card-icon">
+                        ${card.icon}
+                    </div>
+                `;
+
+
+        return `
+            <div
+                class="card method-card"
+                onclick="openCalculator('${card.key}')"
+                role="button"
+                tabindex="0"
+            >
+
+                ${icon}
+
+                <div class="card-content">
+
+                    <h3>
+                        ${card.title}
+                    </h3>
+
+                    <p>
+                        ${card.description}
+                    </p>
+
+                </div>
+
+            </div>
+        `;
+
+    }).join('');
+}
+
 
 function renderCalculators() {
 
     const contentCards =
-        document.getElementById('contentCards');
-
-    if (!contentCards) return;
-
-    contentCards.innerHTML = `
-
-        <div class="cards">
-
-            <div
-                class="card"
-                onclick="openCalculator('adult')"
-            >
-                <div class="card-icon">
-                    ✦
-                </div>
-
-                <div class="card-content">
-                    <h3>
-                        Взрослая<br>
-                        матрица
-                    </h3>
-
-                    <p>
-                        Полный расчёт<br>
-                        по дате рождения
-                    </p>
-                </div>
-            </div>
+        document.getElementById(
+            'contentCards'
+        );
 
 
-            <div
-                class="card"
-                onclick="openCalculator('child')"
-            >
-                <div class="card-icon">
-                    👶
-                </div>
-
-                <div class="card-content">
-                    <h3>
-                        Детская<br>
-                        матрица
-                    </h3>
-
-                    <p>
-                        Анализ и расчёт<br>
-                        детской матрицы
-                    </p>
-                </div>
-            </div>
+    if (!contentCards) {
+        return;
+    }
 
 
-            <div
-                class="card"
-                onclick="openCalculator('compatibility')"
-            >
-                <div class="card-icon">
-                    💕
-                </div>
-
-                <div class="card-content">
-                    <h3>
-                        Матрица<br>
-                        совместимости
-                    </h3>
-
-                    <p>
-                        Анализ отношений<br>
-                        двух людей
-                    </p>
-                </div>
-            </div>
-
-
-            <div
-                class="card"
-                onclick="openCalculator('vedic')"
-            >
-                <div class="card-icon">
-                    ॐ
-                </div>
-
-                <div class="card-content">
-                    <h3>
-                        Ведическая<br>
-                        нумерология
-                    </h3>
-
-                    <p>
-                        Расчёт по ведической<br>
-                        системе
-                    </p>
-                </div>
-            </div>
-
-
-            <div
-                class="card"
-                onclick="openCalculator('pythagoras')"
-            >
-                <div class="card-icon pythagoras-icon">
-
-                    <span>1</span>
-                    <span>4</span>
-                    <span>7</span>
-
-                    <span>2</span>
-                    <span>5</span>
-                    <span>8</span>
-
-                    <span>3</span>
-                    <span>6</span>
-                    <span>9</span>
-
-                </div>
-
-                <div class="card-content">
-                    <h3>
-                        Квадрат<br>
-                        Пифагора
-                    </h3>
-
-                    <p>
-                        Психоматрица<br>
-                        по Пифагору
-                    </p>
-                </div>
-            </div>
-
-        </div>
-    `;
+    contentCards.innerHTML =
+        renderMethodCards();
 }
 
 
@@ -156,83 +130,244 @@ function renderCalculators() {
 // ОТКРЫТИЕ КАЛЬКУЛЯТОРА
 // ============================================================
 
-function openCalculator(type) {
+async function openCalculator(type) {
+
+    if (
+        !window.currentUserIsManager &&
+        !window.currentUserHasAccess
+    ) {
+
+        showNoAccessMessage();
+
+        return;
+    }
+
+
+    const {
+        data: {
+            session
+        }
+    } =
+        await supabaseClient
+            .auth
+            .getSession();
+
+
+    if (!session) {
+
+        showLogin();
+
+        return;
+    }
+
+
+    if (!window.currentUserIsManager) {
+
+        const {
+            data: access,
+            error
+        } =
+            await supabaseClient
+                .from('access_periods')
+                .select(
+                    `
+                        id,
+                        status,
+                        payment_status,
+                        starts_at,
+                        ends_at,
+                        is_unlimited
+                    `
+                )
+                .eq(
+                    'profile_id',
+                    session.user.id
+                )
+                .eq(
+                    'status',
+                    'active'
+                )
+                .eq(
+                    'payment_status',
+                    'paid'
+                )
+                .limit(1)
+                .maybeSingle();
+
+
+        if (error || !access) {
+
+            showNoAccessMessage();
+
+            return;
+        }
+
+
+        if (
+            !access.is_unlimited &&
+            access.ends_at &&
+            new Date(access.ends_at) < new Date()
+        ) {
+
+            showNoAccessMessage();
+
+            return;
+        }
+
+    }
+
+
+    const names = {
+
+        adult:
+            'Взрослая матрица',
+
+        child:
+            'Детская матрица',
+
+        compatibility:
+            'Матрица совместимости',
+
+        vedic:
+            'Ведическая нумерология',
+
+        pythagoras:
+            'Нумерология по Пифагору'
+
+    };
+
 
     const title =
-        CALCULATOR_NAMES[type] ||
-        'Калькулятор';
+        names[type] ||
+        'Расчёт';
 
 
-    const contentCards =
-        document.getElementById('contentCards');
-
-    if (!contentCards) return;
-
-
-    contentCards.innerHTML = `
-
-        <div class="section-title">
-
-            <h2>
-                ${title}
-            </h2>
-
-        </div>
-
+    document.body.innerHTML = `
 
         <div
-            class="table-card"
             style="
-                max-width:700px;
-                margin-top:20px;
+                min-height:100vh;
+                padding:40px;
+                background:
+                    linear-gradient(
+                        135deg,
+                        #17102f,
+                        #211443,
+                        #17102f
+                    );
+                color:#f8e7a8;
+                font-family:Arial,sans-serif;
             "
         >
 
-            <label>
-                Имя
-            </label>
-
-            <input
-                id="calculatorName"
-                type="text"
-                class="material-manager-input"
-                placeholder="Введите имя"
-            >
-
-
-            <label>
-                Дата рождения
-            </label>
-
-            <input
-                id="calculatorBirthDate"
-                type="text"
-                class="material-manager-input"
-                placeholder="ДД.ММ.ГГГГ"
-                maxlength="10"
-                inputmode="numeric"
-                oninput="formatCalculatorDate(this)"
-            >
-
-
-            <div
-                id="calculatorError"
-                class="auth-message error"
-            ></div>
-
-
             <div
                 style="
-                    display:flex;
-                    gap:10px;
-                    margin-top:15px;
+                    max-width:650px;
+                    margin:0 auto;
+                    padding:35px;
+                    border:1px solid #d7aa31;
+                    border-radius:20px;
+                    background:
+                        linear-gradient(
+                            145deg,
+                            #302052,
+                            #21163d
+                        );
                 "
             >
 
+                <h1
+                    style="
+                        margin-top:0;
+                        color:#f6d66c;
+                        font-family:Georgia,serif;
+                        font-weight:500;
+                    "
+                >
+                    ${title}
+                </h1>
+
+
+                <label>
+                    Имя
+                </label>
+
+
+                <input
+                    id="name"
+                    type="text"
+                    style="
+                        display:block;
+                        width:100%;
+                        padding:13px;
+                        margin:8px 0 20px;
+                        box-sizing:border-box;
+                        border:1px solid
+                            rgba(225,180,52,.5);
+                        border-radius:10px;
+                        background:
+                            rgba(0,0,0,.2);
+                        color:#fff;
+                        font-size:16px;
+                    "
+                >
+
+
+                <label>
+                    Дата рождения
+                </label>
+
+
+                <input
+                    id="birthDate"
+                    type="text"
+                    placeholder="ДД.ММ.ГГГГ"
+                    maxlength="10"
+                    inputmode="numeric"
+                    oninput="formatBirthDate(this)"
+                    style="
+                        display:block;
+                        width:100%;
+                        padding:13px;
+                        margin:8px 0 5px;
+                        box-sizing:border-box;
+                        border:1px solid
+                            rgba(225,180,52,.5);
+                        border-radius:10px;
+                        background:
+                            rgba(0,0,0,.2);
+                        color:#fff;
+                        font-size:16px;
+                    "
+                >
+
+
+                <div
+                    id="dateError"
+                    style="
+                        color:#ff9b9b;
+                        min-height:22px;
+                        margin-bottom:15px;
+                    "
+                ></div>
+
+
                 <button
-                    class="material-manager-button"
-                    onclick="
-                        calculateCalculator('${type}')
+                    onclick="calculate('${type}')"
+                    style="
+                        width:100%;
+                        padding:14px;
+                        border:1px solid #d7aa31;
+                        border-radius:10px;
+                        background:
+                            linear-gradient(
+                                90deg,
+                                #713199,
+                                #5d2789
+                            );
+                        color:#f8d96d;
+                        font-size:16px;
+                        cursor:pointer;
                     "
                 >
                     Рассчитать
@@ -240,23 +375,33 @@ function openCalculator(type) {
 
 
                 <button
-                    class="material-manager-button"
-                    onclick="
-                        showSection('calculators')
+                    onclick="returnToPlatform()"
+                    style="
+                        width:100%;
+                        padding:14px;
+                        margin-top:10px;
+                        border:1px solid
+                            rgba(225,180,52,.5);
+                        border-radius:10px;
+                        background:
+                            rgba(0,0,0,.15);
+                        color:#f5d46b;
+                        font-size:16px;
+                        cursor:pointer;
                     "
                 >
                     Назад
                 </button>
 
+
+                <div
+                    id="result"
+                    style="
+                        margin-top:30px;
+                    "
+                ></div>
+
             </div>
-
-
-            <div
-                id="calculatorResult"
-                style="
-                    margin-top:25px;
-                "
-            ></div>
 
         </div>
 
@@ -265,27 +410,31 @@ function openCalculator(type) {
 
 
 // ============================================================
-// ДАТА
+// ВОЗВРАТ НА ПЛАТФОРМУ
 // ============================================================
 
-function formatCalculatorDate(input) {
+function returnToPlatform() {
+
+    location.reload();
+
+}
+
+
+// ============================================================
+// ФОРМАТ ДАТЫ
+// ============================================================
+
+function formatBirthDate(input) {
 
     let value =
-        String(
-            input.value || ''
-        ).replace(
-            /\D/g,
-            ''
-        );
+        input.value
+            .replace(/\D/g, '');
 
 
     if (value.length > 8) {
 
         value =
-            value.substring(
-                0,
-                8
-            );
+            value.substring(0, 8);
 
     }
 
@@ -293,23 +442,26 @@ function formatCalculatorDate(input) {
     if (value.length > 4) {
 
         value =
-            value.substring(0,2) +
+            value.substring(0, 2) +
             '.' +
-            value.substring(2,4) +
+            value.substring(2, 4) +
             '.' +
             value.substring(4);
 
-    } else if (value.length > 2) {
+    } else if (
+        value.length > 2
+    ) {
 
         value =
-            value.substring(0,2) +
+            value.substring(0, 2) +
             '.' +
             value.substring(2);
 
     }
 
 
-    input.value = value;
+    input.value =
+        value;
 }
 
 
@@ -317,40 +469,37 @@ function formatCalculatorDate(input) {
 // ПРОВЕРКА ДАТЫ
 // ============================================================
 
-function isValidCalculatorDate(value) {
+function isValidBirthDate(value) {
 
-    const parts =
-        String(value || '').split('.');
+    const match =
+        String(value || '')
+            .match(
+                /^(\d{2})\.(\d{2})\.(\d{4})$/
+            );
 
 
-    if (
-        parts.length !== 3 ||
-        parts[0].length !== 2 ||
-        parts[1].length !== 2 ||
-        parts[2].length !== 4
-    ) {
+    if (!match) {
         return false;
     }
 
 
     const day =
-        Number(parts[0]);
+        Number(match[1]);
 
     const month =
-        Number(parts[1]);
+        Number(match[2]);
 
     const year =
-        Number(parts[2]);
+        Number(match[3]);
 
 
     if (
-        day < 1 ||
-        month < 1 ||
-        month > 12 ||
         year < 1900 ||
-        year > new Date().getFullYear()
+        year > 2100
     ) {
+
         return false;
+
     }
 
 
@@ -374,115 +523,173 @@ function isValidCalculatorDate(value) {
 // РАСЧЁТ
 // ============================================================
 
-async function calculateCalculator(type) {
+function calculate(type) {
 
     const name =
-        document.getElementById(
-            'calculatorName'
-        )?.value.trim() || '';
+        document
+            .getElementById('name')
+            ?.value
+            .trim();
 
 
     const birthDate =
-        document.getElementById(
-            'calculatorBirthDate'
-        )?.value.trim() || '';
+        document
+            .getElementById('birthDate')
+            ?.value
+            .trim();
 
 
-    const error =
+    const dateError =
         document.getElementById(
-            'calculatorError'
+            'dateError'
         );
 
 
     const result =
         document.getElementById(
-            'calculatorResult'
+            'result'
         );
 
 
-    if (error) {
-        error.textContent = '';
+    if (dateError) {
+
+        dateError.textContent =
+            '';
+
     }
 
 
     if (result) {
-        result.innerHTML = '';
+
+        result.innerHTML =
+            '';
+
     }
 
 
     if (!name) {
 
-        if (error) {
-            error.textContent =
+        if (dateError) {
+
+            dateError.textContent =
                 'Введите имя.';
+
         }
 
         return;
     }
 
 
-    if (!isValidCalculatorDate(birthDate)) {
+    if (!isValidBirthDate(birthDate)) {
 
-        if (error) {
-            error.textContent =
-                'Введите корректную дату в формате ДД.ММ.ГГГГ.';
+        if (dateError) {
+
+            dateError.textContent =
+                'Введите корректную дату рождения в формате ДД.ММ.ГГГГ.';
+
         }
 
         return;
     }
 
 
-    /*
-     * Здесь будет подключение конкретного
-     * Apps Script каждого калькулятора.
-     *
-     * Ссылки НЕ прописываем в коде.
-     * Они будут храниться в платформе.
-     */
-
-
-    if (result) {
-
-        result.innerHTML = `
-
-            <div class="table-card">
-
-                <div class="table-title">
-                    ${escapeCalculatorHtml(
-                        CALCULATOR_NAMES[type] ||
-                        'Расчёт'
-                    )}
-                </div>
-
-                <p>
-                    Имя:
-                    <strong>
-                        ${escapeCalculatorHtml(name)}
-                    </strong>
-                </p>
-
-                <p>
-                    Дата рождения:
-                    <strong>
-                        ${escapeCalculatorHtml(birthDate)}
-                    </strong>
-                </p>
-
-                <p>
-                    Ссылка на калькулятор
-                    будет подключена через
-                    настройки платформы.
-                </p>
-
-            </div>
-
-        `;
+    if (!result) {
+        return;
     }
+
+
+    result.innerHTML = `
+
+        <div
+            style="
+                padding:20px;
+                border:1px solid
+                    rgba(225,180,52,.5);
+                border-radius:14px;
+                background:
+                    rgba(0,0,0,.12);
+            "
+        >
+
+            <h3
+                style="
+                    margin-top:0;
+                    color:#f6d66c;
+                    font-family:Georgia,serif;
+                "
+            >
+                ${titleForCalculator(type)}
+            </h3>
+
+
+            <p>
+                Имя:
+                <strong>
+                    ${escapeCalculatorHtml(name)}
+                </strong>
+            </p>
+
+
+            <p>
+                Дата рождения:
+                <strong>
+                    ${escapeCalculatorHtml(birthDate)}
+                </strong>
+            </p>
+
+
+            <p
+                style="
+                    margin-bottom:0;
+                    color:#d9d0bd;
+                "
+            >
+                Расчёт будет выполнен
+                в соответствии с выбранной
+                системой нумерологии.
+            </p>
+
+        </div>
+
+    `;
 }
 
 
 // ============================================================
-// ЗАЩИТА HTML
+// НАЗВАНИЕ КАЛЬКУЛЯТОРА
+// ============================================================
+
+function titleForCalculator(type) {
+
+    const names = {
+
+        adult:
+            'Взрослая матрица',
+
+        child:
+            'Детская матрица',
+
+        compatibility:
+            'Матрица совместимости',
+
+        vedic:
+            'Ведическая нумерология',
+
+        pythagoras:
+            'Нумерология по Пифагору'
+
+    };
+
+
+    return (
+        names[type] ||
+        'Расчёт'
+    );
+}
+
+
+// ============================================================
+// ЭКРАНИРОВАНИЕ
 // ============================================================
 
 function escapeCalculatorHtml(value) {
@@ -497,29 +704,64 @@ function escapeCalculatorHtml(value) {
 
 
 // ============================================================
-// СТАРТОВАЯ ОТРИСОВКА
+// НЕТ ДОСТУПА
 // ============================================================
 
-if (
-    document.readyState === 'loading'
-) {
+function showNoAccessMessage() {
 
-    document.addEventListener(
-        'DOMContentLoaded',
-        function () {
+    const contentCards =
+        document.getElementById(
+            'contentCards'
+        );
 
-            if (
-                typeof renderCalculators ===
-                'function'
-            ) {
-                renderCalculators();
-            }
+
+    if (!contentCards) {
+        return;
+    }
+
+
+    contentCards.innerHTML = `
+
+        <div class="access-locked">
+
+            <div class="access-locked-icon">
+                🔒
+            </div>
+
+
+            <h2>
+                У вас нет доступа
+            </h2>
+
+
+            <p>
+                Обратитесь к администратору
+                или нумерологу для получения
+                доступа к этому разделу.
+            </p>
+
+        </div>
+
+    `;
+}
+
+
+// ============================================================
+// СТАРТ
+// ============================================================
+
+document.addEventListener(
+    'DOMContentLoaded',
+    function () {
+
+        if (
+            window.currentUserIsManager ||
+            window.currentUserHasAccess
+        ) {
+
+            renderCalculators();
 
         }
-    );
 
-} else {
-
-    renderCalculators();
-
-}
+    }
+);
