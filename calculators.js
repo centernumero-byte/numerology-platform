@@ -1,132 +1,525 @@
-// =========================================================
-// calculators.gs — РАЗДЕЛ «КАЛЬКУЛЯТОРЫ»
-// =========================================================
+// ============================================================
+// CALCULATORS.JS
+// ============================================================
 
-function pythagorasIconHtml() {
-  return `
-    <div class="card-icon pythagoras-icon">
-      <span>1</span><span>4</span><span>7</span>
-      <span>2</span><span>5</span><span>8</span>
-      <span>3</span><span>6</span><span>9</span>
-    </div>
-  `;
-}
+const CALCULATOR_NAMES = {
+    adult: 'Взрослая матрица',
+    child: 'Детская матрица',
+    compatibility: 'Матрица совместимости',
+    vedic: 'Ведическая нумерология',
+    pythagoras: 'Квадрат Пифагора'
+};
 
-async function renderCalculators() {
-  const contentCards = document.getElementById('contentCards');
-  if (!contentCards) return;
 
-  contentCards.innerHTML = 'Загрузка...';
+// ============================================================
+// КАРТОЧКИ КАЛЬКУЛЯТОРОВ
+// ============================================================
 
-  const accessMap = await getAccessMap(CURRENT_PROFILE.id);
+function renderCalculators() {
 
-  contentCards.innerHTML = DIRECTIONS.map(d => {
-    const open = CURRENT_PROFILE.role === 'admin' || accessMap.calculator[d.key];
-    const icon = d.icon === 'pythagoras' ? pythagorasIconHtml() : `<div class="card-icon">${d.icon}</div>`;
+    const contentCards =
+        document.getElementById('contentCards');
 
-    return `
-      <div class="card method-card ${open ? '' : 'locked'}" style="position:relative"
-           onclick="openCalculator('${d.key}', ${open})">
-        ${open ? '' : '<span class="card-lock-icon">🔒</span>'}
-        ${icon}
-        <div class="card-content">
-          <h3>${d.title}</h3>
-          <p>${open ? 'Полный расчёт по дате рождения' : 'Нет доступа'}</p>
+    if (!contentCards) return;
+
+    contentCards.innerHTML = `
+
+        <div class="cards">
+
+            <div
+                class="card"
+                onclick="openCalculator('adult')"
+            >
+                <div class="card-icon">
+                    ✦
+                </div>
+
+                <div class="card-content">
+                    <h3>
+                        Взрослая<br>
+                        матрица
+                    </h3>
+
+                    <p>
+                        Полный расчёт<br>
+                        по дате рождения
+                    </p>
+                </div>
+            </div>
+
+
+            <div
+                class="card"
+                onclick="openCalculator('child')"
+            >
+                <div class="card-icon">
+                    👶
+                </div>
+
+                <div class="card-content">
+                    <h3>
+                        Детская<br>
+                        матрица
+                    </h3>
+
+                    <p>
+                        Анализ и расчёт<br>
+                        детской матрицы
+                    </p>
+                </div>
+            </div>
+
+
+            <div
+                class="card"
+                onclick="openCalculator('compatibility')"
+            >
+                <div class="card-icon">
+                    💕
+                </div>
+
+                <div class="card-content">
+                    <h3>
+                        Матрица<br>
+                        совместимости
+                    </h3>
+
+                    <p>
+                        Анализ отношений<br>
+                        двух людей
+                    </p>
+                </div>
+            </div>
+
+
+            <div
+                class="card"
+                onclick="openCalculator('vedic')"
+            >
+                <div class="card-icon">
+                    ॐ
+                </div>
+
+                <div class="card-content">
+                    <h3>
+                        Ведическая<br>
+                        нумерология
+                    </h3>
+
+                    <p>
+                        Расчёт по ведической<br>
+                        системе
+                    </p>
+                </div>
+            </div>
+
+
+            <div
+                class="card"
+                onclick="openCalculator('pythagoras')"
+            >
+                <div class="card-icon pythagoras-icon">
+
+                    <span>1</span>
+                    <span>4</span>
+                    <span>7</span>
+
+                    <span>2</span>
+                    <span>5</span>
+                    <span>8</span>
+
+                    <span>3</span>
+                    <span>6</span>
+                    <span>9</span>
+
+                </div>
+
+                <div class="card-content">
+                    <h3>
+                        Квадрат<br>
+                        Пифагора
+                    </h3>
+
+                    <p>
+                        Психоматрица<br>
+                        по Пифагору
+                    </p>
+                </div>
+            </div>
+
         </div>
-      </div>
     `;
-  }).join('');
 }
 
-async function openCalculator(type, hasAccessFlag) {
-  if (!hasAccessFlag) {
-    const dir = DIRECTIONS.find(d => d.key === type);
-    showNoAccessMessage(dir ? dir.title : 'Калькулятор');
-    return;
-  }
 
-  await logUsage('calculator', type, 'open');
+// ============================================================
+// ОТКРЫТИЕ КАЛЬКУЛЯТОРА
+// ============================================================
 
-  const names = {
-    adult: "Взрослая матрица",
-    child: "Детская матрица",
-    compatibility: "Матрица совместимости",
-    vedic: "Ведическая нумерология",
-    pythagoras: "Квадрат Пифагора"
-  };
+function openCalculator(type) {
 
-  const title = names[type] || "Расчёт";
+    const title =
+        CALCULATOR_NAMES[type] ||
+        'Калькулятор';
 
-  document.body.innerHTML = `
-    <div style="max-width:600px;margin:50px auto;padding:30px;font-family:Arial">
-      <h1>${title}</h1>
 
-      <label>Имя</label>
-      <input id="name" type="text" style="display:block;width:100%;padding:12px;margin:8px 0 20px">
+    const contentCards =
+        document.getElementById('contentCards');
 
-      <label>Дата рождения</label>
-      <input id="birthDate" type="text" placeholder="ДД.ММ.ГГГГ" maxlength="10" inputmode="numeric"
-        oninput="formatBirthDate(this)"
-        style="display:block;width:100%;padding:12px;margin:8px 0 20px;box-sizing:border-box">
-      <div id="dateError" style="color:red;margin-top:-10px;margin-bottom:15px;"></div>
+    if (!contentCards) return;
 
-      <button onclick="calculate('${type}')">Рассчитать</button>
-      <button onclick="location.reload()">Назад</button>
 
-      <div id="result" style="margin-top:30px"></div>
-    </div>
-  `;
+    contentCards.innerHTML = `
+
+        <div class="section-title">
+
+            <h2>
+                ${title}
+            </h2>
+
+        </div>
+
+
+        <div
+            class="table-card"
+            style="
+                max-width:700px;
+                margin-top:20px;
+            "
+        >
+
+            <label>
+                Имя
+            </label>
+
+            <input
+                id="calculatorName"
+                type="text"
+                class="material-manager-input"
+                placeholder="Введите имя"
+            >
+
+
+            <label>
+                Дата рождения
+            </label>
+
+            <input
+                id="calculatorBirthDate"
+                type="text"
+                class="material-manager-input"
+                placeholder="ДД.ММ.ГГГГ"
+                maxlength="10"
+                inputmode="numeric"
+                oninput="formatCalculatorDate(this)"
+            >
+
+
+            <div
+                id="calculatorError"
+                class="auth-message error"
+            ></div>
+
+
+            <div
+                style="
+                    display:flex;
+                    gap:10px;
+                    margin-top:15px;
+                "
+            >
+
+                <button
+                    class="material-manager-button"
+                    onclick="
+                        calculateCalculator('${type}')
+                    "
+                >
+                    Рассчитать
+                </button>
+
+
+                <button
+                    class="material-manager-button"
+                    onclick="
+                        showSection('calculators')
+                    "
+                >
+                    Назад
+                </button>
+
+            </div>
+
+
+            <div
+                id="calculatorResult"
+                style="
+                    margin-top:25px;
+                "
+            ></div>
+
+        </div>
+
+    `;
 }
 
-function formatBirthDate(input) {
-  let value = input.value.replace(/\D/g, "");
-  if (value.length > 8) value = value.substring(0, 8);
 
-  if (value.length > 4) {
-    value = value.substring(0, 2) + "." + value.substring(2, 4) + "." + value.substring(4);
-  } else if (value.length > 2) {
-    value = value.substring(0, 2) + "." + value.substring(2);
-  }
+// ============================================================
+// ДАТА
+// ============================================================
 
-  input.value = value;
+function formatCalculatorDate(input) {
+
+    let value =
+        String(
+            input.value || ''
+        ).replace(
+            /\D/g,
+            ''
+        );
+
+
+    if (value.length > 8) {
+
+        value =
+            value.substring(
+                0,
+                8
+            );
+
+    }
+
+
+    if (value.length > 4) {
+
+        value =
+            value.substring(0,2) +
+            '.' +
+            value.substring(2,4) +
+            '.' +
+            value.substring(4);
+
+    } else if (value.length > 2) {
+
+        value =
+            value.substring(0,2) +
+            '.' +
+            value.substring(2);
+
+    }
+
+
+    input.value = value;
 }
 
-function calculate(type) {
-  const name = document.getElementById("name").value.trim();
-  const birthDate = document.getElementById("birthDate").value.trim();
-  const dateError = document.getElementById("dateError");
-  const result = document.getElementById("result");
 
-  dateError.textContent = "";
-  result.innerHTML = "";
+// ============================================================
+// ПРОВЕРКА ДАТЫ
+// ============================================================
 
-  if (!name) { dateError.textContent = "Введите имя."; return; }
-  if (!birthDate) { dateError.textContent = "Введите дату рождения."; return; }
+function isValidCalculatorDate(value) {
 
-  const dateParts = birthDate.split(".");
-  if (dateParts.length !== 3 || dateParts[0].length !== 2 || dateParts[1].length !== 2 || dateParts[2].length !== 4) {
-    dateError.textContent = "Введите дату рождения в формате ДД.ММ.ГГГГ.";
-    return;
-  }
+    const parts =
+        String(value || '').split('.');
 
-  const day = Number(dateParts[0]);
-  const month = Number(dateParts[1]);
-  const year = Number(dateParts[2]);
 
-  if (year < 1900 || year > new Date().getFullYear()) {
-    dateError.textContent = "Введите корректный год рождения.";
-    return;
-  }
+    if (
+        parts.length !== 3 ||
+        parts[0].length !== 2 ||
+        parts[1].length !== 2 ||
+        parts[2].length !== 4
+    ) {
+        return false;
+    }
 
-  const date = new Date(year, month - 1, day);
-  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
-    dateError.textContent = "Введите корректную дату рождения.";
-    return;
-  }
 
-  result.innerHTML = `
-    <h2>Данные приняты</h2>
-    <p>Имя: ${name}</p>
-    <p>Дата рождения: ${birthDate}</p>
-  `;
+    const day =
+        Number(parts[0]);
+
+    const month =
+        Number(parts[1]);
+
+    const year =
+        Number(parts[2]);
+
+
+    if (
+        day < 1 ||
+        month < 1 ||
+        month > 12 ||
+        year < 1900 ||
+        year > new Date().getFullYear()
+    ) {
+        return false;
+    }
+
+
+    const date =
+        new Date(
+            year,
+            month - 1,
+            day
+        );
+
+
+    return (
+        date.getFullYear() === year &&
+        date.getMonth() === month - 1 &&
+        date.getDate() === day
+    );
+}
+
+
+// ============================================================
+// РАСЧЁТ
+// ============================================================
+
+async function calculateCalculator(type) {
+
+    const name =
+        document.getElementById(
+            'calculatorName'
+        )?.value.trim() || '';
+
+
+    const birthDate =
+        document.getElementById(
+            'calculatorBirthDate'
+        )?.value.trim() || '';
+
+
+    const error =
+        document.getElementById(
+            'calculatorError'
+        );
+
+
+    const result =
+        document.getElementById(
+            'calculatorResult'
+        );
+
+
+    if (error) {
+        error.textContent = '';
+    }
+
+
+    if (result) {
+        result.innerHTML = '';
+    }
+
+
+    if (!name) {
+
+        if (error) {
+            error.textContent =
+                'Введите имя.';
+        }
+
+        return;
+    }
+
+
+    if (!isValidCalculatorDate(birthDate)) {
+
+        if (error) {
+            error.textContent =
+                'Введите корректную дату в формате ДД.ММ.ГГГГ.';
+        }
+
+        return;
+    }
+
+
+    /*
+     * Здесь будет подключение конкретного
+     * Apps Script каждого калькулятора.
+     *
+     * Ссылки НЕ прописываем в коде.
+     * Они будут храниться в платформе.
+     */
+
+
+    if (result) {
+
+        result.innerHTML = `
+
+            <div class="table-card">
+
+                <div class="table-title">
+                    ${escapeCalculatorHtml(
+                        CALCULATOR_NAMES[type] ||
+                        'Расчёт'
+                    )}
+                </div>
+
+                <p>
+                    Имя:
+                    <strong>
+                        ${escapeCalculatorHtml(name)}
+                    </strong>
+                </p>
+
+                <p>
+                    Дата рождения:
+                    <strong>
+                        ${escapeCalculatorHtml(birthDate)}
+                    </strong>
+                </p>
+
+                <p>
+                    Ссылка на калькулятор
+                    будет подключена через
+                    настройки платформы.
+                </p>
+
+            </div>
+
+        `;
+    }
+}
+
+
+// ============================================================
+// ЗАЩИТА HTML
+// ============================================================
+
+function escapeCalculatorHtml(value) {
+
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+
+// ============================================================
+// СТАРТОВАЯ ОТРИСОВКА
+// ============================================================
+
+if (
+    document.readyState === 'loading'
+) {
+
+    document.addEventListener(
+        'DOMContentLoaded',
+        function () {
+
+            if (
+                typeof renderCalculators ===
+                'function'
+            ) {
+                renderCalculators();
+            }
+
+        }
+    );
+
+} else {
+
+    renderCalculators();
+
 }
