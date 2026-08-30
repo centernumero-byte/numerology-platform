@@ -1,184 +1,25 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Numerology Platform</title>
-
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Numerology Platform</title>
+  <link rel="stylesheet" href="style.css">
 </head>
+<body style="visibility:hidden;">
 
-<body>
+  <!-- Содержимое страницы полностью формируется скриптами ниже
+       (showLogin / showRegister / renderPlatformShell) -->
 
-<div class="platform">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <!-- ЛЕВАЯ ПАНЕЛЬ -->
-    <aside class="sidebar">
-
-        <div class="logo">
-            <div class="logo-symbol">✧</div>
-
-            <div class="logo-title">
-                NUMEROLOGY
-            </div>
-
-            <div class="logo-subtitle">
-                Platform
-            </div>
-        </div>
-
-
-        <div class="nav">
-
-            <button
-                class="nav-item active"
-                data-section="calculators"
-                onclick="showSection('calculators')">
-                <span class="nav-icon">▦</span>
-                Калькуляторы
-            </button>
-
-
-            <button
-                class="nav-item"
-                data-section="manuals"
-                onclick="showSection('manuals')">
-                <span class="nav-icon">📖</span>
-                Методические пособия
-            </button>
-
-
-            <button
-                class="nav-item"
-                data-section="videos"
-                onclick="showSection('videos')">
-                <span class="nav-icon">▶</span>
-                Видео
-            </button>
-
-
-            <button
-                class="nav-item"
-                data-section="tests"
-                onclick="showSection('tests')">
-                <span class="nav-icon">✎</span>
-                Тесты
-            </button>
-
-
-            <button
-                class="nav-item"
-                data-section="library"
-                onclick="showSection('library')">
-                <span class="nav-icon">📚</span>
-                Библиотека нумеролога
-            </button>
-
-
-            <button
-                class="nav-item"
-                data-section="my-calculations"
-                onclick="showSection('my-calculations')">
-                <span class="nav-icon">▤</span>
-                Мои расчёты
-            </button>
-
-
-            <button
-                class="nav-item"
-                data-section="access"
-                onclick="showSection('access')">
-                <span class="nav-icon">🔑</span>
-                Доступы
-            </button>
-
-
-            <button
-                class="nav-item"
-                data-section="statistics"
-                onclick="showSection('statistics')">
-                <span class="nav-icon">▥</span>
-                Отчёты и статистика
-            </button>
-
-        </div>
-
-
-        <button
-            class="nav-item logout"
-            onclick="logoutUser()">
-            <span class="nav-icon">🚪</span>
-            Выйти
-        </button>
-
-    </aside>
-
-
-    <!-- ОСНОВНАЯ ЧАСТЬ -->
-    <main class="main">
-
-        <div class="top">
-
-            <div class="welcome">
-
-                <h1>
-                    Добро пожаловать,
-                    <span id="clientName">Пользователь</span>! ✨
-                </h1>
-
-                <p>
-                    Выберите нужный расчёт или раздел
-                </p>
-
-            </div>
-
-
-            <div class="account">
-
-                <div class="account-icon">
-                    ♙
-                </div>
-
-                <span id="clientEmail"></span>
-
-                <span>⌄</span>
-
-            </div>
-
-        </div>
-
-
-        <div
-            class="cards"
-            id="contentCards">
-        </div>
-
-    </main>
-
-</div>
-
-
-<!-- Supabase -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<!-- Основная логика -->
-<script src="main.js"></script>
-
-<!-- Калькуляторы -->
-<script src="calculators.js"></script>
-
-<!-- Методические пособия -->
-<script src="manuals.js"></script>
-
-<!-- Видео -->
-<script src="videos.js"></script>
-
-<!-- Тесты -->
-<script src="tests.js"></script>
-
-<!-- Библиотека -->
-<script src="library.js"></script>
+  <!-- Порядок важен: main.gs подключается последним и запускает checkAuth() -->
+  <script src="calculators.gs"></script>
+  <script src="manuals.gs"></script>
+  <script src="videos.gs"></script>
+  <script src="tests.gs"></script>
+  <script src="library.gs"></script>
+  <script src="main.gs"></script>
 
 </body>
 </html>
