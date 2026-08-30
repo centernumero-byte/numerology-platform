@@ -1,92 +1,127 @@
-// =========================================================
-// library.gs — РАЗДЕЛ «БИБЛИОТЕКА НУМЕРОЛОГА»
-// Видна всем пользователям платформы. Добавлять/менять ссылку
-// может только администратор — нумерологи и ученицы только смотрят.
-// =========================================================
+// ============================================================
+// LIBRARY.JS
+// Библиотека нумеролога
+// ============================================================
 
-async function renderLibrary() {
-  const contentCards = document.getElementById('contentCards');
-  if (!contentCards) return;
+const NUMEROLOGY_LIBRARY_URL =
+    'https://drive.google.com/drive/folders/1pGjVPKtGeHm5NKrcg0JLvy5M_XDTAaOv?usp=sharing';
 
-  contentCards.innerHTML = 'Загрузка...';
 
-  const { data } = await supabaseClient
-    .from('materials')
-    .select('*')
-    .eq('section', 'library')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+// ============================================================
+// ОТКРЫТИЕ БИБЛИОТЕКИ
+// ============================================================
 
-  const link = data ? (data.external_url || data.file_url || '') : '';
-  const isAdmin = CURRENT_PROFILE.role === 'admin';
+function loadLibrary() {
 
-  contentCards.innerHTML = `
-    <div class="card library-main-card" onclick="openLibrary(${JSON.stringify(link)}, ${isAdmin})" role="button" tabindex="0">
-      <div class="card-icon library-icon">📚</div>
-      <div class="card-content">
-        <h3>Библиотека<br>нумеролога</h3>
-        <p>${link ? 'Все книги и материалы' : (isAdmin ? 'Ссылка не добавлена — нажмите, чтобы добавить' : 'Материалы скоро появятся')}</p>
-      </div>
-    </div>
-  `;
+    const contentCards =
+        document.getElementById('contentCards');
+
+    if (!contentCards) return;
+
+
+    contentCards.innerHTML = `
+
+        <div class="section-title">
+
+            <h2>
+                Библиотека нумеролога
+            </h2>
+
+        </div>
+
+
+        <div class="cards">
+
+            <div
+                class="card library-main-card"
+                onclick="openLibraryHome()"
+                role="button"
+                tabindex="0"
+            >
+
+                <div class="card-icon library-icon">
+                    📚
+                </div>
+
+
+                <div class="card-content">
+
+                    <h3>
+                        Библиотека<br>
+                        нумеролога
+                    </h3>
+
+                    <p>
+                        Все книги и материалы
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    `;
 }
 
-async function openLibrary(link, isAdmin) {
-  await logUsage('library', 'library', link ? 'open' : 'view');
 
-  if (link) {
-    window.open(link, '_blank', 'noopener,noreferrer');
-    return;
-  }
+// ============================================================
+// GOOGLE DRIVE
+// ============================================================
 
-  if (isAdmin) {
-    showLibraryManager();
-  } else {
-    alert('Библиотека пока не наполнена материалами.');
-  }
+function openLibraryHome() {
+
+    if (!NUMEROLOGY_LIBRARY_URL) {
+        return;
+    }
+
+
+    window.open(
+        NUMEROLOGY_LIBRARY_URL,
+        '_blank',
+        'noopener,noreferrer'
+    );
+
 }
 
-function showLibraryManager() {
-  const old = document.getElementById('materialManager');
-  if (old) old.remove();
 
-  const box = document.createElement('div');
-  box.id = 'materialManager';
+// ============================================================
+// КЛАВИАТУРА
+// ============================================================
 
-  box.innerHTML = `
-    <div class="material-manager-overlay">
-      <div class="material-manager">
-        <button class="material-manager-close" onclick="document.getElementById('materialManager').remove()">×</button>
-        <h2>Библиотека нумеролога</h2>
-        <label>Ссылка на папку с материалами (например, Google Drive):</label>
-        <input id="libraryUrlInput" type="url" placeholder="https://..." class="material-manager-input">
-        <button class="material-manager-button" onclick="saveLibraryUrl()">🔗 Сохранить ссылку</button>
-      </div>
-    </div>
-  `;
+document.addEventListener(
+    'keydown',
+    function(event) {
 
-  document.body.appendChild(box);
-}
+        const card =
+            event.target.closest(
+                '.library-main-card'
+            );
 
-async function saveLibraryUrl() {
-  const input = document.getElementById('libraryUrlInput');
-  const url = input ? input.value.trim() : '';
-  if (!url) return;
+        if (!card) return;
 
-  const { error } = await supabaseClient.from('materials').insert({
-    section: 'library',
-    title: 'Библиотека нумеролога',
-    external_url: url,
-    uploaded_by: CURRENT_PROFILE.id
-  });
 
-  if (error) {
-    alert('Не удалось сохранить ссылку: ' + error.message);
-    return;
-  }
+        if (
+            event.key === 'Enter' ||
+            event.key === ' '
+        ) {
 
-  document.getElementById('materialManager').remove();
-  renderLibrary();
-}
+            event.preventDefault();
 
+            openLibraryHome();
+
+        }
+
+    }
+);
+
+
+// ============================================================
+// ГЛОБАЛЬНАЯ ФУНКЦИЯ
+// ============================================================
+
+window.loadLibrary =
+    loadLibrary;
+
+window.openLibraryHome =
+    openLibraryHome;
