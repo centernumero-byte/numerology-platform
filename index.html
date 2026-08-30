@@ -1722,8 +1722,16 @@ async function checkAuth() {
         console.error('Ошибка загрузки профиля:', profileError);
     }
 
-    const role = String(profile?.role || session.user.user_metadata?.role || 'client').toLowerCase();
-    const isManager = isManagerRole(role);
+    // Администратор платформы определяется по служебному e-mail
+    // независимо от того, что сейчас записано в profiles.role.
+    const sessionEmail = String(session.user.email || '').trim().toLowerCase();
+    const isPlatformAdmin = sessionEmail === 'centernumero@gmail.com';
+
+    const role = isPlatformAdmin
+        ? 'admin'
+        : String(profile?.role || session.user.user_metadata?.role || 'client').toLowerCase();
+
+    const isManager = isPlatformAdmin || isManagerRole(role);
     let hasAccess = false;
 
     if (isManager) {
@@ -1753,7 +1761,9 @@ async function checkAuth() {
     startInactivityTimer();
     document.body.style.visibility = 'visible';
 
-    const displayName = profile?.first_name || profile?.last_name || session.user.user_metadata?.first_name || session.user.email?.split('@')[0] || 'Пользователь';
+    const displayName = isPlatformAdmin
+        ? 'Центр Нумера'
+        : (profile?.first_name || profile?.last_name || session.user.user_metadata?.first_name || session.user.email?.split('@')[0] || 'Пользователь');
     const nameNode = document.getElementById('clientName');
     const emailNode = document.getElementById('clientEmail');
     if (nameNode) nameNode.textContent = displayName;
