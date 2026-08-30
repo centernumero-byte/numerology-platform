@@ -1518,84 +1518,51 @@ function escapeHtml(value) {
 // ===== ВХОД ПОЛЬЗОВАТЕЛЯ =====
 
 async function loginUser() {
+    const email = document.getElementById('loginEmail')?.value.trim().toLowerCase();
+    const password = document.getElementById('loginPassword')?.value || '';
+    const errorBox = document.getElementById('loginError');
 
-    const email =
-        document
-            .getElementById(
-                'loginEmail'
-            )
-            ?.value
-            .trim();
-
-    const password =
-        document
-            .getElementById(
-                'loginPassword'
-            )
-            ?.value || '';
-
-    const errorBox =
-        document.getElementById(
-            'loginError'
-        );
-
-
-    if (errorBox) {
-        errorBox.textContent =
-            '';
-    }
-
+    if (errorBox) errorBox.textContent = '';
 
     if (!email || !password) {
-
         if (errorBox) {
-            errorBox.textContent =
-                'Введите email и пароль.';
+            errorBox.textContent = 'Введите email и пароль.';
         }
-
         return;
     }
 
-
     try {
-
-        const {
-            error
-        } =
-            await supabaseClient.auth
-                .signInWithPassword({
-                    email,
-                    password
-                });
-
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
+            email: email,
+            password: password
+        });
 
         if (error) {
+            console.error('Ошибка входа:', error);
 
             if (errorBox) {
-                errorBox.textContent =
-                    error.message ||
-                    'Неверный email или пароль.';
+                errorBox.textContent = error.message || 'Неверный email или пароль.';
             }
 
             return;
         }
 
+        if (!data || !data.user) {
+            if (errorBox) {
+                errorBox.textContent = 'Не удалось выполнить вход.';
+            }
+            return;
+        }
 
         updateLastActivity();
 
         location.reload();
 
     } catch (error) {
-
-        console.error(
-            'Ошибка входа:',
-            error
-        );
+        console.error('Ошибка входа:', error);
 
         if (errorBox) {
-
-            errorBox.textContent =
-                'Не удалось подключиться к серверу. Проверьте интернет и попробуйте ещё раз.';
+            errorBox.textContent = 'Ошибка соединения с сервером.';
         }
     }
 }
