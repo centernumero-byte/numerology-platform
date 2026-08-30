@@ -1,175 +1,916 @@
-// =========================================================
-// manuals.gs — РАЗДЕЛ «МЕТОДИЧЕСКИЕ ПОСОБИЯ»
-// Загружать материалы могут: admin, numerologist.
-// Ученицы — только просматривают/скачивают открытые им направления.
-// =========================================================
+// ============================================================
+// MANUALS.JS
+// Методические пособия
+// ============================================================
 
-async function renderManuals() {
-  await renderMaterialSection({
-    section: 'manuals',
-    contentType: 'manual',
-    subtitle: 'Методическое пособие'
-  });
+const MATERIALS_TABLE = 'platform_materials';
+const MATERIALS_BUCKET = 'methodicals';
+
+const METHODICAL_SECTIONS = {
+    adult: 'adult',
+    child: 'child',
+    compatibility: 'compatibility',
+    vedic: 'vedic',
+    pythagoras: 'pythagoras'
+};
+
+const METHODICAL_NAMES = {
+    adult: 'Взрослая матрица',
+    child: 'Детская матрица',
+    compatibility: 'Матрица совместимости',
+    vedic: 'Ведическая нумерология',
+    pythagoras: 'Квадрат Пифагора'
+};
+
+
+// ============================================================
+// ГЛАВНАЯ СТРАНИЦА МЕТОДИЧЕСКИХ ПОСОБИЙ
+// ============================================================
+
+async function loadManuals() {
+
+    const contentCards =
+        document.getElementById('contentCards');
+
+    if (!contentCards) return;
+
+    contentCards.innerHTML = `
+
+        <div class="section-title">
+            <h2>
+                Методические пособия
+            </h2>
+        </div>
+
+        <div class="cards">
+
+            ${createManualCard(
+                'adult',
+                '📘',
+                'Взрослая<br>матрица'
+            )}
+
+            ${createManualCard(
+                'child',
+                '👶',
+                'Детская<br>матрица'
+            )}
+
+            ${createManualCard(
+                'compatibility',
+                '💕',
+                'Матрица<br>совместимости'
+            )}
+
+            ${createManualCard(
+                'vedic',
+                'ॐ',
+                'Ведическая<br>нумерология'
+            )}
+
+            ${createManualCard(
+                'pythagoras',
+                '🔢',
+                'Квадрат<br>Пифагора'
+            )}
+
+        </div>
+    `;
 }
 
-// Общая функция отрисовки карточек направления для раздела материалов
-// (используется manuals.gs и videos.gs)
-async function renderMaterialSection(options) {
-  const { section, contentType, subtitle } = options;
-  const contentCards = document.getElementById('contentCards');
-  if (!contentCards) return;
 
-  contentCards.innerHTML = 'Загрузка...';
-
-  const [accessMap, materialsResult] = await Promise.all([
-    getAccessMap(CURRENT_PROFILE.id),
-    supabaseClient.from('materials').select('*').eq('section', section)
-  ]);
-
-  const materials = materialsResult.data || [];
-  const canUpload = CURRENT_PROFILE.role === 'admin' || CURRENT_PROFILE.role === 'numerologist';
-
-  contentCards.innerHTML = DIRECTIONS.map(d => {
-    const open = CURRENT_PROFILE.role === 'admin' || accessMap[contentType][d.key];
-    const item = findMaterialForDirection(materials, d.key);
-    const link = item ? (item.external_url || item.file_url || '') : '';
-    const icon = d.icon === 'pythagoras' ? pythagorasIconHtml() : `<div class="card-icon">${d.icon}</div>`;
-
-    let description = subtitle;
-    if (!open) description = 'Нет доступа';
-    else if (!link) description = canUpload ? 'Материал не добавлен — нажмите, чтобы добавить' : 'Материал пока не добавлен';
+function createManualCard(
+    section,
+    icon,
+    title
+) {
 
     return `
-      <div class="card method-card ${open ? '' : 'locked'}" style="position:relative"
-           onclick="onMaterialCardClick('${section}', '${contentType}', '${d.key}', ${open}, ${JSON.stringify(link)}, ${JSON.stringify(d.title)}, ${canUpload})">
-        ${open ? '' : '<span class="card-lock-icon">🔒</span>'}
-        ${icon}
-        <div class="card-content">
-          <h3>${d.title}</h3>
-          <p>${description}</p>
+
+        <div
+            class="card"
+            onclick="
+                openManualSection('${section}')
+            "
+        >
+
+            <div class="card-icon">
+                ${icon}
+            </div>
+
+            <div class="card-content">
+
+                <h3>
+                    ${title}
+                </h3>
+
+                <p>
+                    Методическое пособие
+                </p>
+
+            </div>
+
         </div>
-      </div>
+
     `;
-  }).join('');
 }
 
-function findMaterialForDirection(materials, directionKey) {
-  return (materials || []).find(item => {
-    const fields = [item.method, item.direction_key, item.type_key, item.slug, item.title].filter(Boolean).map(normalizeKey);
-    return fields.includes(normalizeKey(directionKey));
-  }) || null;
+
+// ============================================================
+// ОТКРЫТЬ КОНКРЕТНОЕ ПОСОБИЕ
+// ============================================================
+
+async function openManualSection(section) {
+
+    const contentCards =
+        document.getElementById('contentCards');
+
+    if (!contentCards) return;
+
+
+    const title =
+        METHODICAL_NAMES[section] ||
+        'Методическое пособие';
+
+
+    contentCards.innerHTML = `
+
+        <div class="section-title">
+
+            <h2>
+                ${title}
+            </h2>
+
+        </div>
+
+        <div
+            id="manualMaterials"
+            class="cards"
+        >
+
+            <div class="table-card">
+                Загрузка...
+            </div>
+
+        </div>
+
+    `;
+
+
+    await loadMaterialsForSection(
+        section
+    );
 }
 
-function normalizeKey(value) {
-  return String(value || '').toLowerCase().trim().replace(/ё/g, 'е').replace(/[«»"'`]/g, '').replace(/\s+/g, ' ');
+
+// ============================================================
+// ЗАГРУЗКА МАТЕРИАЛОВ
+// ============================================================
+
+async function loadMaterialsForSection(section) {
+
+    const container =
+        document.getElementById(
+            'manualMaterials'
+        );
+
+    if (!container) return;
+
+
+    const {
+        data: {
+            session
+        }
+    } =
+        await supabaseClient.auth.getSession();
+
+
+    if (!session) return;
+
+
+    const userId =
+        session.user.id;
+
+
+    const role =
+        String(
+            window.currentUserRole ||
+            'client'
+        ).toLowerCase();
+
+
+    const isManager =
+        typeof isManagerRole === 'function'
+            ? isManagerRole(role)
+            : [
+                'admin',
+                'teacher',
+                'numerologist',
+                'нумеролог',
+                'администратор'
+            ].includes(role);
+
+
+    /*
+     * Администраторские материалы:
+     * видят все.
+     *
+     * Материалы нумеролога:
+     * видит только сам нумеролог
+     * и его ученицы.
+     *
+     * Ученица другого нумеролога
+     * эти материалы не получает.
+     */
+
+
+    let query =
+        supabaseClient
+            .from(MATERIALS_TABLE)
+            .select('*')
+            .eq(
+                'section',
+                section
+            )
+            .order(
+                'created_at',
+                {
+                    ascending: false
+                }
+            );
+
+
+    const {
+        data,
+        error
+    } =
+        await query;
+
+
+    if (error) {
+
+        console.error(
+            'Ошибка загрузки материалов:',
+            error
+        );
+
+
+        container.innerHTML = `
+
+            <div class="table-card">
+
+                Не удалось загрузить
+                методические материалы.
+
+            </div>
+
+        `;
+
+        return;
+    }
+
+
+    const materials =
+        data || [];
+
+
+    let visibleMaterials = [];
+
+
+    if (isManager) {
+
+        /*
+         * Администратор видит всё.
+         */
+
+        visibleMaterials =
+            materials;
+
+    } else {
+
+        /*
+         * Для ученицы сначала показываем
+         * материалы администратора.
+         */
+
+        const adminMaterials =
+            materials.filter(function(item) {
+
+                return (
+                    !item.created_by ||
+                    item.is_admin === true ||
+                    item.owner_type === 'admin'
+                );
+
+            });
+
+
+        /*
+         * Далее добавляем материалы
+         * её нумеролога.
+         *
+         * Здесь используем доступное
+         * поле numerologist_id / created_by.
+         */
+
+        const ownMaterials =
+            materials.filter(function(item) {
+
+                return (
+                    String(item.created_by || '') ===
+                    String(
+                        window.currentNumerologistId ||
+                        ''
+                    )
+                );
+
+            });
+
+
+        visibleMaterials =
+            [
+                ...adminMaterials,
+                ...ownMaterials
+            ];
+
+    }
+
+
+    renderMaterials(
+        visibleMaterials,
+        section,
+        isManager
+    );
 }
 
-async function onMaterialCardClick(section, contentType, directionKey, open, link, title, canUpload) {
-  if (!open) {
-    showNoAccessMessage(title);
-    return;
-  }
 
-  await logUsage(contentType, directionKey, link ? 'open' : 'view');
+// ============================================================
+// ОТОБРАЖЕНИЕ МАТЕРИАЛОВ
+// ============================================================
 
-  if (link) {
-    window.open(link, '_blank', 'noopener,noreferrer');
-    return;
-  }
-
-  if (canUpload) {
-    showMaterialManager(section, directionKey, title);
-  } else {
-    alert(title + '\n\nМатериал пока не добавлен.');
-  }
-}
-
-// ---------- ЗАГРУЗКА МАТЕРИАЛА (ссылка или файл) ----------
-
-function showMaterialManager(section, directionKey, title) {
-  const old = document.getElementById('materialManager');
-  if (old) old.remove();
-
-  const box = document.createElement('div');
-  box.id = 'materialManager';
-
-  box.innerHTML = `
-    <div class="material-manager-overlay">
-      <div class="material-manager">
-        <button class="material-manager-close" onclick="document.getElementById('materialManager').remove()">×</button>
-        <h2>${title}</h2>
-
-        <label>Вставить ссылку:</label>
-        <input id="materialUrlInput" type="url" placeholder="https://..." class="material-manager-input">
-        <button class="material-manager-button" onclick="saveMaterialUrl('${section}', '${directionKey}', ${JSON.stringify(title)})">
-          🔗 Сохранить ссылку
-        </button>
-
-        <div class="material-manager-or">или</div>
-
-        <label>Загрузить файл:</label>
-        <input id="materialFileInput" type="file" class="material-manager-input">
-        <button class="material-manager-button" onclick="uploadMaterialFile('${section}', '${directionKey}', ${JSON.stringify(title)})">
-          📁 Загрузить
-        </button>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(box);
-}
-
-async function saveMaterialUrl(section, directionKey, title) {
-  const input = document.getElementById('materialUrlInput');
-  const url = input ? input.value.trim() : '';
-  if (!url) return;
-
-  const { error } = await supabaseClient.from('materials').insert({
+function renderMaterials(
+    materials,
     section,
-    method: directionKey,
-    title,
-    external_url: url,
-    uploaded_by: CURRENT_PROFILE.id
-  });
+    isManager
+) {
 
-  if (error) {
-    alert('Не удалось сохранить ссылку: ' + error.message);
-    return;
-  }
+    const container =
+        document.getElementById(
+            'manualMaterials'
+        );
 
-  document.getElementById('materialManager').remove();
-  showSection(section === 'manuals' ? 'manuals' : section);
+    if (!container) return;
+
+
+    if (!materials.length) {
+
+        container.innerHTML = `
+
+            <div class="table-card">
+
+                <div
+                    style="
+                        text-align:center;
+                        padding:30px;
+                    "
+                >
+
+                    Пока материалов нет.
+
+                </div>
+
+            </div>
+
+        `;
+
+
+        if (isManager) {
+
+            container.innerHTML +=
+                managerMaterialControls(
+                    section
+                );
+
+        }
+
+        return;
+    }
+
+
+    container.innerHTML = `
+
+        ${materials.map(function(material) {
+
+            return createMaterialCard(
+                material,
+                isManager
+            );
+
+        }).join('')}
+
+
+        ${
+            isManager
+                ? managerMaterialControls(section)
+                : ''
+        }
+
+    `;
 }
 
-async function uploadMaterialFile(section, directionKey, title) {
-  const input = document.getElementById('materialFileInput');
-  if (!input || !input.files.length) return;
 
-  const file = input.files[0];
-  const path = `${section}/${directionKey}/${Date.now()}_${file.name}`;
+// ============================================================
+// КАРТОЧКА МАТЕРИАЛА
+// ============================================================
 
-  const { error: uploadError } = await supabaseClient.storage.from('materials').upload(path, file);
+function createMaterialCard(
+    material,
+    isManager
+) {
 
-  if (uploadError) {
-    alert('Не удалось загрузить файл: ' + uploadError.message);
-    return;
-  }
+    const name =
+        material.name ||
+        material.title ||
+        'Методическое пособие';
 
-  const { data: publicUrlData } = supabaseClient.storage.from('materials').getPublicUrl(path);
 
-  const { error } = await supabaseClient.from('materials').insert({
-    section,
-    method: directionKey,
-    title,
-    file_url: publicUrlData ? publicUrlData.publicUrl : null,
-    uploaded_by: CURRENT_PROFILE.id
-  });
+    const url =
+        material.url ||
+        material.file_url ||
+        '';
 
-  if (error) {
-    alert('Файл загружен, но не удалось сохранить запись: ' + error.message);
-    return;
-  }
 
-  document.getElementById('materialManager').remove();
-  showSection(section);
+    const filePath =
+        material.file_path ||
+        material.path ||
+        '';
+
+
+    const id =
+        material.id ||
+        '';
+
+
+    let action = '';
+
+
+    if (url) {
+
+        action = `
+
+            <button
+                class="material-manager-button"
+                onclick="
+                    openMaterialUrl(
+                        '${escapeAttribute(url)}'
+                    )
+                "
+            >
+                Открыть
+            </button>
+
+        `;
+
+    } else if (filePath) {
+
+        action = `
+
+            <button
+                class="material-manager-button"
+                onclick="
+                    downloadMaterial(
+                        '${escapeAttribute(filePath)}',
+                        '${escapeAttribute(name)}'
+                    )
+                "
+            >
+                Открыть / скачать
+            </button>
+
+        `;
+
+    }
+
+
+    return `
+
+        <div
+            class="card"
+            style="cursor:default;"
+        >
+
+            <div class="card-icon">
+                📄
+            </div>
+
+            <div class="card-content">
+
+                <h3>
+                    ${escapeHtml(name)}
+                </h3>
+
+                <p>
+                    Методическое пособие
+                </p>
+
+                <div
+                    style="
+                        width:100%;
+                        margin-top:15px;
+                    "
+                >
+                    ${action}
+                </div>
+
+            </div>
+
+        </div>
+
+    `;
+}
+
+
+// ============================================================
+// КНОПКИ НУМЕРОЛОГА / АДМИНИСТРАТОРА
+// ============================================================
+
+function managerMaterialControls(section) {
+
+    return `
+
+        <div
+            class="table-card"
+            style="
+                width:100%;
+                max-width:560px;
+                margin-top:5px;
+            "
+        >
+
+            <div class="table-title">
+                Добавить материал
+            </div>
+
+
+            <input
+                id="materialTitle"
+                class="material-manager-input"
+                type="text"
+                placeholder="Название материала"
+            >
+
+
+            <input
+                id="materialUrl"
+                class="material-manager-input"
+                type="url"
+                placeholder="Вставьте ссылку"
+            >
+
+
+            <div class="material-manager-or">
+                или
+            </div>
+
+
+            <input
+                id="materialFile"
+                type="file"
+                style="
+                    display:block;
+                    width:100%;
+                    margin-bottom:15px;
+                    color:#eee5d0;
+                "
+            >
+
+
+            <button
+                class="material-manager-button"
+                onclick="
+                    saveMaterial('${section}')
+                "
+            >
+                Сохранить
+            </button>
+
+
+            <div
+                id="materialSaveMessage"
+                class="auth-message"
+            ></div>
+
+        </div>
+
+    `;
+}
+
+
+// ============================================================
+// СОХРАНЕНИЕ
+// ============================================================
+
+async function saveMaterial(section) {
+
+    const title =
+        document.getElementById(
+            'materialTitle'
+        )?.value.trim() || '';
+
+
+    const url =
+        document.getElementById(
+            'materialUrl'
+        )?.value.trim() || '';
+
+
+    const fileInput =
+        document.getElementById(
+            'materialFile'
+        );
+
+
+    const file =
+        fileInput?.files?.[0] || null;
+
+
+    const message =
+        document.getElementById(
+            'materialSaveMessage'
+        );
+
+
+    if (!title) {
+
+        if (message) {
+            message.textContent =
+                'Введите название материала.';
+        }
+
+        return;
+    }
+
+
+    if (!url && !file) {
+
+        if (message) {
+            message.textContent =
+                'Вставьте ссылку или выберите файл.';
+        }
+
+        return;
+    }
+
+
+    const {
+        data: {
+            session
+        }
+    } =
+        await supabaseClient.auth.getSession();
+
+
+    if (!session) return;
+
+
+    let filePath = null;
+    let finalUrl = url || null;
+
+
+    // ========================================================
+    // ЕСЛИ ВЫБРАН ФАЙЛ
+    // ========================================================
+
+    if (file) {
+
+        const safeName =
+            file.name
+                .replace(
+                    /[^a-zA-Zа-яА-Я0-9._-]/g,
+                    '_'
+                );
+
+
+        filePath =
+            `${session.user.id}/${Date.now()}_${safeName}`;
+
+
+        const {
+            error: uploadError
+        } =
+            await supabaseClient
+                .storage
+                .from(MATERIALS_BUCKET)
+                .upload(
+                    filePath,
+                    file,
+                    {
+                        upsert: false
+                    }
+                );
+
+
+        if (uploadError) {
+
+            console.error(
+                'Ошибка загрузки файла:',
+                uploadError
+            );
+
+
+            if (message) {
+                message.textContent =
+                    'Не удалось загрузить файл.';
+            }
+
+            return;
+        }
+
+    }
+
+
+    // ========================================================
+    // СОХРАНЯЕМ ЗАПИСЬ В ТАБЛИЦЕ
+    // ========================================================
+
+    const {
+        error
+    } =
+        await supabaseClient
+            .from(MATERIALS_TABLE)
+            .insert({
+
+                name: title,
+
+                title: title,
+
+                section: section,
+
+                material_type:
+                    file
+                        ? 'file'
+                        : 'url',
+
+                url: finalUrl,
+
+                file_path: filePath,
+
+                created_by:
+                    session.user.id,
+
+                owner_type:
+                    window.currentUserRole ===
+                    'admin'
+                        ? 'admin'
+                        : 'numerologist'
+
+            });
+
+
+    if (error) {
+
+        console.error(
+            'Ошибка сохранения материала:',
+            error
+        );
+
+
+        if (message) {
+            message.textContent =
+                'Не удалось сохранить материал.';
+        }
+
+        return;
+    }
+
+
+    if (message) {
+
+        message.textContent =
+            'Материал сохранён.';
+
+        message.className =
+            'auth-message success';
+
+    }
+
+
+    await loadMaterialsForSection(
+        section
+    );
+}
+
+
+// ============================================================
+// ОТКРЫТЬ ССЫЛКУ
+// ============================================================
+
+function openMaterialUrl(url) {
+
+    if (!url) return;
+
+    window.open(
+        url,
+        '_blank',
+        'noopener,noreferrer'
+    );
+}
+
+
+// ============================================================
+// СКАЧАТЬ ФАЙЛ ИЗ STORAGE
+// ============================================================
+
+async function downloadMaterial(
+    filePath,
+    fileName
+) {
+
+    if (!filePath) return;
+
+
+    const {
+        data,
+        error
+    } =
+        await supabaseClient
+            .storage
+            .from(MATERIALS_BUCKET)
+            .download(
+                filePath
+            );
+
+
+    if (error) {
+
+        console.error(
+            'Ошибка скачивания:',
+            error
+        );
+
+        alert(
+            'Не удалось открыть файл.'
+        );
+
+        return;
+    }
+
+
+    const url =
+        URL.createObjectURL(
+            data
+        );
+
+
+    const link =
+        document.createElement(
+            'a'
+        );
+
+
+    link.href = url;
+
+    link.download =
+        fileName ||
+        'material';
+
+
+    document.body.appendChild(
+        link
+    );
+
+    link.click();
+
+    link.remove();
+
+
+    setTimeout(
+        function () {
+            URL.revokeObjectURL(url);
+        },
+        1000
+    );
+}
+
+
+// ============================================================
+// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// ============================================================
+
+function escapeAttribute(value) {
+
+    return String(value || '')
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'");
+}
+
+
+if (
+    typeof window.loadManuals !==
+    'function'
+) {
+
+    window.loadManuals =
+        loadManuals;
+
 }
