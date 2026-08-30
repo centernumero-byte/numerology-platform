@@ -537,6 +537,37 @@
     cursor:pointer;
   }
 
+  .access-locked {
+    width:100%;
+    max-width:760px;
+    margin:35px auto;
+    padding:48px 40px;
+    border:1px solid rgba(225,180,52,.9);
+    border-radius:20px;
+    background:linear-gradient(145deg,#302052 0%,#21163d 100%);
+    text-align:center;
+    box-shadow:0 10px 30px rgba(0,0,0,.22);
+  }
+
+  .access-locked-icon {
+    font-size:52px;
+    margin-bottom:18px;
+  }
+
+  .access-locked h2 {
+    margin:0 0 14px;
+    font-family:Georgia,serif;
+    font-size:30px;
+    color:#f6d66c;
+  }
+
+  .access-locked p {
+    margin:0;
+    font-size:18px;
+    line-height:1.5;
+    color:#eee5d0;
+  }
+
   @media (max-width:1200px) {
     .sidebar { width:210px; }
     .cards { grid-template-columns:repeat(3,180px); }
@@ -589,6 +620,7 @@
   }
 </style>
 
+
 <div class="platform">
 
   <aside class="sidebar">
@@ -609,6 +641,7 @@
 
     </div>
 
+
     <div class="nav">
 
       <button
@@ -620,6 +653,7 @@
         Калькуляторы
       </button>
 
+
       <button
         class="nav-item"
         data-section="manuals"
@@ -628,6 +662,7 @@
         <span class="nav-icon">📖</span>
         Методические пособия
       </button>
+
 
       <button
         class="nav-item"
@@ -638,6 +673,7 @@
         Видео
       </button>
 
+
       <button
         class="nav-item"
         data-section="tests"
@@ -646,6 +682,7 @@
         <span class="nav-icon">✎</span>
         Тесты
       </button>
+
 
       <button
         class="nav-item"
@@ -656,6 +693,7 @@
         Библиотека нумеролога
       </button>
 
+
       <button
         class="nav-item"
         data-section="my-calculations"
@@ -665,6 +703,7 @@
         Мои расчёты
       </button>
 
+
       <button
         class="nav-item"
         data-section="access"
@@ -673,6 +712,7 @@
         <span class="nav-icon">🔑</span>
         Доступы
       </button>
+
 
       <button
         class="nav-item"
@@ -684,6 +724,7 @@
       </button>
 
     </div>
+
 
     <button
       class="nav-item logout"
@@ -704,12 +745,8 @@
 
         <h1>
           Добро пожаловать,
-          <span id="clientName">Бибигуль</span>! ✨
+          <span id="clientName">Центр Нумера</span>! ✨
         </h1>
-
-        <p>
-          Выберите нужный расчёт или раздел
-        </p>
 
       </div>
 
@@ -736,9 +773,11 @@
       id="contentCards"
     >
 
+      <!-- ВЗРОСЛАЯ МАТРИЦА -->
+
       <div
         class="card"
-        onclick="openAdultMatrix()"
+        onclick="openCalculator('adult')"
       >
 
         <div class="card-icon">
@@ -762,9 +801,11 @@
       </div>
 
 
+      <!-- ДЕТСКАЯ МАТРИЦА -->
+
       <div
         class="card"
-        onclick="openChildMatrix()"
+        onclick="openCalculator('child')"
       >
 
         <div class="card-icon">
@@ -788,9 +829,11 @@
       </div>
 
 
+      <!-- МАТРИЦА СОВМЕСТИМОСТИ -->
+
       <div
         class="card"
-        onclick="openCompatibilityMatrix()"
+        onclick="openCalculator('compatibility')"
       >
 
         <div class="card-icon">
@@ -814,9 +857,11 @@
       </div>
 
 
+      <!-- ВЕДИЧЕСКАЯ НУМЕРОЛОГИЯ -->
+
       <div
         class="card"
-        onclick="openVedicNumerology()"
+        onclick="openCalculator('vedic')"
       >
 
         <div class="card-icon">
@@ -840,21 +885,27 @@
       </div>
 
 
+      <!-- КВАДРАТ ПИФАГОРА -->
+
       <div
         class="card"
-        onclick="openPythagoras()"
+        onclick="openCalculator('pythagoras')"
       >
 
         <div class="card-icon pythagoras-icon">
+
           <span>1</span>
           <span>4</span>
           <span>7</span>
+
           <span>2</span>
           <span>5</span>
           <span>8</span>
+
           <span>3</span>
           <span>6</span>
           <span>9</span>
+
         </div>
 
         <div class="card-content">
@@ -873,70 +924,6 @@
 
       </div>
 
-
-      
-
-
-      
-
-
-      <div
-        class="card wide-card"
-        onclick="showSection('tests')"
-      >
-
-        <div class="card-icon">
-          ✿
-        </div>
-
-        <div class="card-content">
-
-          <h3>
-            Тесты и практики
-          </h3>
-
-          <p>
-            Тесты, практики,<br>
-            самопознание
-          </p>
-
-        </div>
-
-        <div class="arrow">
-          →
-        </div>
-
-      </div>
-
-
-      <div
-        class="card wide-card"
-        onclick="showSection('library')"
-      >
-
-        <div class="card-icon">
-          📚
-        </div>
-
-        <div class="card-content">
-
-          <h3>
-            Материалы и знания
-          </h3>
-
-          <p>
-            Статьи, книги,<br>
-            методики
-          </p>
-
-        </div>
-
-        <div class="arrow">
-          →
-        </div>
-
-      </div>
-
     </div>
 
   </main>
@@ -945,6 +932,7 @@
 
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script src="main.js"></script>
 <script src="manuals.js"></script>
 <script src="calculators.js"></script>
