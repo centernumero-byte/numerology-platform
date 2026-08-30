@@ -1,25 +1,2185 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Numerology Platform</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body style="visibility:hidden;">
+<style>
+  * { box-sizing: border-box; }
 
-  <!-- Содержимое страницы полностью формируется скриптами ниже
-       (showLogin / showRegister / renderPlatformShell) -->
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 70% 15%, rgba(142,73,181,.22), transparent 28%),
+      radial-gradient(circle at 20% 80%, rgba(104,54,151,.18), transparent 30%),
+      linear-gradient(135deg,#17102f 0%,#211443 45%,#17102f 100%);
+    color:#f8e7a8;
+    font-family:Arial,sans-serif;
+  }
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  .platform {
+    min-height:100vh;
+    display:flex;
+    padding:8px;
+  }
 
-  <!-- Порядок важен: main.gs подключается последним и запускает checkAuth() -->
-  <script src="calculators.gs"></script>
-  <script src="manuals.gs"></script>
-  <script src="videos.gs"></script>
-  <script src="tests.gs"></script>
-  <script src="library.gs"></script>
-  <script src="main.gs"></script>
+  .sidebar {
+    width:245px;
+    min-height:calc(100vh - 16px);
+    padding:28px 18px 24px;
+    border:1px solid rgba(220,169,42,.65);
+    border-radius:18px 0 0 18px;
+    background:
+      radial-gradient(circle at 50% 10%,rgba(135,64,175,.30),transparent 28%),
+      linear-gradient(180deg,#21143d 0%,#17112f 100%);
+    display:flex;
+    flex-direction:column;
+  }
 
-</body>
-</html>
+  .logo {
+    text-align:center;
+    margin-bottom:38px;
+  }
+
+  .logo-symbol {
+    width:100px;
+    height:100px;
+    margin:0 auto 14px;
+    border-radius:50%;
+    border:2px solid #e7bd43;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#f5d46b;
+    font-size:48px;
+    box-shadow:
+      0 0 20px rgba(225,184,64,.35),
+      inset 0 0 20px rgba(225,184,64,.12);
+  }
+
+  .logo-title {
+    font-family:Georgia,serif;
+    font-size:25px;
+    color:#f5d46b;
+    letter-spacing:1px;
+  }
+
+  .logo-subtitle {
+    margin-top:8px;
+    font-size:20px;
+    color:#e7bd43;
+  }
+
+  .nav {
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+
+  .nav-item {
+    width:100%;
+    min-height:52px;
+    padding:15px 16px;
+    border-radius:12px;
+    border:1px solid transparent;
+    background:transparent;
+    color:#f5f0df;
+    font-size:18px;
+    line-height:1.2;
+    text-align:left;
+    cursor:pointer;
+    transition:.25s;
+    display:flex;
+    align-items:center;
+  }
+
+  .nav-item:hover {
+    background:rgba(126,66,164,.25);
+    border-color:rgba(218,173,49,.55);
+  }
+
+  .nav-item.active {
+    background:
+      linear-gradient(
+        90deg,
+        rgba(113,49,153,.55),
+        rgba(93,39,137,.35)
+      );
+    border-color:#d7aa31;
+    color:#f8d96d;
+    box-shadow:0 0 15px rgba(212,164,43,.12);
+  }
+
+  .nav-icon {
+    display:inline-flex;
+    width:32px;
+    min-width:32px;
+    margin-right:2px;
+    align-items:center;
+    justify-content:center;
+    color:#f2c84d;
+    font-size:22px;
+  }
+
+  .logout {
+    margin-top:auto;
+    color:#f5d46b;
+  }
+
+  .main {
+    flex:1;
+    min-height:calc(100vh - 16px);
+    padding:42px 30px 36px;
+    border:1px solid rgba(220,169,42,.65);
+    border-left:none;
+    border-radius:0 18px 18px 0;
+    background:
+      radial-gradient(circle at 55% 5%,rgba(146,73,182,.23),transparent 28%),
+      radial-gradient(circle at 90% 85%,rgba(111,57,157,.16),transparent 30%),
+      #21163f;
+  }
+
+  .top {
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    margin-bottom:28px;
+  }
+
+  .welcome h1 {
+    margin:0;
+    font-family:Georgia,serif;
+    font-size:43px;
+    font-weight:500;
+    color:#f8dc78;
+  }
+
+  .welcome p {
+    margin:14px 0 0;
+    font-size:19px;
+    color:#eee6d4;
+  }
+
+  .account {
+    display:flex;
+    align-items:center;
+    gap:12px;
+    color:#f4e9cc;
+    font-size:16px;
+  }
+
+  .account-icon {
+    width:45px;
+    height:45px;
+    border:1px solid #e3b936;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#f4c94f;
+    font-size:23px;
+  }
+
+  .cards {
+    display:grid;
+    grid-template-columns:repeat(5,180px);
+    gap:20px;
+    justify-content:start;
+    align-items:start;
+    width:100%;
+    margin-top:18px;
+  }
+
+  .cards .card,
+  .method-card {
+    width:180px;
+    height:250px;
+    min-height:250px;
+    box-sizing:border-box;
+    padding:18px 14px;
+    border:1px solid rgba(225,180,52,.9);
+    border-radius:18px;
+    background:
+      radial-gradient(circle at 50% 10%,rgba(130,65,169,.30),transparent 40%),
+      linear-gradient(145deg,#302052 0%,#21163d 100%);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    box-shadow:
+      0 10px 30px rgba(0,0,0,.18),
+      inset 0 0 30px rgba(126,65,167,.08);
+    cursor:pointer;
+    overflow:hidden;
+    transition:transform .25s,box-shadow .25s;
+  }
+
+  .cards .card:hover,
+  .method-card:hover {
+    transform:translateY(-4px);
+    box-shadow:
+      0 14px 35px rgba(0,0,0,.25),
+      0 0 22px rgba(222,174,47,.12);
+  }
+
+  .cards .card-icon {
+    height:65px;
+    margin-bottom:12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:52px;
+    line-height:1;
+    color:#f2c94c;
+    text-shadow:0 0 20px rgba(239,192,62,.3);
+  }
+
+  .cards .card-content h3 {
+    margin:0 0 9px;
+    font-family:Georgia,serif;
+    font-size:20px;
+    line-height:1.12;
+    font-weight:500;
+    color:#f6d66c;
+  }
+
+  .cards .card-content p {
+    margin:0;
+    font-size:14px;
+    line-height:1.3;
+    color:#eee5d0;
+  }
+
+  .section-title {
+    width:100%;
+    margin:0 0 20px;
+  }
+
+  .section-title h2 {
+    margin:0;
+    font-family:Georgia,serif;
+    font-size:31px;
+    font-weight:500;
+    color:#f6d66c;
+  }
+
+  .pythagoras-icon {
+    display:grid !important;
+    grid-template-columns:repeat(3,1fr);
+    gap:3px 8px;
+    width:88px;
+    height:65px !important;
+    font-size:17px !important;
+    line-height:1 !important;
+  }
+
+  .pythagoras-icon span {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .library-icon {
+    font-size:54px !important;
+    line-height:1;
+    height:65px !important;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .method-card:not([onclick]) {
+    cursor:default;
+  }
+
+  .stats-grid {
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:14px;
+    margin-bottom:18px;
+  }
+
+  .stat-card,
+  .table-card {
+    border:1px solid rgba(225,180,52,.65);
+    border-radius:16px;
+    background:
+      linear-gradient(
+        145deg,
+        rgba(48,32,82,.92),
+        rgba(33,22,61,.92)
+      );
+    box-shadow:inset 0 0 25px rgba(126,65,167,.08);
+  }
+
+  .stat-card {
+    padding:18px;
+  }
+
+  .stat-card span {
+    display:block;
+    color:#eee5d0;
+    font-size:14px;
+    margin-bottom:8px;
+  }
+
+  .stat-card strong {
+    display:block;
+    color:#f6d66c;
+    font-family:Georgia,serif;
+    font-size:30px;
+  }
+
+  .table-card {
+    padding:18px;
+    overflow-x:auto;
+  }
+
+  .table-title {
+    color:#f6d66c;
+    font-family:Georgia,serif;
+    font-size:22px;
+    margin-bottom:14px;
+  }
+
+  .data-table {
+    width:100%;
+    border-collapse:collapse;
+    color:#eee5d0;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding:12px 10px;
+    border-bottom:1px solid rgba(225,180,52,.18);
+    text-align:left;
+  }
+
+  .data-table th {
+    color:#f6d66c;
+    font-weight:600;
+  }
+
+  .empty-table {
+    padding:28px 10px;
+    color:#d9d0bd;
+    text-align:center;
+  }
+
+  .auth-shell {
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:30px;
+    background:
+      radial-gradient(circle at 50% 20%,rgba(142,73,181,.22),transparent 30%),
+      linear-gradient(135deg,#17102f,#211443,#17102f);
+  }
+
+  .auth-card {
+    width:420px;
+    max-width:100%;
+    padding:38px;
+    border:1px solid rgba(225,180,52,.7);
+    border-radius:20px;
+    background:linear-gradient(145deg,#302052,#21163d);
+    box-shadow:0 20px 70px rgba(0,0,0,.4);
+    text-align:center;
+  }
+
+  .auth-card-register {
+    width:600px;
+  }
+
+  .auth-symbol {
+    font-size:48px;
+    color:#f5d46b;
+    margin-bottom:8px;
+  }
+
+  .auth-title {
+    font-family:Georgia,serif;
+    font-size:28px;
+    color:#f5d46b;
+  }
+
+  .auth-subtitle {
+    color:#e7bd43;
+    margin-top:5px;
+    margin-bottom:25px;
+  }
+
+  .auth-card h2 {
+    color:#f6d66c;
+    font-family:Georgia,serif;
+    font-weight:500;
+  }
+
+  .auth-card input {
+    width:100%;
+    padding:14px;
+    margin:7px 0;
+    border:1px solid rgba(225,180,52,.4);
+    border-radius:10px;
+    background:rgba(0,0,0,.18);
+    color:#fff;
+    font-size:16px;
+    outline:none;
+  }
+
+  .auth-card button {
+    width:100%;
+    padding:14px;
+    margin-top:12px;
+    border:1px solid #d7aa31;
+    border-radius:10px;
+    background:linear-gradient(90deg,#713199,#5d2789);
+    color:#f8d96d;
+    font-size:16px;
+    cursor:pointer;
+  }
+
+  .auth-link {
+    background:transparent !important;
+    border:none !important;
+    color:#d9cba8 !important;
+  }
+
+  .auth-divider {
+    margin:15px 0;
+    color:#a99d83;
+  }
+
+  .auth-register {
+    background:transparent !important;
+  }
+
+  .auth-description {
+    color:#ddd4c1;
+    line-height:1.5;
+  }
+
+  .auth-message {
+    margin-top:14px;
+    min-height:22px;
+    line-height:1.4;
+  }
+
+  .auth-message.error {
+    color:#ff9b9b;
+  }
+
+  .auth-message.success {
+    color:#a8e6b0;
+  }
+
+  .auth-grid {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:4px 10px;
+  }
+
+  .material-manager-overlay {
+    position:fixed;
+    inset:0;
+    z-index:99999;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    background:rgba(0,0,0,.72);
+  }
+
+  .material-manager {
+    width:560px;
+    max-width:95vw;
+    max-height:90vh;
+    overflow-y:auto;
+    padding:30px;
+    border-radius:20px;
+    background:linear-gradient(145deg,#302052,#21163d);
+    border:1px solid #d7aa31;
+    color:#f8e7a8;
+    box-shadow:0 20px 70px rgba(0,0,0,.5);
+  }
+
+  .material-manager-button {
+    width:100%;
+    padding:13px 16px;
+    border:1px solid #d7aa31;
+    border-radius:10px;
+    background:linear-gradient(90deg,#713199,#5d2789);
+    color:#f8d96d;
+    cursor:pointer;
+    font-size:16px;
+  }
+
+  .material-manager-input {
+    width:100%;
+    padding:13px;
+    margin-bottom:12px;
+    border:1px solid rgba(225,180,52,.5);
+    border-radius:10px;
+    background:rgba(0,0,0,.2);
+    color:#fff;
+    font-size:16px;
+  }
+
+  .material-manager-or {
+    text-align:center;
+    margin:14px 0;
+    color:#c8bca4;
+  }
+
+  .material-manager-close {
+    float:right;
+    border:none;
+    background:none;
+    color:#f6d66c;
+    font-size:30px;
+    cursor:pointer;
+  }
+
+  @media (max-width:1200px) {
+    .sidebar { width:210px; }
+    .cards { grid-template-columns:repeat(3,180px); }
+  }
+
+  @media (max-width:900px) {
+    .stats-grid {
+      grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+  }
+
+  @media (max-width:800px) {
+    .platform { display:block; }
+
+    .sidebar {
+      width:100%;
+      min-height:auto;
+      border-radius:18px 18px 0 0;
+    }
+
+    .main {
+      border-left:1px solid rgba(220,169,42,.65);
+      border-top:none;
+      border-radius:0 0 18px 18px;
+    }
+
+    .cards {
+      grid-template-columns:repeat(2,180px);
+    }
+
+    .top { display:block; }
+
+    .account { margin-top:20px; }
+
+    .auth-grid {
+      grid-template-columns:1fr;
+    }
+  }
+
+  @media (max-width:520px) {
+    .cards {
+      grid-template-columns:1fr;
+    }
+
+    .cards .card,
+    .method-card {
+      width:100%;
+      max-width:320px;
+    }
+  }
+</style>
+
+<div class="platform">
+
+  <aside class="sidebar">
+
+    <div class="logo">
+
+      <div class="logo-symbol">
+        ✧
+      </div>
+
+      <div class="logo-title">
+        NUMEROLOGY
+      </div>
+
+      <div class="logo-subtitle">
+        Platform
+      </div>
+
+    </div>
+
+    <div class="nav">
+
+      <button
+        class="nav-item active"
+        data-section="calculators"
+        onclick="showSection('calculators')"
+      >
+        <span class="nav-icon">▦</span>
+        Калькуляторы
+      </button>
+
+      <button
+        class="nav-item"
+        data-section="manuals"
+        onclick="showSection('manuals')"
+      >
+        <span class="nav-icon">📖</span>
+        Методические пособия
+      </button>
+
+      <button
+        class="nav-item"
+        data-section="videos"
+        onclick="showSection('videos')"
+      >
+        <span class="nav-icon">▶</span>
+        Видео
+      </button>
+
+      <button
+        class="nav-item"
+        data-section="tests"
+        onclick="showSection('tests')"
+      >
+        <span class="nav-icon">✎</span>
+        Тесты
+      </button>
+
+      <button
+        class="nav-item"
+        data-section="library"
+        onclick="showSection('library')"
+      >
+        <span class="nav-icon">📚</span>
+        Библиотека нумеролога
+      </button>
+
+      <button
+        class="nav-item"
+        data-section="my-calculations"
+        onclick="showSection('my-calculations')"
+      >
+        <span class="nav-icon">▤</span>
+        Мои расчёты
+      </button>
+
+      <button
+        class="nav-item"
+        data-section="access"
+        onclick="showSection('access')"
+      >
+        <span class="nav-icon">🔑</span>
+        Доступы
+      </button>
+
+      <button
+        class="nav-item"
+        data-section="statistics"
+        onclick="showSection('statistics')"
+      >
+        <span class="nav-icon">▥</span>
+        Отчёты и статистика
+      </button>
+
+    </div>
+
+    <button
+      class="nav-item logout"
+      onclick="logoutUser()"
+    >
+      <span class="nav-icon">🚪</span>
+      Выйти
+    </button>
+
+  </aside>
+
+
+  <main class="main">
+
+    <div class="top">
+
+      <div class="welcome">
+
+        <h1>
+          Добро пожаловать,
+          <span id="clientName">Бибигуль</span>! ✨
+        </h1>
+
+        <p>
+          Выберите нужный расчёт или раздел
+        </p>
+
+      </div>
+
+
+      <div class="account">
+
+        <div class="account-icon">
+          ♙
+        </div>
+
+        <span id="clientEmail">
+          centernumero@gmail.com
+        </span>
+
+        <span>⌄</span>
+
+      </div>
+
+    </div>
+
+
+    <div
+      class="cards"
+      id="contentCards"
+    >
+
+      <div
+        class="card"
+        onclick="openAdultMatrix()"
+      >
+
+        <div class="card-icon">
+          ✦
+        </div>
+
+        <div class="card-content">
+
+          <h3>
+            Взрослая<br>
+            матрица
+          </h3>
+
+          <p>
+            Полный расчёт<br>
+            по дате рождения
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div
+        class="card"
+        onclick="openChildMatrix()"
+      >
+
+        <div class="card-icon">
+          👶
+        </div>
+
+        <div class="card-content">
+
+          <h3>
+            Детская<br>
+            матрица
+          </h3>
+
+          <p>
+            Анализ и расчёт<br>
+            детской матрицы
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div
+        class="card"
+        onclick="openCompatibilityMatrix()"
+      >
+
+        <div class="card-icon">
+          💕
+        </div>
+
+        <div class="card-content">
+
+          <h3>
+            Матрица<br>
+            совместимости
+          </h3>
+
+          <p>
+            Анализ отношений<br>
+            двух людей
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div
+        class="card"
+        onclick="openVedicNumerology()"
+      >
+
+        <div class="card-icon">
+          ॐ
+        </div>
+
+        <div class="card-content">
+
+          <h3>
+            Ведическая<br>
+            нумерология
+          </h3>
+
+          <p>
+            Расчёт по ведической<br>
+            системе
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div
+        class="card"
+        onclick="openPythagoras()"
+      >
+
+        <div class="card-icon pythagoras-icon">
+          <span>1</span>
+          <span>4</span>
+          <span>7</span>
+          <span>2</span>
+          <span>5</span>
+          <span>8</span>
+          <span>3</span>
+          <span>6</span>
+          <span>9</span>
+        </div>
+
+        <div class="card-content">
+
+          <h3>
+            Квадрат<br>
+            Пифагора
+          </h3>
+
+          <p>
+            Психоматрица<br>
+            по Пифагору
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div
+        class="card"
+        onclick="openEnergyDay()"
+      >
+
+        <div class="card-icon">
+          ☀
+        </div>
+
+        <div class="card-content">
+
+          <h3>
+            Энергия дня<br>
+            и карта рождения
+          </h3>
+
+          <p>
+            Прогноз и энергия<br>
+            на каждый день
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div
+        class="card"
+        onclick="openMoneyVocation()"
+      >
+
+        <div class="card-icon">
+          ✧
+        </div>
+
+        <div class="card-content">
+
+          <h3>
+            Деньги<br>
+            и призвание
+          </h3>
+
+          <p>
+            Финансовый потенциал<br>
+            и реализация
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div
+        class="card wide-card"
+        onclick="showSection('tests')"
+      >
+
+        <div class="card-icon">
+          ✿
+        </div>
+
+        <div class="card-content">
+
+          <h3>
+            Тесты и практики
+          </h3>
+
+          <p>
+            Тесты, практики,<br>
+            самопознание
+          </p>
+
+        </div>
+
+        <div class="arrow">
+          →
+        </div>
+
+      </div>
+
+
+      <div
+        class="card wide-card"
+        onclick="showSection('library')"
+      >
+
+        <div class="card-icon">
+          📚
+        </div>
+
+        <div class="card-content">
+
+          <h3>
+            Материалы и знания
+          </h3>
+
+          <p>
+            Статьи, книги,<br>
+            методики
+          </p>
+
+        </div>
+
+        <div class="arrow">
+          →
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+
+const SUPABASE_URL =
+  'https://YOUR-PROJECT.supabase.co';
+
+const SUPABASE_ANON_KEY =
+  'YOUR_SUPABASE_ANON_KEY';
+
+const supabaseClient =
+  window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+  );
+
+
+window.currentUserRole = 'client';
+window.currentUserIsManager = false;
+window.currentUserHasAccess = false;
+
+
+const MANAGER_ROLES = [
+  'admin',
+  'teacher',
+  'numerologist',
+  'нумеролог',
+  'администратор'
+];
+
+
+function isManagerRole(role) {
+
+  return MANAGER_ROLES.includes(
+    String(role || '').toLowerCase()
+  );
+
+}
+
+
+function hasActivePlatformAccess(access) {
+
+  if (!access) return false;
+
+  if (
+    String(access.status || '').toLowerCase() !==
+    'active'
+  ) {
+    return false;
+  }
+
+  if (
+    String(access.payment_status || '').toLowerCase() !==
+    'paid'
+  ) {
+    return false;
+  }
+
+  if (
+    !access.is_unlimited &&
+    access.ends_at &&
+    new Date(access.ends_at) < new Date()
+  ) {
+    return false;
+  }
+
+  return true;
+
+}
+
+
+function setActiveSection(section) {
+
+  document
+    .querySelectorAll('.nav-item[data-section]')
+    .forEach(function(button) {
+
+      button.classList.toggle(
+        'active',
+        button.dataset.section === section
+      );
+
+    });
+
+}
+
+
+async function showSection(section) {
+
+  const contentCards =
+    document.getElementById('contentCards');
+
+  if (!contentCards) return;
+
+  setActiveSection(section);
+
+
+  if (section === 'calculators') {
+
+    if (typeof renderCalculators === 'function') {
+      renderCalculators();
+    }
+
+    return;
+  }
+
+
+  if (section === 'manuals') {
+
+    if (typeof loadManuals === 'function') {
+      await loadManuals();
+    }
+
+    return;
+  }
+
+
+  if (section === 'videos') {
+
+    if (typeof loadVideos === 'function') {
+      await loadVideos();
+    }
+
+    return;
+  }
+
+
+  if (section === 'tests') {
+
+    if (typeof renderTests === 'function') {
+      await renderTests();
+    }
+
+    return;
+  }
+
+
+  if (section === 'library') {
+
+    if (typeof loadLibrary === 'function') {
+      await loadLibrary();
+    }
+
+    return;
+  }
+
+
+  if (section === 'my-calculations') {
+
+    if (typeof renderMyCalculations === 'function') {
+      renderMyCalculations();
+    }
+
+    return;
+  }
+
+
+  if (section === 'access') {
+
+    if (typeof renderAccess === 'function') {
+      await renderAccess();
+    }
+
+    return;
+  }
+
+
+  if (section === 'statistics') {
+
+    if (typeof renderStatistics === 'function') {
+      await renderStatistics();
+    }
+
+    return;
+  }
+
+}
+
+
+async function checkAuth() {
+
+  const {
+    data: { session }
+  } =
+    await supabaseClient.auth.getSession();
+
+
+  if (!session) {
+
+    showLogin();
+
+    return;
+
+  }
+
+
+  const userId =
+    session.user.id;
+
+
+  const {
+    data: profile,
+    error: profileError
+  } =
+    await supabaseClient
+      .from('profiles')
+      .select(`
+        role,
+        first_name,
+        last_name,
+        middle_name,
+        email,
+        phone,
+        status
+      `)
+      .eq('id', userId)
+      .maybeSingle();
+
+
+  if (profileError) {
+
+    console.error(
+      'Ошибка загрузки профиля:',
+      profileError
+    );
+
+  }
+
+
+  const role =
+    String(
+      profile?.role ||
+      session.user.user_metadata?.role ||
+      'client'
+    ).toLowerCase();
+
+
+  const isManager =
+    isManagerRole(role);
+
+
+  let hasAccess = false;
+
+
+  if (isManager) {
+
+    hasAccess = true;
+
+  } else {
+
+    const {
+      data: access,
+      error: accessError
+    } =
+      await supabaseClient
+        .from('access_periods')
+        .select(`
+          id,
+          access_kind,
+          status,
+          starts_at,
+          ends_at,
+          is_unlimited,
+          payment_status
+        `)
+        .eq('profile_id', userId)
+        .eq('access_kind', 'platform')
+        .order(
+          'starts_at',
+          { ascending:false }
+        )
+        .limit(10);
+
+
+    if (accessError) {
+
+      console.error(
+        'Ошибка проверки доступа:',
+        accessError
+      );
+
+    } else {
+
+      hasAccess =
+        (access || [])
+          .some(hasActivePlatformAccess);
+
+    }
+
+  }
+
+
+  window.currentUserRole =
+    role;
+
+  window.currentUserIsManager =
+    isManager;
+
+  window.currentUserHasAccess =
+    hasAccess;
+
+
+  startInactivityTimer();
+
+  document.body.style.visibility =
+    'visible';
+
+
+  const displayName =
+    profile?.first_name ||
+    profile?.last_name ||
+    session.user.user_metadata?.first_name ||
+    session.user.email?.split('@')[0] ||
+    'Пользователь';
+
+
+  const nameNode =
+    document.getElementById('clientName');
+
+
+  const emailNode =
+    document.getElementById('clientEmail');
+
+
+  if (nameNode) {
+
+    nameNode.textContent =
+      displayName;
+
+  }
+
+
+  if (emailNode) {
+
+    emailNode.textContent =
+      profile?.email ||
+      session.user.email ||
+      '';
+
+  }
+
+
+  setActiveSection(
+    'calculators'
+  );
+
+
+  if (typeof renderCalculators === 'function') {
+
+    renderCalculators();
+
+  }
+
+}
+
+
+function showLogin(message = '') {
+
+  document.body.style.visibility =
+    'visible';
+
+  document.body.innerHTML = `
+
+    <div class="auth-shell">
+
+      <div class="auth-card">
+
+        <div class="auth-symbol">
+          ✧
+        </div>
+
+        <div class="auth-title">
+          NUMEROLOGY
+        </div>
+
+        <div class="auth-subtitle">
+          Platform
+        </div>
+
+        <h2>
+          Вход в платформу
+        </h2>
+
+        <input
+          id="loginEmail"
+          type="email"
+          placeholder="Email"
+        >
+
+        <input
+          id="loginPassword"
+          type="password"
+          placeholder="Пароль"
+        >
+
+        <button onclick="loginUser()">
+          Войти
+        </button>
+
+        <button
+          class="auth-link"
+          type="button"
+          onclick="showForgotPassword()"
+        >
+          Забыли пароль?
+        </button>
+
+        <div class="auth-divider">
+          или
+        </div>
+
+        <button
+          class="auth-register"
+          type="button"
+          onclick="showRegister()"
+        >
+          Зарегистрироваться
+        </button>
+
+        <div
+          id="loginError"
+          class="auth-message error"
+        >
+          ${escapeHtml(message)}
+        </div>
+
+      </div>
+
+    </div>
+
+  `;
+
+}
+
+
+function showRegister(message = '') {
+
+  document.body.style.visibility =
+    'visible';
+
+  document.body.innerHTML = `
+
+    <div class="auth-shell">
+
+      <div class="auth-card auth-card-register">
+
+        <div class="auth-symbol">
+          ✧
+        </div>
+
+        <div class="auth-title">
+          NUMEROLOGY
+        </div>
+
+        <div class="auth-subtitle">
+          Platform
+        </div>
+
+        <h2>
+          Регистрация
+        </h2>
+
+        <p class="auth-description">
+          Создайте аккаунт. После регистрации
+          доступ к разделам открывает
+          администратор или нумеролог.
+        </p>
+
+        <div class="auth-grid">
+
+          <input
+            id="registerLastName"
+            type="text"
+            placeholder="Фамилия *"
+          >
+
+          <input
+            id="registerFirstName"
+            type="text"
+            placeholder="Имя *"
+          >
+
+          <input
+            id="registerMiddleName"
+            type="text"
+            placeholder="Отчество"
+          >
+
+          <input
+            id="registerPhone"
+            type="tel"
+            placeholder="Телефон"
+          >
+
+          <input
+            id="registerEmail"
+            type="email"
+            placeholder="Email *"
+          >
+
+          <input
+            id="registerPassword"
+            type="password"
+            placeholder="Пароль *"
+          >
+
+          <input
+            id="registerPassword2"
+            type="password"
+            placeholder="Повторите пароль *"
+          >
+
+        </div>
+
+        <button onclick="registerUser()">
+          Создать аккаунт
+        </button>
+
+        <div
+          id="registerMessage"
+          class="auth-message ${message ? 'error' : ''}"
+        >
+          ${escapeHtml(message)}
+        </div>
+
+        <button
+          class="auth-link"
+          type="button"
+          onclick="showLogin()"
+        >
+          ← Вернуться ко входу
+        </button>
+
+      </div>
+
+    </div>
+
+  `;
+
+}
+
+
+function escapeHtml(value) {
+
+  return String(value || '')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;');
+
+}
+
+
+async function loginUser() {
+
+  const email =
+    document.getElementById(
+      'loginEmail'
+    )?.value.trim();
+
+  const password =
+    document.getElementById(
+      'loginPassword'
+    )?.value || '';
+
+  const errorBox =
+    document.getElementById(
+      'loginError'
+    );
+
+
+  if (errorBox) {
+
+    errorBox.textContent = '';
+
+  }
+
+
+  if (!email || !password) {
+
+    if (errorBox) {
+
+      errorBox.textContent =
+        'Введите email и пароль.';
+
+    }
+
+    return;
+
+  }
+
+
+  const {
+    error
+  } =
+    await supabaseClient.auth.signInWithPassword({
+      email,
+      password
+    });
+
+
+  if (error) {
+
+    if (errorBox) {
+
+      errorBox.textContent =
+        'Неверный email или пароль.';
+
+    }
+
+    return;
+
+  }
+
+
+  updateLastActivity();
+
+  location.reload();
+
+}
+
+
+async function registerUser() {
+
+  const lastName =
+    document.getElementById(
+      'registerLastName'
+    )?.value.trim() || '';
+
+  const firstName =
+    document.getElementById(
+      'registerFirstName'
+    )?.value.trim() || '';
+
+  const middleName =
+    document.getElementById(
+      'registerMiddleName'
+    )?.value.trim() || '';
+
+  const phone =
+    document.getElementById(
+      'registerPhone'
+    )?.value.trim() || '';
+
+  const email =
+    document.getElementById(
+      'registerEmail'
+    )?.value.trim() || '';
+
+  const password =
+    document.getElementById(
+      'registerPassword'
+    )?.value || '';
+
+  const password2 =
+    document.getElementById(
+      'registerPassword2'
+    )?.value || '';
+
+  const message =
+    document.getElementById(
+      'registerMessage'
+    );
+
+
+  const setMessage =
+    (text,ok=false) => {
+
+      if (!message) return;
+
+      message.textContent =
+        text;
+
+      message.className =
+        'auth-message ' +
+        (ok ? 'success' : 'error');
+
+    };
+
+
+  if (
+    !lastName ||
+    !firstName ||
+    !email ||
+    !password ||
+    !password2
+  ) {
+
+    setMessage(
+      'Заполните обязательные поля: фамилия, имя, email и пароль.'
+    );
+
+    return;
+
+  }
+
+
+  if (password.length < 6) {
+
+    setMessage(
+      'Пароль должен содержать минимум 6 символов.'
+    );
+
+    return;
+
+  }
+
+
+  if (password !== password2) {
+
+    setMessage(
+      'Пароли не совпадают.'
+    );
+
+    return;
+
+  }
+
+
+  setMessage(
+    'Создаю аккаунт...',
+    true
+  );
+
+
+  const {
+    data,
+    error
+  } =
+    await supabaseClient.auth.signUp({
+
+      email,
+      password,
+
+      options: {
+
+        data: {
+          first_name:firstName,
+          last_name:lastName,
+          middle_name:middleName,
+          phone:phone,
+          role:'client',
+          status:'pending'
+        }
+
+      }
+
+    });
+
+
+  if (error) {
+
+    setMessage(
+      error.message ||
+      'Не удалось зарегистрировать пользователя.'
+    );
+
+    return;
+
+  }
+
+
+  if (data?.user) {
+
+    const {
+      error:profileError
+    } =
+      await supabaseClient
+        .from('profiles')
+        .upsert({
+
+          id:data.user.id,
+          first_name:firstName,
+          last_name:lastName,
+          middle_name:middleName,
+          email:email,
+          phone:phone,
+          role:'client',
+          status:'pending'
+
+        },{
+          onConflict:'id'
+        });
+
+
+    if (profileError) {
+
+      console.warn(
+        'Профиль не обновлён:',
+        profileError
+      );
+
+    }
+
+  }
+
+
+  if (data.session) {
+
+    setMessage(
+      'Регистрация завершена. Сейчас откроется платформа. Доступ к разделам будет закрыт до выдачи доступа.',
+      true
+    );
+
+    setTimeout(
+      () => location.reload(),
+      900
+    );
+
+  } else {
+
+    setMessage(
+      'Регистрация создана. Проверьте почту, подтвердите email и затем войдите.',
+      true
+    );
+
+  }
+
+}
+
+
+let resetSent = false;
+
+
+function showForgotPassword() {
+
+  document.body.innerHTML = `
+
+    <div
+      class="auth-shell"
+    >
+
+      <div
+        class="auth-card"
+      >
+
+        <div class="auth-symbol">
+          ✧
+        </div>
+
+        <div class="auth-title">
+          NUMEROLOGY
+        </div>
+
+        <div class="auth-subtitle">
+          Platform
+        </div>
+
+        <h2>
+          Восстановление пароля
+        </h2>
+
+        <input
+          id="resetEmail"
+          type="email"
+          placeholder="Введите ваш Email"
+        >
+
+        <button
+          type="button"
+          onclick="sendPasswordReset()"
+        >
+          Отправить ссылку
+        </button>
+
+        <div
+          id="resetMessage"
+          class="auth-message"
+        ></div>
+
+        <button
+          type="button"
+          class="auth-link"
+          onclick="showLogin()"
+        >
+          ← Вернуться ко входу
+        </button>
+
+      </div>
+
+    </div>
+
+  `;
+
+  resetSent = false;
+
+}
+
+
+async function sendPasswordReset() {
+
+  const email =
+    document.getElementById(
+      'resetEmail'
+    ).value.trim();
+
+  const message =
+    document.getElementById(
+      'resetMessage'
+    );
+
+
+  message.textContent = '';
+
+
+  if (!email) {
+
+    message.textContent =
+      'Введите ваш Email.';
+
+    message.className =
+      'auth-message error';
+
+    return;
+
+  }
+
+
+  if (resetSent) {
+
+    message.textContent =
+      'Ссылка уже была отправлена. Проверьте вашу почту.';
+
+    message.className =
+      'auth-message success';
+
+    return;
+
+  }
+
+
+  const {
+    error
+  } =
+    await supabaseClient.auth.resetPasswordForEmail(
+      email,
+      {
+        redirectTo:
+          window.location.origin +
+          window.location.pathname
+      }
+    );
+
+
+  if (error) {
+
+    message.textContent =
+      'Не удалось отправить письмо. Попробуйте ещё раз.';
+
+    message.className =
+      'auth-message error';
+
+    return;
+
+  }
+
+
+  resetSent = true;
+
+  message.textContent =
+    'Ссылка для восстановления пароля отправлена на вашу почту.';
+
+  message.className =
+    'auth-message success';
+
+}
+
+
+const INACTIVITY_LIMIT =
+  60 * 60 * 1000;
+
+const LAST_ACTIVITY_KEY =
+  'numerology_last_activity';
+
+let inactivityTimer = null;
+
+
+function updateLastActivity() {
+
+  localStorage.setItem(
+    LAST_ACTIVITY_KEY,
+    String(Date.now())
+  );
+
+  clearTimeout(
+    inactivityTimer
+  );
+
+  inactivityTimer =
+    setTimeout(
+      autoLogoutAfterInactivity,
+      INACTIVITY_LIMIT
+    );
+
+}
+
+
+async function autoLogoutAfterInactivity() {
+
+  const lastActivity =
+    Number(
+      localStorage.getItem(
+        LAST_ACTIVITY_KEY
+      ) || 0
+    );
+
+
+  const inactiveTime =
+    Date.now() - lastActivity;
+
+
+  if (
+    inactiveTime >=
+    INACTIVITY_LIMIT
+  ) {
+
+    localStorage.removeItem(
+      LAST_ACTIVITY_KEY
+    );
+
+    await supabaseClient.auth.signOut();
+
+    showLogin();
+
+    return;
+
+  }
+
+
+  clearTimeout(
+    inactivityTimer
+  );
+
+
+  inactivityTimer =
+    setTimeout(
+      autoLogoutAfterInactivity,
+      INACTIVITY_LIMIT - inactiveTime
+    );
+
+}
+
+
+function startInactivityTimer() {
+
+  const lastActivity =
+    Number(
+      localStorage.getItem(
+        LAST_ACTIVITY_KEY
+      ) || 0
+    );
+
+
+  if (
+    lastActivity &&
+    Date.now() - lastActivity >=
+    INACTIVITY_LIMIT
+  ) {
+
+    autoLogoutAfterInactivity();
+
+    return;
+
+  }
+
+
+  updateLastActivity();
+
+}
+
+
+[
+  'click',
+  'keydown',
+  'mousemove',
+  'scroll',
+  'touchstart'
+].forEach(function(eventName) {
+
+  document.addEventListener(
+    eventName,
+    updateLastActivity,
+    { passive:true }
+  );
+
+});
+
+
+document.addEventListener(
+  'visibilitychange',
+  function() {
+
+    if (!document.hidden) {
+
+      autoLogoutAfterInactivity();
+
+    }
+
+  }
+);
+
+
+async function logoutUser() {
+
+  await supabaseClient.auth.signOut();
+
+  localStorage.removeItem(
+    LAST_ACTIVITY_KEY
+  );
+
+  clearTimeout(
+    inactivityTimer
+  );
+
+  showLogin();
+
+}
+
+
+const NUMEROLOGY_LIBRARY_URL =
+  'https://drive.google.com/drive/folders/1pGjVPKtGeHm5NKrcg0JLvy5M_XDTAaOv?usp=sharing';
+
+
+function loadLibrary() {
+
+  const contentCards =
+    document.getElementById(
+      'contentCards'
+    );
+
+  if (!contentCards) return;
+
+
+  contentCards.innerHTML = `
+
+    <div class="cards">
+
+      <div
+        class="card library-main-card"
+        onclick="openLibraryHome()"
+        role="button"
+        tabindex="0"
+      >
+
+        <div class="card-icon library-icon">
+          📚
+        </div>
+
+        <div class="card-content">
+
+          <h3>
+            Библиотека<br>
+            нумеролога
+          </h3>
+
+          <p>
+            Все книги и материалы
+          </p>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  `;
+
+}
+
+
+function openLibraryHome() {
+
+  window.open(
+    NUMEROLOGY_LIBRARY_URL,
+    '_blank'
+  );
+
+}
+
+
+document.addEventListener(
+  'DOMContentLoaded',
+  checkAuth
+);
+
+</script>
+
+<script src="manuals.js"></script>
+<script src="calculators.js"></script>
+<script src="tests.js"></script>
+<script src="videos.js"></script>
+<script src="library.js"></script>
