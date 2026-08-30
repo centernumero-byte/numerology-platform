@@ -1,13 +1,12 @@
-// =========================================================
+// ============================================================
 // MAIN.JS
-// Авторизация, Supabase, проверка доступа,
-// навигация, мои расчёты, доступы, статистика
-// =========================================================
+// ОСНОВНАЯ ЛОГИКА ПЛАТФОРМЫ
+// ============================================================
 
 
-// =========================================================
+// ============================================================
 // SUPABASE
-// =========================================================
+// ============================================================
 
 const SUPABASE_URL =
     "https://skvprhqsxnlacshucncq.supabase.co";
@@ -22,149 +21,103 @@ const supabaseClient =
     );
 
 
-// =========================================================
-// ГЛОБАЛЬНЫЕ ДАННЫЕ ПОЛЬЗОВАТЕЛЯ
-// =========================================================
+// ============================================================
+// ТЕКУЩИЙ ПОЛЬЗОВАТЕЛЬ
+// ============================================================
 
-window.currentUserRole = null;
+window.currentUserRole = "";
+
 window.currentUserIsManager = false;
+
 window.currentUserHasAccess = false;
 
 
-// =========================================================
-// БЕЗДЕЙСТВИЕ — АВТОМАТИЧЕСКИЙ ВЫХОД ЧЕРЕЗ 1 ЧАС
-// =========================================================
+// ============================================================
+// РОЛИ
+// ============================================================
 
-const INACTIVITY_LIMIT =
-    60 * 60 * 1000;
+const MANAGER_ROLES = [
+    "admin",
+    "teacher",
+    "numerologist",
+    "нумеролог",
+    "администратор"
+];
 
-const LAST_ACTIVITY_KEY =
-    "numerology_last_activity";
 
-let inactivityTimer = null;
+function isManagerRole(role) {
 
-
-function updateLastActivity() {
-
-    localStorage.setItem(
-        LAST_ACTIVITY_KEY,
-        Date.now().toString()
+    return MANAGER_ROLES.includes(
+        String(role || "").toLowerCase()
     );
 
-    clearTimeout(inactivityTimer);
-
-    inactivityTimer = setTimeout(
-        autoLogoutAfterInactivity,
-        INACTIVITY_LIMIT
-    );
 }
 
 
-async function autoLogoutAfterInactivity() {
+// ============================================================
+// ПРОВЕРКА АКТИВНОГО ДОСТУПА
+// ============================================================
 
-    const lastActivity =
-        Number(
-            localStorage.getItem(
-                LAST_ACTIVITY_KEY
-            ) || 0
-        );
+function hasActivePlatformAccess(access) {
 
-    const inactiveTime =
-        Date.now() - lastActivity;
+    if (!access) return false;
 
 
     if (
-        inactiveTime >=
-        INACTIVITY_LIMIT
+        String(
+            access.status || ""
+        ).toLowerCase() !== "active"
     ) {
 
-        localStorage.removeItem(
-            LAST_ACTIVITY_KEY
-        );
+        return false;
 
-        await supabaseClient.auth.signOut();
-
-        showLogin();
-
-        return;
     }
-
-
-    clearTimeout(
-        inactivityTimer
-    );
-
-    inactivityTimer = setTimeout(
-        autoLogoutAfterInactivity,
-        INACTIVITY_LIMIT - inactiveTime
-    );
-}
-
-
-function startInactivityTimer() {
-
-    const lastActivity =
-        Number(
-            localStorage.getItem(
-                LAST_ACTIVITY_KEY
-            ) || 0
-        );
 
 
     if (
-        lastActivity &&
-        Date.now() - lastActivity >=
-        INACTIVITY_LIMIT
+        String(
+            access.payment_status || ""
+        ).toLowerCase() !== "paid"
     ) {
 
-        autoLogoutAfterInactivity();
+        return false;
 
-        return;
     }
 
 
-    updateLastActivity();
+    if (
+        !access.is_unlimited &&
+        access.ends_at &&
+        new Date(access.ends_at) < new Date()
+    ) {
+
+        return false;
+
+    }
+
+
+    return true;
+
 }
 
 
-// Отслеживание активности
-[
-    "click",
-    "keydown",
-    "mousemove",
-    "scroll",
-    "touchstart"
-].forEach(function(eventName) {
+// ============================================================
+// СООБЩЕНИЕ ОБ ОТСУТСТВИИ ДОСТУПА
+// ============================================================
 
-    document.addEventListener(
-        eventName,
-        function() {
-            updateLastActivity();
-        },
-        { passive: true }
+function showNoAccessMessage() {
+
+    alert(
+        "У вас нет доступа к этому разделу. " +
+        "Обратитесь к администратору или нумерологу."
     );
 
-});
+}
 
 
-// Проверка при возвращении на вкладку
-document.addEventListener(
-    "visibilitychange",
-    function() {
-
-        if (!document.hidden) {
-
-            autoLogoutAfterInactivity();
-
-        }
-
-    }
-);
-
-
-// =========================================================
-// НАВИГАЦИЯ
-// =========================================================
+// ============================================================
+// АКТИВНЫЙ ПУНКТ МЕНЮ
+// ============================================================
 
 function setActiveSection(section) {
 
@@ -172,548 +125,149 @@ function setActiveSection(section) {
         .querySelectorAll(
             ".nav-item[data-section]"
         )
-        .forEach(function(btn) {
+        .forEach(
+            function(button) {
 
-            btn.classList.toggle(
-                "active",
-                btn.dataset.section === section
-            );
-
-        });
-
-}
-
-
-// =========================================================
-// КАРТОЧКИ НАПРАВЛЕНИЙ
-// =========================================================
-
-const METHOD_CARDS = [
-
-    {
-        key: "adult",
-        title: "Взрослая<br>матрица",
-        icon: "✦",
-        description:
-            "Полный расчёт<br>по дате рождения"
-    },
-
-    {
-        key: "child",
-        title: "Детская<br>матрица",
-        icon: "👶",
-        description:
-            "Анализ и расчёт<br>детской матрицы"
-    },
-
-    {
-        key: "compatibility",
-        title: "Матрица<br>совместимости",
-        icon: "💕",
-        description:
-            "Анализ отношений<br>двух людей"
-    },
-
-    {
-        key: "vedic",
-        title: "Ведическая<br>нумерология",
-        icon: "ॐ",
-        description:
-            "Расчёт по ведической<br>системе"
-    },
-
-    {
-        key: "pythagoras",
-        title: "Квадрат<br>Пифагора",
-        icon: "pythagoras",
-        description:
-            "Психоматрица<br>по Пифагору"
-    }
-
-];
-
-
-// =========================================================
-// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
-// =========================================================
-
-function pythagorasIconHtml() {
-
-    return `
-        <div class="card-icon pythagoras-icon">
-
-            <span>1</span>
-            <span>4</span>
-            <span>7</span>
-
-            <span>2</span>
-            <span>5</span>
-            <span>8</span>
-
-            <span>3</span>
-            <span>6</span>
-            <span>9</span>
-
-        </div>
-    `;
-
-}
-
-
-function normalizeKey(value) {
-
-    return String(value || "")
-        .toLowerCase()
-        .trim()
-        .replace(/ё/g, "е")
-        .replace(/[«»"'`]/g, "")
-        .replace(/\s+/g, " ");
-
-}
-
-
-function findMaterialForMethod(
-    materials,
-    card
-) {
-
-    const aliases = {
-
-        adult: [
-            "adult",
-            "взрослая",
-            "взрослая матрица",
-            "adult matrix"
-        ],
-
-        child: [
-            "child",
-            "детская",
-            "детская матрица",
-            "child matrix"
-        ],
-
-        compatibility: [
-            "compatibility",
-            "совместимость",
-            "матрица совместимости"
-        ],
-
-        vedic: [
-            "vedic",
-            "ведическая",
-            "ведическая нумерология"
-        ],
-
-        pythagoras: [
-            "pythagoras",
-            "пифагор",
-            "квадрат пифагора",
-            "психоматрица"
-        ]
-
-    };
-
-
-    const wanted =
-        (
-            aliases[card.key] ||
-            [card.key]
-        )
-        .map(normalizeKey);
-
-
-    return (
-        materials || []
-    ).find(function(item) {
-
-        const fields = [
-
-            item.method,
-            item.calculator,
-            item.type_key,
-            item.slug,
-            item.title
-
-        ]
-        .filter(Boolean)
-        .map(normalizeKey);
-
-
-        return fields.some(function(field) {
-
-            return wanted.some(function(alias) {
-
-                return (
-                    field === alias ||
-                    field.includes(alias) ||
-                    alias.includes(field)
+                button.classList.toggle(
+                    "active",
+                    button.dataset.section === section
                 );
 
-            });
-
-        });
-
-    }) || null;
+            }
+        );
 
 }
 
 
-// =========================================================
-// РЕНДЕР КАРТОЧЕК
-// =========================================================
+// ============================================================
+// ЗАКРЫТЫЙ РАЗДЕЛ
+// ============================================================
 
-function renderMethodCards(options) {
-
-    const {
-        section,
-        action,
-        materials = [],
-        emptyText =
-            "Материал пока не добавлен."
-    } = options;
-
-
-    return METHOD_CARDS
-        .map(function(card) {
-
-            const item =
-                findMaterialForMethod(
-                    materials,
-                    card
-                );
-
-
-            const link =
-                item
-                    ? (
-                        item.external_url ||
-                        item.file_url ||
-                        ""
-                    )
-                    : "";
-
-
-            const icon =
-                card.icon === "pythagoras"
-
-                    ? pythagorasIconHtml()
-
-                    : `
-                        <div class="card-icon">
-                            ${card.icon}
-                        </div>
-                    `;
-
-
-            let click = "";
-
-
-            if (
-                action ===
-                "calculator"
-            ) {
-
-                click =
-                    `onclick="openCalculator('${card.key}')"`;
-
-            }
-
-            else if (
-                action ===
-                "material"
-            ) {
-
-                click =
-                    `onclick="openMaterial(${JSON.stringify(
-                        String(link || "")
-                    )}, ${JSON.stringify(
-                        card.title
-                    )})"`;
-
-            }
-
-            else if (
-                action ===
-                "video"
-            ) {
-
-                click =
-                    `onclick="openMaterial(${JSON.stringify(
-                        String(link || "")
-                    )}, ${JSON.stringify(
-                        card.title
-                    )})"`;
-
-            }
-
-            else if (
-                action ===
-                "test"
-            ) {
-
-                click =
-                    `onclick="openTest('${card.key}', ${JSON.stringify(
-                        card.title
-                    )})"`;
-
-            }
-
-
-            let description =
-                card.description;
-
-
-            if (
-                item &&
-                item.description
-            ) {
-
-                description =
-                    item.description;
-
-            }
-
-            else if (
-                item &&
-                item.type
-            ) {
-
-                description =
-                    item.type;
-
-            }
-
-            else if (
-                action ===
-                "material"
-            ) {
-
-                description =
-                    emptyText;
-
-            }
-
-            else if (
-                action ===
-                "test"
-            ) {
-
-                description =
-                    "Тесты и практики";
-
-            }
-
-
-            return `
-
-                <div
-                    class="card method-card"
-                    ${click}
-                    role="button"
-                    tabindex="0"
-                >
-
-                    ${icon}
-
-                    <div class="card-content">
-
-                        <h3>
-                            ${card.title}
-                        </h3>
-
-                        <p>
-                            ${description}
-                        </p>
-
-                    </div>
-
-                </div>
-
-            `;
-
-        })
-        .join("");
-
-}
-
-
-// =========================================================
-// КАЛЬКУЛЯТОРЫ
-// =========================================================
-
-function renderCalculators() {
+function renderLockedSection(section) {
 
     const contentCards =
         document.getElementById(
             "contentCards"
         );
 
+
     if (!contentCards) return;
 
 
-    contentCards.innerHTML =
-        renderMethodCards({
+    const titles = {
 
-            section:
-                "calculators",
+        calculators:
+            "Калькуляторы",
 
-            action:
-                "calculator"
+        manuals:
+            "Методические пособия",
 
-        });
+        videos:
+            "Видео",
 
-}
+        tests:
+            "Тесты",
 
+        library:
+            "Библиотека нумеролога",
 
-// =========================================================
-// ТЕСТЫ
-// =========================================================
+        "my-calculations":
+            "Мои расчёты"
 
-async function renderTests() {
-
-    await loadMaterials(
-        "tests",
-        "Тесты",
-        "test"
-    );
-
-}
+    };
 
 
-// =========================================================
-// ОТКРЫТИЕ МАТЕРИАЛА
-// =========================================================
+    contentCards.innerHTML = `
 
-function openMaterial(
-    url,
-    title
-) {
+        <div class="dashboard-wrap">
 
-    const cleanUrl =
-        String(url || "").trim();
+            <div class="dashboard-head">
 
+                <div>
 
-    if (cleanUrl) {
+                    <h2>
+                        ${
+                            titles[section] ||
+                            "Раздел платформы"
+                        }
+                    </h2>
 
-        window.open(
-            cleanUrl,
-            "_blank",
-            "noopener,noreferrer"
-        );
+                    <p>
+                        Раздел доступен
+                        после выдачи доступа.
+                    </p>
 
-        return;
-
-    }
-
-
-    showMaterialManager(
-        title ||
-        "Материал"
-    );
-
-}
-
-
-// =========================================================
-// ОКНО ДОБАВЛЕНИЯ МАТЕРИАЛА
-// =========================================================
-
-function showMaterialManager(title) {
-
-    const old =
-        document.getElementById(
-            "materialManager"
-        );
-
-    if (old) old.remove();
-
-
-    const box =
-        document.createElement(
-            "div"
-        );
-
-    box.id =
-        "materialManager";
-
-
-    box.innerHTML = `
-
-        <div class="material-manager-overlay">
-
-            <div class="material-manager">
-
-                <button
-                    class="material-manager-close"
-                    onclick="
-                        document
-                            .getElementById(
-                                'materialManager'
-                            )
-                            .remove()
-                    "
-                >
-                    ×
-                </button>
-
-
-                <h2>
-                    ${title}
-                </h2>
-
-
-                <button
-                    class="material-manager-button"
-                    onclick="
-                        document
-                            .getElementById(
-                                'materialFileInput'
-                            )
-                            .click()
-                    "
-                >
-                    📁 Загрузить файл
-                </button>
-
-
-                <input
-                    id="materialFileInput"
-                    type="file"
-                    style="display:none"
-                    onchange="
-                        uploadMaterialFile(
-                            this.files[0],
-                            '${String(title)
-                                .replace(/'/g, "\\'")}'
-                        )
-                    "
-                >
-
-
-                <div class="material-manager-or">
-                    или
                 </div>
 
 
-                <input
-                    id="materialUrlInput"
-                    class="material-manager-input"
-                    type="url"
-                    placeholder="Вставьте ссылку"
+                <div class="dashboard-badge">
+                    Доступ закрыт
+                </div>
+
+            </div>
+
+
+            <div
+                class="table-card"
+                style="
+                    text-align:center;
+                    padding:55px 30px;
+                "
+            >
+
+                <div
+                    style="
+                        font-size:55px;
+                        margin-bottom:15px;
+                    "
                 >
+                    🔒
+                </div>
+
+
+                <div
+                    style="
+                        font-family:Georgia,serif;
+                        font-size:27px;
+                        color:#f6d66c;
+                        margin-bottom:12px;
+                    "
+                >
+                    У вас нет доступа
+                    к этому разделу
+                </div>
+
+
+                <div
+                    style="
+                        font-size:17px;
+                        color:#eee5d0;
+                        line-height:1.6;
+                        max-width:650px;
+                        margin:0 auto;
+                    "
+                >
+
+                    Вы успешно зарегистрированы
+                    в Numerology Platform.
+
+                    <br>
+
+                    Чтобы открыть раздел,
+                    администратор или нумеролог
+                    должен выдать вам доступ.
+
+                </div>
 
 
                 <button
                     class="material-manager-button"
+                    style="margin-top:24px;"
                     onclick="
-                        saveMaterialUrl(
-                            '${String(title)
-                                .replace(/'/g, "\\'")}'
-                        )
+                        showSection('access')
                     "
                 >
-                    🔗 Сохранить ссылку
+                    Посмотреть статус доступа
                 </button>
 
             </div>
@@ -722,34 +276,12 @@ function showMaterialManager(title) {
 
     `;
 
-
-    document.body.appendChild(
-        box
-    );
-
 }
 
 
-// =========================================================
-// ТЕСТ
-// =========================================================
-
-function openTest(
-    type,
-    title
-) {
-
-    showMaterialManager(
-        title ||
-        "Тест"
-    );
-
-}
-
-
-// =========================================================
+// ============================================================
 // ПЕРЕКЛЮЧЕНИЕ РАЗДЕЛОВ
-// =========================================================
+// ============================================================
 
 async function showSection(section) {
 
@@ -757,6 +289,7 @@ async function showSection(section) {
         document.getElementById(
             "contentCards"
         );
+
 
     if (!contentCards) return;
 
@@ -766,39 +299,29 @@ async function showSection(section) {
     );
 
 
-    if (
-        section ===
-        "calculators"
-    ) {
+    const protectedSections = [
 
-        renderCalculators();
+        "calculators",
+        "manuals",
+        "videos",
+        "tests",
+        "library",
+        "my-calculations"
 
-        return;
-
-    }
+    ];
 
 
-    if (
-        section ===
-        "manuals"
-    ) {
-
-        await loadManuals();
-
-        return;
-
-    }
-
+    // Пользователь без доступа
+    // видит меню, но не содержимое
 
     if (
-        section ===
-        "videos"
+        !window.currentUserIsManager &&
+        protectedSections.includes(section) &&
+        !window.currentUserHasAccess
     ) {
 
-        await loadMaterials(
-            "videos",
-            "Видео",
-            "material"
+        renderLockedSection(
+            section
         );
 
         return;
@@ -806,33 +329,110 @@ async function showSection(section) {
     }
 
 
+    // КАЛЬКУЛЯТОРЫ
+
     if (
-        section ===
-        "tests"
+        section === "calculators"
     ) {
 
-        await renderTests();
+        if (
+            typeof renderCalculators ===
+            "function"
+        ) {
+
+            renderCalculators();
+
+        }
 
         return;
 
     }
 
 
+    // МЕТОДИЧЕСКИЕ ПОСОБИЯ
+
     if (
-        section ===
-        "library"
+        section === "manuals"
     ) {
 
-        await loadLibrary();
+        if (
+            typeof loadManuals ===
+            "function"
+        ) {
+
+            await loadManuals();
+
+        }
 
         return;
 
     }
 
 
+    // ВИДЕО
+
     if (
-        section ===
-        "my-calculations"
+        section === "videos"
+    ) {
+
+        if (
+            typeof loadVideos ===
+            "function"
+        ) {
+
+            await loadVideos();
+
+        }
+
+        return;
+
+    }
+
+
+    // ТЕСТЫ
+
+    if (
+        section === "tests"
+    ) {
+
+        if (
+            typeof renderTests ===
+            "function"
+        ) {
+
+            await renderTests();
+
+        }
+
+        return;
+
+    }
+
+
+    // БИБЛИОТЕКА
+
+    if (
+        section === "library"
+    ) {
+
+        if (
+            typeof loadLibrary ===
+            "function"
+        ) {
+
+            await loadLibrary();
+
+        }
+
+        return;
+
+    }
+
+
+    // МОИ РАСЧЁТЫ
+
+    if (
+        section === "my-calculations"
     ) {
 
         renderMyCalculations();
@@ -842,9 +442,10 @@ async function showSection(section) {
     }
 
 
+    // ДОСТУПЫ
+
     if (
-        section ===
-        "access"
+        section === "access"
     ) {
 
         await renderAccess();
@@ -854,9 +455,10 @@ async function showSection(section) {
     }
 
 
+    // СТАТИСТИКА
+
     if (
-        section ===
-        "statistics"
+        section === "statistics"
     ) {
 
         await renderStatistics();
@@ -868,455 +470,9 @@ async function showSection(section) {
 }
 
 
-// =========================================================
-// ЗАГРУЗКА МАТЕРИАЛОВ ИЗ SUPABASE
-// =========================================================
-
-async function loadMaterials(
-    section,
-    title,
-    action
-) {
-
-    const contentCards =
-        document.getElementById(
-            "contentCards"
-        );
-
-    if (!contentCards) return;
-
-
-    const directions = [
-
-        {
-            key: "adult",
-            icon: "✦",
-            title:
-                "Взрослая матрица"
-        },
-
-        {
-            key: "child",
-            icon: "👶",
-            title:
-                "Детская матрица"
-        },
-
-        {
-            key: "compatibility",
-            icon: "💕",
-            title:
-                "Матрица совместимости"
-        },
-
-        {
-            key: "vedic",
-            icon: "ॐ",
-            title:
-                "Ведическая нумерология"
-        },
-
-        {
-            key: "pythagoras",
-            icon: "🔢",
-            title:
-                "Квадрат Пифагора"
-        }
-
-    ];
-
-
-    let subtitle =
-        "Материал";
-
-
-    if (
-        section ===
-        "manuals"
-    ) {
-
-        subtitle =
-            "Методическое пособие";
-
-    }
-
-
-    if (
-        section ===
-        "videos"
-    ) {
-
-        subtitle =
-            "Видео";
-
-    }
-
-
-    if (
-        section ===
-        "tests"
-    ) {
-
-        subtitle =
-            "Тесты и практики";
-
-    }
-
-
-    contentCards.innerHTML = `
-
-        <div class="cards">
-
-            ${
-                directions
-                    .map(function(item) {
-
-                        let icon =
-                            item.icon;
-
-
-                        if (
-                            item.key ===
-                            "pythagoras"
-                        ) {
-
-                            icon = `
-
-                                <div class="pythagoras-icon">
-
-                                    <span>1</span>
-                                    <span>4</span>
-                                    <span>7</span>
-
-                                    <span>2</span>
-                                    <span>5</span>
-                                    <span>8</span>
-
-                                    <span>3</span>
-                                    <span>6</span>
-                                    <span>9</span>
-
-                                </div>
-
-                            `;
-
-                        }
-
-
-                        return `
-
-                            <div
-                                class="card method-card"
-                                id="material-${section}-${item.key}"
-                                data-section="${section}"
-                                data-direction="${item.key}"
-                                onclick="
-                                    openPlatformMaterial(
-                                        '${section}',
-                                        '${item.key}'
-                                    )
-                                "
-                            >
-
-                                <div class="card-icon">
-                                    ${icon}
-                                </div>
-
-
-                                <div class="card-content">
-
-                                    <h3>
-                                        ${item.title}
-                                    </h3>
-
-                                    <p>
-                                        ${subtitle}
-                                    </p>
-
-                                </div>
-
-                            </div>
-
-                        `;
-
-                    })
-                    .join("")
-            }
-
-        </div>
-
-    `;
-
-
-    try {
-
-        const {
-            data,
-            error
-        } =
-            await supabaseClient
-                .from("materials")
-                .select("*")
-                .eq(
-                    "section",
-                    section
-                )
-                .order(
-                    "created_at",
-                    {
-                        ascending: false
-                    }
-                );
-
-
-        if (error) {
-
-            console.error(
-                "Ошибка загрузки материалов:",
-                error
-            );
-
-            return;
-
-        }
-
-
-        if (
-            !data ||
-            data.length === 0
-        ) {
-
-            return;
-
-        }
-
-
-        data.forEach(
-            function(item) {
-
-                const text = (
-
-                    (item.title || "") +
-                    " " +
-                    (item.name || "") +
-                    " " +
-                    (item.slug || "") +
-                    " " +
-                    (item.type_key || "") +
-                    " " +
-                    (item.method || "")
-
-                ).toLowerCase();
-
-
-                let direction =
-                    null;
-
-
-                if (
-                    text.includes(
-                        "взросл"
-                    ) ||
-                    text.includes(
-                        "adult"
-                    )
-                ) {
-
-                    direction =
-                        "adult";
-
-                }
-
-                else if (
-                    text.includes(
-                        "детск"
-                    ) ||
-                    text.includes(
-                        "child"
-                    )
-                ) {
-
-                    direction =
-                        "child";
-
-                }
-
-                else if (
-                    text.includes(
-                        "совмест"
-                    ) ||
-                    text.includes(
-                        "compatibility"
-                    )
-                ) {
-
-                    direction =
-                        "compatibility";
-
-                }
-
-                else if (
-                    text.includes(
-                        "ведичес"
-                    ) ||
-                    text.includes(
-                        "vedic"
-                    )
-                ) {
-
-                    direction =
-                        "vedic";
-
-                }
-
-                else if (
-                    text.includes(
-                        "пифагор"
-                    ) ||
-                    text.includes(
-                        "pythagoras"
-                    )
-                ) {
-
-                    direction =
-                        "pythagoras";
-
-                }
-
-
-                if (!direction)
-                    return;
-
-
-                const link =
-                    item.external_url ||
-                    item.file_url ||
-                    "";
-
-
-                if (!link)
-                    return;
-
-
-                const card =
-                    document.getElementById(
-                        `material-${section}-${direction}`
-                    );
-
-
-                if (!card)
-                    return;
-
-
-                card.dataset.url =
-                    link;
-
-                card.classList.add(
-                    "has-material"
-                );
-
-            }
-        );
-
-
-    }
-
-    catch (error) {
-
-        console.error(
-            "Ошибка загрузки материалов:",
-            error
-        );
-
-    }
-
-}
-
-
-// =========================================================
-// ОТКРЫТИЕ МАТЕРИАЛА ПЛАТФОРМЫ
-// =========================================================
-
-function openPlatformMaterial(
-    section,
-    direction
-) {
-
-    const card =
-        document.getElementById(
-            `material-${section}-${direction}`
-        );
-
-    if (!card) return;
-
-
-    const link =
-        card.dataset.url ||
-        "";
-
-
-    if (link) {
-
-        window.open(
-            link,
-            "_blank",
-            "noopener,noreferrer"
-        );
-
-        return;
-
-    }
-
-
-    const names = {
-
-        adult:
-            "Взрослая матрица",
-
-        child:
-            "Детская матрица",
-
-        compatibility:
-            "Матрица совместимости",
-
-        vedic:
-            "Ведическая нумерология",
-
-        pythagoras:
-            "Квадрат Пифагора"
-
-    };
-
-
-    const types = {
-
-        manuals:
-            "методическое пособие",
-
-        videos:
-            "видео",
-
-        tests:
-            "тесты и практики"
-
-    };
-
-
-    alert(
-
-        names[direction] +
-        "\n\n" +
-        types[section] +
-        "\n\nСсылка пока не добавлена."
-
-    );
-
-}
-
-
-// =========================================================
+// ============================================================
 // МОИ РАСЧЁТЫ
-// =========================================================
+// ============================================================
 
 function renderMyCalculations() {
 
@@ -1324,6 +480,7 @@ function renderMyCalculations() {
         document.getElementById(
             "contentCards"
         );
+
 
     if (!contentCards) return;
 
@@ -1358,26 +515,41 @@ function renderMyCalculations() {
             <div class="stats-grid">
 
                 <div class="stat-card">
+
                     <span>
                         Всего расчётов
                     </span>
-                    <strong>0</strong>
+
+                    <strong>
+                        0
+                    </strong>
+
                 </div>
 
 
                 <div class="stat-card">
+
                     <span>
                         За этот месяц
                     </span>
-                    <strong>0</strong>
+
+                    <strong>
+                        0
+                    </strong>
+
                 </div>
 
 
                 <div class="stat-card">
+
                     <span>
                         Последний расчёт
                     </span>
-                    <strong>—</strong>
+
+                    <strong>
+                        —
+                    </strong>
+
                 </div>
 
             </div>
@@ -1388,6 +560,7 @@ function renderMyCalculations() {
                 <div class="table-title">
                     История расчётов
                 </div>
+
 
                 <div class="empty-table">
                     Пока нет сохранённых расчётов.
@@ -1402,9 +575,9 @@ function renderMyCalculations() {
 }
 
 
-// =========================================================
-// ДОСТУПЫ
-// =========================================================
+// ============================================================
+// РАЗДЕЛ «ДОСТУПЫ»
+// ============================================================
 
 async function renderAccess() {
 
@@ -1413,8 +586,271 @@ async function renderAccess() {
             "contentCards"
         );
 
+
     if (!contentCards) return;
 
+
+    // --------------------------------------------------------
+    // ОБЫЧНЫЙ КЛИЕНТ
+    // --------------------------------------------------------
+
+    if (
+        !window.currentUserIsManager
+    ) {
+
+        contentCards.innerHTML = `
+
+            <div class="dashboard-wrap">
+
+                <div class="dashboard-head">
+
+                    <div>
+
+                        <h2>
+                            Доступы
+                        </h2>
+
+                        <p>
+                            Здесь отображается
+                            статус вашего доступа
+                            к платформе.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="table-card"
+                    id="accessTable"
+                >
+                    Загрузка...
+                </div>
+
+            </div>
+
+        `;
+
+
+        try {
+
+            const {
+                data: {
+                    session
+                }
+            } =
+                await supabaseClient
+                    .auth
+                    .getSession();
+
+
+            if (!session) return;
+
+
+            const {
+                data,
+                error
+            } =
+                await supabaseClient
+                    .from(
+                        "access_periods"
+                    )
+                    .select(
+                        "access_kind, status, starts_at, ends_at, is_unlimited, payment_status"
+                    )
+                    .eq(
+                        "profile_id",
+                        session.user.id
+                    )
+                    .order(
+                        "starts_at",
+                        {
+                            ascending: false
+                        }
+                    )
+                    .limit(10);
+
+
+            if (error)
+                throw error;
+
+
+            const rows =
+                (
+                    data || []
+                )
+                .map(
+                    function(item) {
+
+                        const active =
+                            hasActivePlatformAccess(
+                                item
+                            );
+
+
+                        const end =
+                            item.is_unlimited
+
+                                ? "Без ограничений"
+
+                                : (
+                                    item.ends_at
+
+                                        ? new Date(
+                                            item.ends_at
+                                        )
+                                        .toLocaleDateString(
+                                            "ru-RU"
+                                        )
+
+                                        : "—"
+                                );
+
+
+                        return `
+
+                            <tr>
+
+                                <td>
+                                    ${
+                                        item.access_kind ||
+                                        "Платформа"
+                                    }
+                                </td>
+
+                                <td>
+                                    ${
+                                        active
+                                            ? "Активен"
+                                            : (
+                                                item.status ||
+                                                "Ожидает"
+                                            )
+                                    }
+                                </td>
+
+                                <td>
+                                    ${
+                                        item.payment_status ||
+                                        "—"
+                                    }
+                                </td>
+
+                                <td>
+                                    ${end}
+                                </td>
+
+                            </tr>
+
+                        `;
+
+                    }
+                )
+                .join("");
+
+
+            document.getElementById(
+                "accessTable"
+            ).innerHTML = rows
+
+                ? `
+
+                    <table class="data-table">
+
+                        <thead>
+
+                            <tr>
+
+                                <th>
+                                    Доступ
+                                </th>
+
+                                <th>
+                                    Статус
+                                </th>
+
+                                <th>
+                                    Оплата
+                                </th>
+
+                                <th>
+                                    До
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+                            ${rows}
+
+                        </tbody>
+
+                    </table>
+
+                `
+
+                : `
+
+                    <div class="empty-table">
+
+                        Доступ пока не выдан.
+
+                        <br><br>
+
+                        После регистрации
+                        администратор или нумеролог
+                        должен открыть вам доступ.
+
+                    </div>
+
+                `;
+
+        }
+
+        catch (error) {
+
+            console.error(
+                "Ошибка загрузки доступа:",
+                error
+            );
+
+
+            const box =
+                document.getElementById(
+                    "accessTable"
+                );
+
+
+            if (box) {
+
+                box.innerHTML = `
+
+                    <div class="empty-table">
+
+                        Не удалось загрузить
+                        статус доступа.
+
+                    </div>
+
+                `;
+
+            }
+
+        }
+
+
+        return;
+
+    }
+
+
+    // --------------------------------------------------------
+    // АДМИНИСТРАТОР / НУМЕРОЛОГ
+    // --------------------------------------------------------
 
     contentCards.innerHTML = `
 
@@ -1425,14 +861,20 @@ async function renderAccess() {
                 <div>
 
                     <h2>
-                        Доступы
+                        Доступы пользователей
                     </h2>
 
                     <p>
-                        Текущий доступ пользователя
-                        к платформе.
+                        Администратор или нумеролог
+                        открывает доступ
+                        зарегистрированным клиентам.
                     </p>
 
+                </div>
+
+
+                <div class="dashboard-badge">
+                    Управление
                 </div>
 
             </div>
@@ -1440,14 +882,626 @@ async function renderAccess() {
 
             <div
                 class="table-card"
-                id="accessTable"
+                style="margin-bottom:18px;"
             >
-                Загрузка...
+
+                <div class="table-title">
+                    Выдать доступ
+                </div>
+
+
+                <div
+                    style="
+                        display:grid;
+                        grid-template-columns:
+                            2fr 1fr 1fr auto;
+                        gap:12px;
+                        align-items:end;
+                    "
+                >
+
+                    <label
+                        style="display:block;"
+                    >
+
+                        <span
+                            style="
+                                display:block;
+                                margin-bottom:7px;
+                                color:#eee5d0;
+                            "
+                        >
+                            Пользователь
+                        </span>
+
+
+                        <select
+                            id="accessUserSelect"
+                            class="material-manager-input"
+                            style="
+                                width:100%;
+                                padding:12px;
+                                border-radius:10px;
+                                background:#17112f;
+                                color:#fff;
+                                border:1px solid #d7aa31;
+                            "
+                        ></select>
+
+                    </label>
+
+
+                    <label
+                        style="display:block;"
+                    >
+
+                        <span
+                            style="
+                                display:block;
+                                margin-bottom:7px;
+                                color:#eee5d0;
+                            "
+                        >
+                            Доступ
+                        </span>
+
+
+                        <select
+                            id="accessKindSelect"
+                            class="material-manager-input"
+                            style="
+                                width:100%;
+                                padding:12px;
+                                border-radius:10px;
+                                background:#17112f;
+                                color:#fff;
+                                border:1px solid #d7aa31;
+                            "
+                        >
+
+                            <option value="platform">
+                                Платформа
+                            </option>
+
+                        </select>
+
+                    </label>
+
+
+                    <label
+                        style="display:block;"
+                    >
+
+                        <span
+                            style="
+                                display:block;
+                                margin-bottom:7px;
+                                color:#eee5d0;
+                            "
+                        >
+                            Срок
+                        </span>
+
+
+                        <select
+                            id="accessTermSelect"
+                            class="material-manager-input"
+                            style="
+                                width:100%;
+                                padding:12px;
+                                border-radius:10px;
+                                background:#17112f;
+                                color:#fff;
+                                border:1px solid #d7aa31;
+                            "
+                        >
+
+                            <option value="unlimited">
+                                Без ограничений
+                            </option>
+
+                            <option value="30">
+                                30 дней
+                            </option>
+
+                            <option value="90">
+                                90 дней
+                            </option>
+
+                            <option value="180">
+                                180 дней
+                            </option>
+
+                            <option value="365">
+                                1 год
+                            </option>
+
+                        </select>
+
+                    </label>
+
+
+                    <button
+                        class="material-manager-button"
+                        style="height:45px;"
+                        onclick="
+                            grantPlatformAccess()
+                        "
+                    >
+                        Выдать
+                    </button>
+
+                </div>
+
+
+                <div
+                    id="accessAdminMessage"
+                    style="margin-top:12px;"
+                ></div>
+
+            </div>
+
+
+            <div class="table-card">
+
+                <div class="table-title">
+                    Зарегистрированные пользователи
+                </div>
+
+
+                <div
+                    id="adminUsersTable"
+                >
+                    Загрузка...
+                </div>
+
             </div>
 
         </div>
 
     `;
+
+
+    await loadAdminUsers();
+
+}
+
+
+// ============================================================
+// ЗАГРУЗКА ПОЛЬЗОВАТЕЛЕЙ ДЛЯ АДМИНИСТРАТОРА
+// ============================================================
+
+async function loadAdminUsers() {
+
+    const box =
+        document.getElementById(
+            "adminUsersTable"
+        );
+
+
+    const select =
+        document.getElementById(
+            "accessUserSelect"
+        );
+
+
+    if (!box || !select)
+        return;
+
+
+    try {
+
+        const {
+            data: users,
+            error: usersError
+        } =
+            await supabaseClient
+                .from("profiles")
+                .select(
+                    "id, first_name, last_name, middle_name, email, role, status"
+                )
+                .order(
+                    "last_name",
+                    {
+                        ascending: true
+                    }
+                );
+
+
+        if (usersError)
+            throw usersError;
+
+
+        const clientUsers =
+            (
+                users || []
+            ).filter(
+                function(user) {
+
+                    const role =
+                        String(
+                            user.role || ""
+                        ).toLowerCase();
+
+
+                    return !MANAGER_ROLES.includes(
+                        role
+                    );
+
+                }
+            );
+
+
+        select.innerHTML =
+            clientUsers.length
+
+                ? clientUsers
+                    .map(
+                        function(user) {
+
+                            const name =
+                                [
+                                    user.last_name,
+                                    user.first_name,
+                                    user.middle_name
+                                ]
+                                .filter(Boolean)
+                                .join(" ")
+
+                                ||
+                                user.email
+
+                                ||
+                                user.id;
+
+
+                            return `
+
+                                <option
+                                    value="${user.id}"
+                                >
+                                    ${escapeHtml(name)}
+                                    ${
+                                        user.email
+                                            ? " — " +
+                                              escapeHtml(
+                                                  user.email
+                                              )
+                                            : ""
+                                    }
+                                </option>
+
+                            `;
+
+                        }
+                    )
+                    .join("")
+
+                : `
+                    <option value="">
+                        Клиенты не найдены
+                    </option>
+                `;
+
+
+        const ids =
+            (
+                users || []
+            )
+            .map(
+                function(user) {
+                    return user.id;
+                }
+            );
+
+
+        let accessMap = {};
+
+
+        if (ids.length) {
+
+            const {
+                data: accesses,
+                error: accessError
+            } =
+                await supabaseClient
+                    .from(
+                        "access_periods"
+                    )
+                    .select(
+                        "profile_id, access_kind, status, payment_status, starts_at, ends_at, is_unlimited"
+                    )
+                    .in(
+                        "profile_id",
+                        ids
+                    )
+                    .order(
+                        "starts_at",
+                        {
+                            ascending: false
+                        }
+                    );
+
+
+            if (accessError)
+                throw accessError;
+
+
+            (
+                accesses || []
+            )
+            .forEach(
+                function(access) {
+
+                    if (
+                        !accessMap[
+                            access.profile_id
+                        ]
+                    ) {
+
+                        accessMap[
+                            access.profile_id
+                        ] =
+                            access;
+
+                    }
+
+                }
+            );
+
+        }
+
+
+        const rows =
+            (
+                users || []
+            )
+            .map(
+                function(user) {
+
+                    const name =
+                        [
+                            user.last_name,
+                            user.first_name,
+                            user.middle_name
+                        ]
+                        .filter(Boolean)
+                        .join(" ")
+                        ||
+                        "—";
+
+
+                    const access =
+                        accessMap[
+                            user.id
+                        ];
+
+
+                    let accessText =
+                        "Нет доступа";
+
+
+                    if (access) {
+
+                        const expired =
+                            !access.is_unlimited &&
+                            access.ends_at &&
+                            new Date(
+                                access.ends_at
+                            ) < new Date();
+
+
+                        accessText =
+                            expired
+
+                                ? "Истёк"
+
+                                : (
+                                    (
+                                        access.status ||
+                                        "—"
+                                    ) +
+                                    " / " +
+                                    (
+                                        access.payment_status ||
+                                        "—"
+                                    )
+                                );
+
+                    }
+
+
+                    return `
+
+                        <tr>
+
+                            <td>
+                                ${escapeHtml(name)}
+                            </td>
+
+                            <td>
+                                ${
+                                    escapeHtml(
+                                        user.email ||
+                                        "—"
+                                    )
+                                }
+                            </td>
+
+                            <td>
+                                ${
+                                    escapeHtml(
+                                        user.role ||
+                                        "—"
+                                    )
+                                }
+                            </td>
+
+                            <td>
+                                ${accessText}
+                            </td>
+
+                        </tr>
+
+                    `;
+
+                }
+            )
+            .join("");
+
+
+        box.innerHTML = `
+
+            <table class="data-table">
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Пользователь
+                        </th>
+
+                        <th>
+                            Email
+                        </th>
+
+                        <th>
+                            Роль
+                        </th>
+
+                        <th>
+                            Доступ
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    ${
+                        rows ||
+
+                        `
+                            <tr>
+                                <td colspan="4">
+                                    Пользователи
+                                    не найдены.
+                                </td>
+                            </tr>
+                        `
+                    }
+
+                </tbody>
+
+            </table>
+
+        `;
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Ошибка загрузки пользователей:",
+            error
+        );
+
+
+        box.innerHTML = `
+
+            <div class="empty-table">
+
+                Не удалось загрузить
+                пользователей.
+
+            </div>
+
+        `;
+
+    }
+
+}
+
+
+// ============================================================
+// ВЫДАЧА ДОСТУПА
+// ============================================================
+
+async function grantPlatformAccess() {
+
+    if (
+        !window.currentUserIsManager
+    )
+        return;
+
+
+    const profileId =
+        document.getElementById(
+            "accessUserSelect"
+        )?.value;
+
+
+    const term =
+        document.getElementById(
+            "accessTermSelect"
+        )?.value;
+
+
+    const message =
+        document.getElementById(
+            "accessAdminMessage"
+        );
+
+
+    if (!profileId) {
+
+        if (message) {
+
+            message.innerHTML = `
+
+                <span
+                    style="color:#f3a6a6;"
+                >
+                    Сначала выберите
+                    пользователя.
+                </span>
+
+            `;
+
+        }
+
+        return;
+
+    }
+
+
+    const now =
+        new Date();
+
+
+    let endsAt =
+        null;
+
+
+    const isUnlimited =
+        term === "unlimited";
+
+
+    if (!isUnlimited) {
+
+        endsAt =
+            new Date(now);
+
+
+        endsAt.setDate(
+            endsAt.getDate() +
+            Number(term)
+        );
+
+    }
 
 
     try {
@@ -1467,148 +1521,86 @@ async function renderAccess() {
 
 
         const {
-            data,
             error
         } =
             await supabaseClient
-                .from("access_periods")
-                .select(
-                    "access_kind, status, starts_at, ends_at, is_unlimited, payment_status"
+                .from(
+                    "access_periods"
                 )
-                .eq(
-                    "profile_id",
-                    session.user.id
-                )
-                .order(
-                    "starts_at",
-                    {
-                        ascending: false
-                    }
-                )
-                .limit(10);
+                .insert({
+
+                    profile_id:
+                        profileId,
+
+                    access_kind:
+                        "platform",
+
+                    status:
+                        "active",
+
+                    payment_status:
+                        "paid",
+
+                    starts_at:
+                        now.toISOString(),
+
+                    ends_at:
+                        endsAt
+                            ? endsAt.toISOString()
+                            : null,
+
+                    is_unlimited:
+                        isUnlimited
+
+                });
 
 
         if (error)
             throw error;
 
 
-        const rows =
-            (data || [])
-                .map(function(item) {
+        if (message) {
 
-                    const end =
-                        item.is_unlimited
+            message.innerHTML = `
 
-                            ? "Без ограничений"
-
-                            : (
-                                item.ends_at
-                                    ? new Date(
-                                        item.ends_at
-                                    ).toLocaleDateString(
-                                        "ru-RU"
-                                    )
-                                    : "—"
-                            );
-
-
-                    return `
-
-                        <tr>
-
-                            <td>
-                                ${
-                                    item.access_kind ||
-                                    "Платформа"
-                                }
-                            </td>
-
-                            <td>
-                                ${
-                                    item.status ||
-                                    "—"
-                                }
-                            </td>
-
-                            <td>
-                                ${
-                                    item.payment_status ||
-                                    "—"
-                                }
-                            </td>
-
-                            <td>
-                                ${end}
-                            </td>
-
-                        </tr>
-
-                    `;
-
-                })
-                .join("");
-
-
-        document.getElementById(
-            "accessTable"
-        ).innerHTML = rows
-
-            ? `
-
-                <table class="data-table">
-
-                    <thead>
-
-                        <tr>
-                            <th>Доступ</th>
-                            <th>Статус</th>
-                            <th>Оплата</th>
-                            <th>До</th>
-                        </tr>
-
-                    </thead>
-
-                    <tbody>
-                        ${rows}
-                    </tbody>
-
-                </table>
-
-            `
-
-            : `
-
-                <div class="empty-table">
-                    Доступы пока не найдены.
-                </div>
+                <span
+                    style="color:#9fe3ae;"
+                >
+                    Доступ успешно выдан.
+                </span>
 
             `;
 
+        }
+
+
+        await loadAdminUsers();
 
     }
 
     catch (error) {
 
         console.error(
-            "Ошибка загрузки доступов:",
+            "Ошибка выдачи доступа:",
             error
         );
 
 
-        const box =
-            document.getElementById(
-                "accessTable"
-            );
+        if (message) {
 
+            message.innerHTML = `
 
-        if (box) {
-
-            box.innerHTML = `
-
-                <div class="empty-table">
-                    Не удалось загрузить
-                    данные доступа.
-                </div>
+                <span
+                    style="color:#f3a6a6;"
+                >
+                    Не удалось выдать доступ:
+                    ${
+                        escapeHtml(
+                            error.message ||
+                            error
+                        )
+                    }
+                </span>
 
             `;
 
@@ -1619,9 +1611,9 @@ async function renderAccess() {
 }
 
 
-// =========================================================
+// ============================================================
 // СТАТИСТИКА
-// =========================================================
+// ============================================================
 
 async function renderStatistics() {
 
@@ -1629,6 +1621,7 @@ async function renderStatistics() {
         document.getElementById(
             "contentCards"
         );
+
 
     if (!contentCards) return;
 
@@ -1718,12 +1711,16 @@ async function renderStatistics() {
                     </thead>
 
 
-                    <tbody id="sectionStats">
+                    <tbody
+                        id="sectionStats"
+                    >
 
                         <tr>
+
                             <td colspan="3">
                                 Загрузка...
                             </td>
+
                         </tr>
 
                     </tbody>
@@ -1744,8 +1741,12 @@ async function renderStatistics() {
             error
         } =
             await supabaseClient
-                .from("materials")
-                .select("section");
+                .from(
+                    "platform_materials"
+                )
+                .select(
+                    "section"
+                );
 
 
         if (error)
@@ -1756,14 +1757,16 @@ async function renderStatistics() {
 
             manuals: 0,
             videos: 0,
-            tests: 0,
-            library: 0
+            tests: 0
 
         };
 
 
-        (data || [])
-            .forEach(function(item) {
+        (
+            data || []
+        )
+        .forEach(
+            function(item) {
 
                 if (
                     Object.prototype
@@ -1780,17 +1783,20 @@ async function renderStatistics() {
 
                 }
 
-            });
+            }
+        );
 
 
         const total =
-            Object.values(counts)
-                .reduce(
-                    function(a, b) {
-                        return a + b;
-                    },
-                    0
-                );
+            Object.values(
+                counts
+            )
+            .reduce(
+                function(a, b) {
+                    return a + b;
+                },
+                0
+            );
 
 
         document.getElementById(
@@ -1798,31 +1804,54 @@ async function renderStatistics() {
         ).innerHTML = `
 
             <div class="stat-card">
-                <span>Материалы</span>
+
+                <span>
+                    Материалы
+                </span>
+
                 <strong>
                     ${total}
                 </strong>
+
             </div>
 
+
             <div class="stat-card">
-                <span>Пособия</span>
+
+                <span>
+                    Пособия
+                </span>
+
                 <strong>
                     ${counts.manuals}
                 </strong>
+
             </div>
 
+
             <div class="stat-card">
-                <span>Видео</span>
+
+                <span>
+                    Видео
+                </span>
+
                 <strong>
                     ${counts.videos}
                 </strong>
+
             </div>
 
+
             <div class="stat-card">
-                <span>Тесты</span>
+
+                <span>
+                    Тесты
+                </span>
+
                 <strong>
                     ${counts.tests}
                 </strong>
+
             </div>
 
         `;
@@ -1894,27 +1923,6 @@ async function renderStatistics() {
 
             </tr>
 
-
-            <tr>
-
-                <td>
-                    Библиотека
-                </td>
-
-                <td>
-                    ${counts.library}
-                </td>
-
-                <td>
-                    ${
-                        counts.library
-                            ? "Есть материалы"
-                            : "Пока пусто"
-                    }
-                </td>
-
-            </tr>
-
         `;
 
     }
@@ -1926,14 +1934,58 @@ async function renderStatistics() {
             error
         );
 
+
+        document.getElementById(
+            "platformStats"
+        ).innerHTML = `
+
+            <div class="stat-card">
+                <span>Материалы</span>
+                <strong>—</strong>
+            </div>
+
+            <div class="stat-card">
+                <span>Пособия</span>
+                <strong>—</strong>
+            </div>
+
+            <div class="stat-card">
+                <span>Видео</span>
+                <strong>—</strong>
+            </div>
+
+            <div class="stat-card">
+                <span>Тесты</span>
+                <strong>—</strong>
+            </div>
+
+        `;
+
+
+        document.getElementById(
+            "sectionStats"
+        ).innerHTML = `
+
+            <tr>
+
+                <td colspan="3">
+
+                    Статистика пока недоступна.
+
+                </td>
+
+            </tr>
+
+        `;
+
     }
 
 }
 
 
-// =========================================================
+// ============================================================
 // ВЫХОД
-// =========================================================
+// ============================================================
 
 async function logoutUser() {
 
@@ -1959,449 +2011,185 @@ async function logoutUser() {
         LAST_ACTIVITY_KEY
     );
 
+
     clearTimeout(
         inactivityTimer
     );
+
 
     showLogin();
 
 }
 
 
-// =========================================================
-// ОТКРЫТИЕ КАЛЬКУЛЯТОРА
-// =========================================================
+// ============================================================
+// БЕЗДЕЙСТВИЕ
+// ============================================================
 
-async function openCalculator(type) {
+const INACTIVITY_LIMIT =
+    60 * 60 * 1000;
 
-    const {
-        data: {
-            session
-        }
-    } =
+
+const LAST_ACTIVITY_KEY =
+    "numerology_last_activity";
+
+
+let inactivityTimer =
+    null;
+
+
+function updateLastActivity() {
+
+    localStorage.setItem(
+        LAST_ACTIVITY_KEY,
+        Date.now().toString()
+    );
+
+
+    clearTimeout(
+        inactivityTimer
+    );
+
+
+    inactivityTimer =
+        setTimeout(
+            autoLogoutAfterInactivity,
+            INACTIVITY_LIMIT
+        );
+
+}
+
+
+async function autoLogoutAfterInactivity() {
+
+    const lastActivity =
+        Number(
+            localStorage.getItem(
+                LAST_ACTIVITY_KEY
+            ) || 0
+        );
+
+
+    const inactiveTime =
+        Date.now() -
+        lastActivity;
+
+
+    if (
+        inactiveTime >=
+        INACTIVITY_LIMIT
+    ) {
+
+        localStorage.removeItem(
+            LAST_ACTIVITY_KEY
+        );
+
+
         await supabaseClient
             .auth
-            .getSession();
+            .signOut();
 
-
-    if (!session) {
 
         showLogin();
 
+
         return;
 
     }
 
 
-    const {
-        data: access,
-        error
-    } =
-        await supabaseClient
-            .from("access_periods")
-            .select(
-                "id, status, payment_status, starts_at, ends_at, is_unlimited"
-            )
-            .eq(
-                "profile_id",
-                session.user.id
-            )
-            .eq(
-                "status",
-                "active"
-            )
-            .eq(
-                "payment_status",
-                "paid"
-            )
-            .limit(1)
-            .maybeSingle();
+    clearTimeout(
+        inactivityTimer
+    );
 
 
-    if (
-        error ||
-        !access
-    ) {
-
-        alert(
-            "У вас нет активного доступа к платформе."
+    inactivityTimer =
+        setTimeout(
+            autoLogoutAfterInactivity,
+            INACTIVITY_LIMIT -
+            inactiveTime
         );
-
-        return;
-
-    }
-
-
-    if (
-
-        !access.is_unlimited &&
-        access.ends_at &&
-        new Date(
-            access.ends_at
-        ) < new Date()
-
-    ) {
-
-        alert(
-            "Срок вашего доступа к платформе истёк."
-        );
-
-        return;
-
-    }
-
-
-    const names = {
-
-        adult:
-            "Взрослая матрица",
-
-        child:
-            "Детская матрица",
-
-        compatibility:
-            "Матрица совместимости",
-
-        vedic:
-            "Ведическая нумерология",
-
-        pythagoras:
-            "Квадрат Пифагора"
-
-    };
-
-
-    const title =
-        names[type] ||
-        "Расчёт";
-
-
-    document.body.innerHTML = `
-
-        <div
-            style="
-                max-width:600px;
-                margin:50px auto;
-                padding:30px;
-                font-family:Arial
-            "
-        >
-
-            <h1>
-                ${title}
-            </h1>
-
-
-            <label>
-                Имя
-            </label>
-
-
-            <input
-                id="name"
-                type="text"
-                style="
-                    display:block;
-                    width:100%;
-                    padding:12px;
-                    margin:8px 0 20px
-                "
-            >
-
-
-            <label>
-                Дата рождения
-            </label>
-
-
-            <input
-                id="birthDate"
-                type="text"
-                placeholder="ДД.ММ.ГГГГ"
-                maxlength="10"
-                inputmode="numeric"
-                oninput="formatBirthDate(this)"
-                style="
-                    display:block;
-                    width:100%;
-                    padding:12px;
-                    margin:8px 0 20px;
-                    box-sizing:border-box
-                "
-            >
-
-
-            <div
-                id="dateError"
-                style="
-                    color:red;
-                    margin-top:-10px;
-                    margin-bottom:15px;
-                "
-            ></div>
-
-
-            <button
-                onclick="
-                    calculate('${type}')
-                "
-            >
-                Рассчитать
-            </button>
-
-
-            <button
-                onclick="
-                    location.reload()
-                "
-            >
-                Назад
-            </button>
-
-
-            <div
-                id="result"
-                style="
-                    margin-top:30px
-                "
-            ></div>
-
-        </div>
-
-    `;
 
 }
 
 
-// =========================================================
-// ФОРМАТ ДАТЫ
-// =========================================================
+function startInactivityTimer() {
 
-function formatBirthDate(input) {
-
-    let value =
-        input.value.replace(
-            /\D/g,
-            ""
+    const lastActivity =
+        Number(
+            localStorage.getItem(
+                LAST_ACTIVITY_KEY
+            ) || 0
         );
 
 
     if (
-        value.length > 8
+        lastActivity &&
+        Date.now() -
+        lastActivity >=
+        INACTIVITY_LIMIT
     ) {
 
-        value =
-            value.substring(
-                0,
-                8
-            );
+        autoLogoutAfterInactivity();
+
+        return;
 
     }
 
 
-    if (
-        value.length > 4
-    ) {
-
-        value =
-            value.substring(
-                0,
-                2
-            ) +
-            "." +
-            value.substring(
-                2,
-                4
-            ) +
-            "." +
-            value.substring(
-                4
-            );
-
-    }
-
-    else if (
-        value.length > 2
-    ) {
-
-        value =
-            value.substring(
-                0,
-                2
-            ) +
-            "." +
-            value.substring(
-                2
-            );
-
-    }
-
-
-    input.value =
-        value;
+    updateLastActivity();
 
 }
 
 
-// =========================================================
-// ВРЕМЕННАЯ ФУНКЦИЯ РАСЧЁТА
-// =========================================================
+// Отслеживание активности
 
-function calculate(type) {
+[
+    "click",
+    "keydown",
+    "mousemove",
+    "scroll",
+    "touchstart"
+]
+.forEach(
+    function(eventName) {
 
-    const name =
-        document.getElementById(
-            "name"
-        ).value.trim();
+        document.addEventListener(
+            eventName,
+            function() {
 
+                updateLastActivity();
 
-    const birthDate =
-        document.getElementById(
-            "birthDate"
-        ).value.trim();
-
-
-    const dateError =
-        document.getElementById(
-            "dateError"
+            },
+            {
+                passive: true
+            }
         );
-
-
-    const result =
-        document.getElementById(
-            "result"
-        );
-
-
-    dateError.textContent =
-        "";
-
-    result.innerHTML =
-        "";
-
-
-    if (!name) {
-
-        dateError.textContent =
-            "Введите имя.";
-
-        return;
 
     }
+);
 
 
-    if (!birthDate) {
+// Проверка при возвращении
+// на вкладку
 
-        dateError.textContent =
-            "Введите дату рождения.";
+document.addEventListener(
+    "visibilitychange",
+    function() {
 
-        return;
+        if (!document.hidden) {
 
-    }
+            autoLogoutAfterInactivity();
 
-
-    const dateParts =
-        birthDate.split(".");
-
-
-    if (
-
-        dateParts.length !== 3 ||
-        dateParts[0].length !== 2 ||
-        dateParts[1].length !== 2 ||
-        dateParts[2].length !== 4
-
-    ) {
-
-        dateError.textContent =
-            "Введите дату рождения в формате ДД.ММ.ГГГГ.";
-
-        return;
+        }
 
     }
+);
 
 
-    const day =
-        Number(
-            dateParts[0]
-        );
-
-
-    const month =
-        Number(
-            dateParts[1]
-        );
-
-
-    const year =
-        Number(
-            dateParts[2]
-        );
-
-
-    if (
-
-        year < 1900 ||
-        year > new Date()
-            .getFullYear()
-
-    ) {
-
-        dateError.textContent =
-            "Введите корректный год рождения.";
-
-        return;
-
-    }
-
-
-    const date =
-        new Date(
-            year,
-            month - 1,
-            day
-        );
-
-
-    if (
-
-        date.getFullYear() !== year ||
-        date.getMonth() !== month - 1 ||
-        date.getDate() !== day
-
-    ) {
-
-        dateError.textContent =
-            "Введите корректную дату рождения.";
-
-        return;
-
-    }
-
-
-    result.innerHTML = `
-
-        <h2>
-            Данные приняты
-        </h2>
-
-        <p>
-            Имя: ${escapeHtml(name)}
-        </p>
-
-        <p>
-            Дата рождения:
-            ${escapeHtml(birthDate)}
-        </p>
-
-    `;
-
-}
-
-
-// =========================================================
-// ПРОВЕРКА АВТОРИЗАЦИИ
-// =========================================================
+// ============================================================
+// ПРОВЕРКА АВТОРИЗАЦИИ И ДОСТУПА
+// ============================================================
 
 async function checkAuth() {
 
@@ -2429,51 +2217,13 @@ async function checkAuth() {
 
 
     const {
-        data: access,
-        error
-    } =
-        await supabaseClient
-            .from("access_periods")
-            .select(
-                "id, access_kind, status, starts_at, ends_at, is_unlimited, payment_status"
-            )
-            .eq(
-                "profile_id",
-                userId
-            )
-            .eq(
-                "status",
-                "active"
-            )
-            .eq(
-                "payment_status",
-                "paid"
-            )
-            .limit(1)
-            .maybeSingle();
-
-
-    if (error) {
-
-        alert(
-            "Ошибка проверки доступа: " +
-            error.message
-        );
-
-        showLogin();
-
-        return;
-
-    }
-
-
-    const {
-        data: profile
+        data: profile,
+        error: profileError
     } =
         await supabaseClient
             .from("profiles")
             .select(
-                "first_name, last_name, email, role, status"
+                "role, first_name, last_name, middle_name, email, phone, status"
             )
             .eq(
                 "id",
@@ -2482,31 +2232,107 @@ async function checkAuth() {
             .maybeSingle();
 
 
+    if (profileError) {
+
+        console.error(
+            "Ошибка загрузки профиля:",
+            profileError
+        );
+
+    }
+
+
     const role =
-        profile?.role ||
-        session.user.user_metadata?.role ||
-        "client";
+        String(
+            profile?.role ||
+            session.user.user_metadata?.role ||
+            "client"
+        )
+        .toLowerCase();
 
 
     const isManager =
-        role === "manager" ||
-        role === "admin" ||
-        role === "numerologist";
+        isManagerRole(
+            role
+        );
 
 
-    const hasAccess =
-        Boolean(access);
+    let hasAccess =
+        false;
+
+
+    // Администратор / нумеролог
+    // имеет доступ к платформе
+
+    if (isManager) {
+
+        hasAccess =
+            true;
+
+    }
+
+    else {
+
+        const {
+            data: access,
+            error: accessError
+        } =
+            await supabaseClient
+                .from(
+                    "access_periods"
+                )
+                .select(
+                    "id, access_kind, status, starts_at, ends_at, is_unlimited, payment_status"
+                )
+                .eq(
+                    "profile_id",
+                    userId
+                )
+                .eq(
+                    "access_kind",
+                    "platform"
+                )
+                .order(
+                    "starts_at",
+                    {
+                        ascending: false
+                    }
+                )
+                .limit(10);
+
+
+        if (accessError) {
+
+            console.error(
+                "Ошибка проверки доступа:",
+                accessError
+            );
+
+        }
+
+        else {
+
+            hasAccess =
+                (
+                    access || []
+                )
+                .some(
+                    hasActivePlatformAccess
+                );
+
+        }
+
+    }
 
 
     /*
-       ВАЖНО:
+        ВАЖНО:
 
-       отсутствие доступа НЕ выкидывает
-       пользователя из аккаунта.
+        отсутствие доступа НЕ выкидывает
+        пользователя из аккаунта.
 
-       После регистрации пользователь
-       может войти, видеть меню и ждать
-       выдачи доступа.
+        Пользователь может войти,
+        видеть меню и ждать выдачи доступа.
     */
 
 
@@ -2572,14 +2398,21 @@ async function checkAuth() {
     );
 
 
-    renderCalculators();
+    if (
+        typeof renderCalculators ===
+        "function"
+    ) {
+
+        renderCalculators();
+
+    }
 
 }
 
 
-// =========================================================
+// ============================================================
 // ЭКРАН ВХОДА
-// =========================================================
+// ============================================================
 
 function showLogin(
     message = ""
@@ -2599,9 +2432,11 @@ function showLogin(
                     ✧
                 </div>
 
+
                 <div class="auth-title">
                     NUMEROLOGY
                 </div>
+
 
                 <div class="auth-subtitle">
                     Platform
@@ -2637,7 +2472,9 @@ function showLogin(
                 <button
                     class="auth-link"
                     type="button"
-                    onclick="showForgotPassword()"
+                    onclick="
+                        showForgotPassword()
+                    "
                 >
                     Забыли пароль?
                 </button>
@@ -2651,7 +2488,9 @@ function showLogin(
                 <button
                     class="auth-register"
                     type="button"
-                    onclick="showRegister()"
+                    onclick="
+                        showRegister()
+                    "
                 >
                     Зарегистрироваться
                 </button>
@@ -2673,9 +2512,9 @@ function showLogin(
 }
 
 
-// =========================================================
+// ============================================================
 // РЕГИСТРАЦИЯ
-// =========================================================
+// ============================================================
 
 function showRegister(
     message = ""
@@ -2690,16 +2529,19 @@ function showRegister(
         <div class="auth-shell">
 
             <div
-                class="auth-card auth-card-register"
+                class="auth-card
+                       auth-card-register"
             >
 
                 <div class="auth-symbol">
                     ✧
                 </div>
 
+
                 <div class="auth-title">
                     NUMEROLOGY
                 </div>
+
 
                 <div class="auth-subtitle">
                     Platform
@@ -2712,10 +2554,12 @@ function showRegister(
 
 
                 <p class="auth-description">
+
                     Создайте аккаунт.
                     После регистрации доступ
                     к разделам открывает
                     администратор или нумеролог.
+
                 </p>
 
 
@@ -2727,11 +2571,13 @@ function showRegister(
                         placeholder="Фамилия *"
                     >
 
+
                     <input
                         id="registerFirstName"
                         type="text"
                         placeholder="Имя *"
                     >
+
 
                     <input
                         id="registerMiddleName"
@@ -2739,11 +2585,13 @@ function showRegister(
                         placeholder="Отчество"
                     >
 
+
                     <input
                         id="registerPhone"
                         type="tel"
                         placeholder="Телефон"
                     >
+
 
                     <input
                         id="registerEmail"
@@ -2751,11 +2599,13 @@ function showRegister(
                         placeholder="Email *"
                     >
 
+
                     <input
                         id="registerPassword"
                         type="password"
                         placeholder="Пароль *"
                     >
+
 
                     <input
                         id="registerPassword2"
@@ -2802,24 +2652,21 @@ function showRegister(
 }
 
 
-// =========================================================
+// ============================================================
 // ЭКРАН ВОССТАНОВЛЕНИЯ ПАРОЛЯ
-// =========================================================
+// ============================================================
 
-let resetSent = false;
+let resetSent =
+    false;
 
 
 function showForgotPassword() {
 
     document.body.innerHTML = `
 
-        <div
-            class="auth-shell"
-        >
+        <div class="auth-shell">
 
-            <div
-                class="auth-card"
-            >
+            <div class="auth-card">
 
                 <div class="auth-symbol">
                     ✧
@@ -2850,7 +2697,9 @@ function showForgotPassword() {
 
                 <button
                     type="button"
-                    onclick="sendPasswordReset()"
+                    onclick="
+                        sendPasswordReset()
+                    "
                 >
                     Отправить ссылку
                 </button>
@@ -2865,7 +2714,9 @@ function showForgotPassword() {
                 <button
                     class="auth-link"
                     type="button"
-                    onclick="showLogin()"
+                    onclick="
+                        showLogin()
+                    "
                 >
                     ← Вернуться ко входу
                 </button>
@@ -2883,16 +2734,16 @@ function showForgotPassword() {
 }
 
 
-// =========================================================
-// ОТПРАВКА ВОССТАНОВЛЕНИЯ ПАРОЛЯ
-// =========================================================
+// ============================================================
+// ВОССТАНОВЛЕНИЕ ПАРОЛЯ
+// ============================================================
 
 async function sendPasswordReset() {
 
     const email =
         document.getElementById(
             "resetEmail"
-        ).value.trim();
+        )?.value.trim();
 
 
     const message =
@@ -2901,8 +2752,16 @@ async function sendPasswordReset() {
         );
 
 
+    if (!message)
+        return;
+
+
     message.textContent =
         "";
+
+
+    message.className =
+        "auth-message";
 
 
     if (!email) {
@@ -2939,9 +2798,11 @@ async function sendPasswordReset() {
             .resetPasswordForEmail(
                 email,
                 {
+
                     redirectTo:
                         window.location.origin +
                         window.location.pathname
+
                 }
             );
 
@@ -2972,9 +2833,9 @@ async function sendPasswordReset() {
 }
 
 
-// =========================================================
+// ============================================================
 // ВХОД
-// =========================================================
+// ============================================================
 
 async function loginUser() {
 
@@ -3041,14 +2902,15 @@ async function loginUser() {
 
     updateLastActivity();
 
+
     location.reload();
 
 }
 
 
-// =========================================================
+// ============================================================
 // РЕГИСТРАЦИЯ ПОЛЬЗОВАТЕЛЯ
-// =========================================================
+// ============================================================
 
 async function registerUser() {
 
@@ -3232,7 +3094,9 @@ async function registerUser() {
             error: profileError
         } =
             await supabaseClient
-                .from("profiles")
+                .from(
+                    "profiles"
+                )
                 .upsert(
 
                     {
@@ -3274,7 +3138,7 @@ async function registerUser() {
         if (profileError) {
 
             console.warn(
-                "Профиль не обновлён из браузера. Проверьте RLS/SQL-триггер:",
+                "Профиль не обновлён:",
                 profileError
             );
 
@@ -3293,7 +3157,9 @@ async function registerUser() {
 
         setTimeout(
             function() {
+
                 location.reload();
+
             },
             900
         );
@@ -3312,39 +3178,41 @@ async function registerUser() {
 }
 
 
-// =========================================================
-// ESCAPE HTML
-// =========================================================
+// ============================================================
+// ЭКРАНИРОВАНИЕ HTML
+// ============================================================
 
 function escapeHtml(value) {
 
-    return String(value || "")
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-        .replace(
-            /</g,
-            "&lt;"
-        )
-        .replace(
-            />/g,
-            "&gt;"
-        )
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-        .replace(
-            /'/g,
-            "&#039;"
-        );
+    return String(
+        value || ""
+    )
+    .replace(
+        /&/g,
+        "&amp;"
+    )
+    .replace(
+        /</g,
+        "&lt;"
+    )
+    .replace(
+        />/g,
+        "&gt;"
+    )
+    .replace(
+        /"/g,
+        "&quot;"
+    )
+    .replace(
+        /'/g,
+        "&#039;"
+    );
 
 }
 
 
-// =========================================================
+// ============================================================
 // ЗАПУСК
-// =========================================================
+// ============================================================
 
 checkAuth();
