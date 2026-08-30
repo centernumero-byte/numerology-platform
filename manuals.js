@@ -1,51 +1,51 @@
 /* =========================================================
    manuals.js
-   Методические пособия + Видео
-   Таблица Supabase: platform_materials
-   Storage bucket: methodicals
+   МЕТОДИЧЕСКИЕ ПОСОБИЯ + ВИДЕО
    ========================================================= */
 
 const PLATFORM_MATERIALS_TABLE = 'platform_materials';
 const PLATFORM_STORAGE_BUCKET = 'methodicals';
 
+
+/* =========================================================
+   КАРТОЧКИ
+   ========================================================= */
+
 const PLATFORM_DIRECTIONS = [
     {
         key: 'adult',
         icon: '✦',
-        title: 'Взрослая матрица'
+        title: 'Взрослая<br>матрица'
     },
     {
         key: 'child',
         icon: '👶',
-        title: 'Детская матрица'
+        title: 'Детская<br>матрица'
     },
     {
         key: 'compatibility',
         icon: '💕',
-        title: 'Матрица совместимости'
+        title: 'Матрица<br>совместимости'
     },
     {
         key: 'vedic',
         icon: 'ॐ',
-        title: 'Ведическая нумерология'
+        title: 'Ведическая<br>нумерология'
     },
     {
         key: 'pythagoras',
-        icon: '🔢',
-        title: 'Нумерология по Пифагору'
+        icon: 'pythagoras',
+        title: 'Нумерология<br>по Пифагору'
     }
 ];
 
 
-const PLATFORM_NAMES =
-    Object.fromEntries(
-        PLATFORM_DIRECTIONS.map(
-            item => [
-                item.key,
-                item.title
-            ]
-        )
-    );
+const PLATFORM_NAMES = Object.fromEntries(
+    PLATFORM_DIRECTIONS.map(item => [
+        item.key,
+        item.title.replace(/<br>/g, ' ')
+    ])
+);
 
 
 let materialManagerState = {
@@ -55,9 +55,9 @@ let materialManagerState = {
 };
 
 
-// ============================================================
-// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
-// ============================================================
+/* =========================================================
+   ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+   ========================================================= */
 
 function platformEscape(value) {
 
@@ -75,7 +75,6 @@ function pythagorasIconHtml() {
 
     return `
         <div class="card-icon pythagoras-icon">
-
             <span>1</span>
             <span>4</span>
             <span>7</span>
@@ -87,46 +86,15 @@ function pythagorasIconHtml() {
             <span>3</span>
             <span>6</span>
             <span>9</span>
-
         </div>
     `;
 
 }
 
 
-function getMaterialSectionTitle(section) {
-
-    if (section === 'manuals') {
-        return 'Методические пособия';
-    }
-
-    if (section === 'videos') {
-        return 'Видео';
-    }
-
-    return 'Материалы';
-
-}
-
-
-function getMaterialSubtitle(section) {
-
-    if (section === 'manuals') {
-        return 'Методическое пособие';
-    }
-
-    if (section === 'videos') {
-        return 'Видео';
-    }
-
-    return 'Материал';
-
-}
-
-
-// ============================================================
-// СТИЛИ
-// ============================================================
+/* =========================================================
+   СТИЛИ ДЛЯ АДМИНИСТРАТОРА
+   ========================================================= */
 
 function ensureMaterialStyles() {
 
@@ -153,6 +121,7 @@ function ensureMaterialStyles() {
 
             position: fixed;
             inset: 0;
+
             z-index: 99999;
 
             display: flex;
@@ -163,7 +132,6 @@ function ensureMaterialStyles() {
 
             background:
                 rgba(0,0,0,.72);
-
         }
 
 
@@ -189,12 +157,12 @@ function ensureMaterialStyles() {
             border:
                 1px solid #d7aa31;
 
-            color: #f8e7a8;
+            color:
+                #f8e7a8;
 
             box-shadow:
                 0 20px 70px
                 rgba(0,0,0,.5);
-
         }
 
 
@@ -209,101 +177,15 @@ function ensureMaterialStyles() {
             font-family:
                 Georgia,
                 serif;
-
-            font-weight:
-                500;
-
-        }
-
-
-        .material-manager-button {
-
-            width: 100%;
-
-            padding:
-                13px 16px;
-
-            border:
-                1px solid #d7aa31;
-
-            border-radius:
-                10px;
-
-            background:
-                linear-gradient(
-                    90deg,
-                    #713199,
-                    #5d2789
-                );
-
-            color:
-                #f8d96d;
-
-            cursor:
-                pointer;
-
-            font-size:
-                16px;
-
-        }
-
-
-        .material-manager-input {
-
-            width: 100%;
-
-            padding:
-                13px;
-
-            margin-bottom:
-                12px;
-
-            border:
-                1px solid
-                rgba(225,180,52,.5);
-
-            border-radius:
-                10px;
-
-            background:
-                rgba(0,0,0,.2);
-
-            color:
-                #fff;
-
-            font-size:
-                16px;
-
-            box-sizing:
-                border-box;
-
-        }
-
-
-        .material-manager-or {
-
-            text-align:
-                center;
-
-            margin:
-                14px 0;
-
-            color:
-                #c8bca4;
-
         }
 
 
         .material-manager-close {
 
-            float:
-                right;
+            float: right;
 
-            border:
-                none;
-
-            background:
-                none;
+            background: none;
+            border: none;
 
             color:
                 #f6d66c;
@@ -311,104 +193,172 @@ function ensureMaterialStyles() {
             font-size:
                 30px;
 
-            cursor:
-                pointer;
-
-        }
-
-
-        .platform-material-card {
+            line-height:
+                1;
 
             cursor:
                 pointer;
-
         }
 
 
-        .platform-material-card.disabled {
+        .material-manager-label {
 
-            cursor:
-                default;
+            display: block;
 
-            opacity:
-                .82;
+            margin:
+                16px 0 8px;
 
+            color:
+                #eee5d0;
         }
 
 
-        .material-open-button {
+        .material-manager-input {
 
-            display:
-                inline-flex;
+            width:
+                100%;
 
-            align-items:
-                center;
-
-            justify-content:
-                center;
+            box-sizing:
+                border-box;
 
             padding:
-                10px 18px;
+                13px;
 
-            margin-top:
+            border-radius:
                 10px;
 
             border:
                 1px solid #d7aa31;
 
-            border-radius:
-                9px;
-
             background:
-                linear-gradient(
-                    90deg,
-                    #713199,
-                    #5d2789
-                );
+                #17112f;
 
             color:
-                #f8d96d;
+                white;
 
-            text-decoration:
+            outline:
                 none;
+        }
+
+
+        .material-manager-input::placeholder {
+
+            color:
+                #aaa1b4;
+        }
+
+
+        .material-manager-button {
+
+            margin-top:
+                12px;
+
+            padding:
+                12px 22px;
+
+            border-radius:
+                10px;
+
+            border:
+                1px solid #d7aa31;
+
+            background:
+                #6b3b8f;
+
+            color:
+                #f8e7a8;
 
             cursor:
                 pointer;
 
+            font-size:
+                16px;
         }
 
 
-        .material-empty {
+        .material-manager-button:disabled {
 
-            width:
-                100%;
+            opacity:
+                .55;
 
-            padding:
-                30px;
+            cursor:
+                wait;
+        }
 
-            border:
-                1px solid
-                rgba(225,180,52,.55);
 
-            border-radius:
-                18px;
+        .material-manager-or {
 
-            background:
-                linear-gradient(
-                    145deg,
-                    #302052,
-                    #21163d
-                );
-
-            color:
-                #eee5d0;
+            margin:
+                22px 0 4px;
 
             text-align:
                 center;
 
-            box-sizing:
-                border-box;
+            color:
+                #cfc4b0;
+        }
 
+
+        .material-manager-status {
+
+            margin-top:
+                18px;
+
+            line-height:
+                1.45;
+        }
+
+
+        .material-manager-status.ok {
+
+            color:
+                #a9e4b4;
+        }
+
+
+        .material-manager-status.error {
+
+            color:
+                #ffb0b0;
+        }
+
+
+        .material-manager-current {
+
+            margin:
+                15px 0;
+
+            padding:
+                12px;
+
+            border-radius:
+                10px;
+
+            background:
+                rgba(255,255,255,.05);
+
+            border:
+                1px solid
+                rgba(215,170,49,.35);
+
+            color:
+                #eee5d0;
+        }
+
+
+        .material-manager-hint {
+
+            margin-top:
+                8px;
+
+            color:
+                #bdb3c5;
+
+            font-size:
+                13px;
+
+            line-height:
+                1.4;
         }
 
     `;
@@ -419,191 +369,88 @@ function ensureMaterialStyles() {
 }
 
 
-// ============================================================
-// ЗАГРУЗКА МАТЕРИАЛОВ
-// ============================================================
+/* =========================================================
+   СЕССИЯ
+   ========================================================= */
 
-async function getPlatformMaterials(
-    section
-) {
+async function getCurrentSession() {
 
-    try {
-
-        const {
-            data,
-            error
-        } =
-            await supabaseClient
-                .from(
-                    PLATFORM_MATERIALS_TABLE
-                )
-                .select('*')
-                .eq(
-                    'section',
-                    section
-                )
-                .order(
-                    'created_at',
-                    {
-                        ascending:
-                            true
-                    }
-                );
+    const {
+        data: {
+            session
+        },
+        error
+    } =
+        await supabaseClient
+            .auth
+            .getSession();
 
 
-        if (error) {
-
-            console.error(
-                'Ошибка загрузки материалов:',
-                error
-            );
-
-            return [];
-
-        }
-
-
-        return data || [];
-
-    } catch (error) {
-
-        console.error(
-            'Ошибка загрузки материалов:',
-            error
-        );
-
-        return [];
-
+    if (error) {
+        throw error;
     }
+
+
+    return session;
 
 }
 
 
-// ============================================================
-// ПОИСК МАТЕРИАЛА
-// ============================================================
+/* =========================================================
+   ПОЛУЧЕНИЕ МАТЕРИАЛА
+   ========================================================= */
 
-function findPlatformMaterial(
-    materials,
+async function getCurrentMaterial(
+    section,
     direction
 ) {
 
-    const aliases = {
-
-        adult: [
-            'adult',
-            'взрослая',
-            'взрослая матрица',
-            'adult matrix'
-        ],
-
-        child: [
-            'child',
-            'детская',
-            'детская матрица',
-            'child matrix'
-        ],
-
-        compatibility: [
-            'compatibility',
-            'совместимость',
-            'матрица совместимости'
-        ],
-
-        vedic: [
-            'vedic',
-            'ведическая',
-            'ведическая нумерология'
-        ],
-
-        pythagoras: [
-            'pythagoras',
-            'пифагор',
-            'квадрат пифагора',
-            'нумерология по пифагору',
-            'психоматрица'
-        ]
-
-    };
-
-
-    const wanted =
-        (
-            aliases[direction] ||
-            [direction]
-        )
-            .map(
-                normalizePlatformValue
-            );
-
-
-    return (
-        materials || []
-    ).find(
-        function(item) {
-
-            const fields = [
-
-                item.direction,
-                item.method,
-                item.calculator,
-                item.type_key,
-                item.slug,
-                item.title,
-                item.name
-
-            ]
-                .filter(Boolean)
-                .map(
-                    normalizePlatformValue
-                );
-
-
-            return fields.some(
-                function(field) {
-
-                    return wanted.some(
-                        function(alias) {
-
-                            return (
-                                field === alias ||
-                                field.includes(alias) ||
-                                alias.includes(field)
-                            );
-
-                        }
-                    );
-
+    const {
+        data,
+        error
+    } =
+        await supabaseClient
+            .from(
+                PLATFORM_MATERIALS_TABLE
+            )
+            .select(
+                'id, section, direction, material_type, url, file_path, created_by, created_at'
+            )
+            .eq(
+                'section',
+                section
+            )
+            .eq(
+                'direction',
+                direction
+            )
+            .order(
+                'created_at',
+                {
+                    ascending:
+                        false
                 }
-            );
-
-        }
-    ) || null;
-
-}
+            )
+            .limit(1)
+            .maybeSingle();
 
 
-function normalizePlatformValue(
-    value
-) {
+    if (error) {
+        throw error;
+    }
 
-    return String(value || '')
-        .toLowerCase()
-        .trim()
-        .replace(/ё/g, 'е')
-        .replace(/[«»"'`]/g, '')
-        .replace(/\s+/g, ' ');
+
+    return data || null;
 
 }
 
 
-// ============================================================
-// КАРТОЧКИ
-// ============================================================
+/* =========================================================
+   ЗАГРУЗКА КАРТОЧЕК
+   ========================================================= */
 
-function renderPlatformMaterialCards(
-    section,
-    materials
+async function loadPlatformMaterials(
+    section
 ) {
 
     const contentCards =
@@ -617,87 +464,68 @@ function renderPlatformMaterialCards(
     }
 
 
+    ensureMaterialStyles();
+
+
+    /*
+       ВАЖНО:
+       Здесь НЕТ заголовка
+       «Методические пособия»
+       или «Видео».
+
+       Показываются сразу карточки.
+    */
+
     const subtitle =
-        getMaterialSubtitle(
-            section
-        );
+        section === 'videos'
+            ? 'Видео'
+            : 'Методическое<br>пособие';
 
 
     contentCards.innerHTML = `
 
-        <div
-            class="cards"
-            style="
-                display:grid;
-                grid-template-columns:
-                    repeat(5,180px);
-                gap:20px;
-                justify-content:start;
-            "
-        >
+        <div class="cards">
 
             ${
-
                 PLATFORM_DIRECTIONS
                     .map(
-                        function(direction) {
-
-                            const material =
-                                findPlatformMaterial(
-                                    materials,
-                                    direction.key
-                                );
-
-
-                            const link =
-                                material
-                                    ? (
-                                        material.external_url ||
-                                        material.file_url ||
-                                        ''
-                                    )
-                                    : '';
-
+                        function(item) {
 
                             const icon =
-                                direction.key ===
+                                item.key ===
                                 'pythagoras'
 
                                     ? pythagorasIconHtml()
 
                                     : `
                                         <div class="card-icon">
-                                            ${direction.icon}
+                                            ${item.icon}
                                         </div>
-                                    `;
+                                      `;
 
 
                             return `
 
                                 <div
-                                    class="
-                                        card
-                                        method-card
-                                        platform-material-card
-                                        ${
-                                            link
-                                                ? ''
-                                                : 'disabled'
-                                        }
+                                    class="card method-card"
+
+                                    id="
+                                        platform-material-${section}-${item.key}
                                     "
 
-                                    ${
-                                        link
-                                            ? `
-                                                onclick="openMaterial(
-                                                    ${JSON.stringify(link)},
-                                                    ${JSON.stringify(direction.title)}
-                                                )
-                                              `
-                                            : ''
-                                    }
+                                    data-section="${section}"
+
+                                    data-direction="${item.key}"
+
+                                    onclick="
+                                        openPlatformMaterial(
+                                            '${section}',
+                                            '${item.key}'
+                                        )
+                                    "
 
                                     role="button"
+
                                     tabindex="0"
                                 >
 
@@ -709,8 +537,9 @@ function renderPlatformMaterialCards(
                                     >
 
                                         <h3>
-                                            ${direction.title}
+                                            ${item.title}
                                         </h3>
+
 
                                         <p>
                                             ${subtitle}
@@ -725,126 +554,302 @@ function renderPlatformMaterialCards(
                         }
                     )
                     .join('')
-
             }
 
         </div>
 
     `;
 
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient
+                .from(
+                    PLATFORM_MATERIALS_TABLE
+                )
+                .select(
+                    'id, section, direction, material_type, url, file_path, created_at'
+                )
+                .eq(
+                    'section',
+                    section
+                )
+                .order(
+                    'created_at',
+                    {
+                        ascending:
+                            false
+                    }
+                );
+
+
+        if (error) {
+            throw error;
+        }
+
+
+        const latestByDirection = {};
+
+
+        (data || []).forEach(
+            function(item) {
+
+                if (
+                    !latestByDirection[
+                        item.direction
+                    ]
+                ) {
+
+                    latestByDirection[
+                        item.direction
+                    ] = item;
+
+                }
+
+            }
+        );
+
+
+        Object.entries(
+            latestByDirection
+        ).forEach(
+            function([
+                direction,
+                item
+            ]) {
+
+                const card =
+                    document.getElementById(
+                        `platform-material-${section}-${direction}`
+                    );
+
+
+                if (!card) {
+                    return;
+                }
+
+
+                card.classList.add(
+                    'has-material'
+                );
+
+
+                card.dataset.materialId =
+                    item.id || '';
+
+
+                card.dataset.materialType =
+                    item.material_type || '';
+
+
+                card.dataset.url =
+                    item.url || '';
+
+
+                card.dataset.filePath =
+                    item.file_path || '';
+
+            }
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            'Ошибка загрузки материалов:',
+            error
+        );
+
+    }
+
 }
 
 
-// ============================================================
-// МЕТОДИЧЕСКИЕ ПОСОБИЯ
-// ============================================================
+/* =========================================================
+   МЕТОДИЧЕСКИЕ ПОСОБИЯ
+   ========================================================= */
 
 async function loadManuals() {
 
-    ensureMaterialStyles();
-
-
-    const contentCards =
-        document.getElementById(
-            'contentCards'
-        );
-
-
-    if (!contentCards) {
-        return;
-    }
-
-
-    contentCards.innerHTML =
-        '<div class="material-empty">Загрузка...</div>';
-
-
-    const materials =
-        await getPlatformMaterials(
-            'manuals'
-        );
-
-
-    renderPlatformMaterialCards(
-        'manuals',
-        materials
+    await loadPlatformMaterials(
+        'manuals'
     );
 
 }
 
 
-// ============================================================
-// ВИДЕО
-// ============================================================
+/* =========================================================
+   ВИДЕО
+   ========================================================= */
 
 async function loadVideos() {
 
-    ensureMaterialStyles();
-
-
-    const contentCards =
-        document.getElementById(
-            'contentCards'
-        );
-
-
-    if (!contentCards) {
-        return;
-    }
-
-
-    contentCards.innerHTML =
-        '<div class="material-empty">Загрузка...</div>';
-
-
-    const materials =
-        await getPlatformMaterials(
-            'videos'
-        );
-
-
-    renderPlatformMaterialCards(
-        'videos',
-        materials
+    await loadPlatformMaterials(
+        'videos'
     );
 
 }
 
 
-// ============================================================
-// ОТКРЫТИЕ МАТЕРИАЛА
-// ============================================================
+/* =========================================================
+   ОТКРЫТИЕ МАТЕРИАЛА
+   ========================================================= */
 
-function openMaterial(
-    url,
-    title
+async function openPlatformMaterial(
+    section,
+    direction
 ) {
 
-    if (!url) {
+    const title =
+        PLATFORM_NAMES[
+            direction
+        ] ||
+        'Материал';
 
-        return;
+
+    try {
+
+        const material =
+            await getCurrentMaterial(
+                section,
+                direction
+            );
+
+
+        if (!material) {
+
+            if (
+                window.currentUserIsManager
+            ) {
+
+                showMaterialManager(
+                    section,
+                    direction,
+                    title
+                );
+
+            } else {
+
+                alert(
+                    `${title}\n\nМатериал пока не добавлен.`
+                );
+
+            }
+
+            return;
+
+        }
+
+
+        if (material.url) {
+
+            window.open(
+                material.url,
+                '_blank',
+                'noopener,noreferrer'
+            );
+
+            return;
+
+        }
+
+
+        if (material.file_path) {
+
+            const {
+                data,
+                error
+            } =
+                await supabaseClient
+                    .storage
+                    .from(
+                        PLATFORM_STORAGE_BUCKET
+                    )
+                    .createSignedUrl(
+                        material.file_path,
+                        60 * 60
+                    );
+
+
+            if (error) {
+                throw error;
+            }
+
+
+            if (
+                !data?.signedUrl
+            ) {
+
+                throw new Error(
+                    'Не удалось получить ссылку на файл.'
+                );
+
+            }
+
+
+            window.open(
+                data.signedUrl,
+                '_blank',
+                'noopener,noreferrer'
+            );
+
+            return;
+
+        }
+
+
+        if (
+            window.currentUserIsManager
+        ) {
+
+            showMaterialManager(
+                section,
+                direction,
+                title
+            );
+
+        } else {
+
+            alert(
+                `${title}\n\nМатериал пока не добавлен.`
+            );
+
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            'Ошибка открытия материала:',
+            error
+        );
+
+
+        alert(
+            'Не удалось открыть материал.\n\n' +
+            (
+                error.message ||
+                error
+            )
+        );
 
     }
-
-
-    window.open(
-        url,
-        '_blank',
-        'noopener,noreferrer'
-    );
 
 }
 
 
-// ============================================================
-// АДМИНИСТРАТОР:
-// ОКНО ДОБАВЛЕНИЯ МАТЕРИАЛА
-// ============================================================
+/* =========================================================
+   ОКНО АДМИНИСТРАТОРА
+   ========================================================= */
 
 function showMaterialManager(
-    title,
-    section = 'manuals',
-    direction = ''
+    section,
+    direction,
+    title
 ) {
 
     ensureMaterialStyles();
@@ -862,17 +867,20 @@ function showMaterialManager(
 
 
     materialManagerState = {
-
-        section:
-            section,
-
-        direction:
-            direction,
-
-        title:
-            title || ''
-
+        section,
+        direction,
+        title
     };
+
+
+    const isVideo =
+        section === 'videos';
+
+
+    const accept =
+        isVideo
+            ? 'video/*,.mp4,.webm,.mov,.m4v'
+            : '.pdf,.doc,.docx';
 
 
     const box =
@@ -897,6 +905,7 @@ function showMaterialManager(
 
                 <button
                     class="material-manager-close"
+
                     onclick="
                         document
                             .getElementById(
@@ -910,37 +919,39 @@ function showMaterialManager(
 
 
                 <h2>
-                    ${platformEscape(
-                        title ||
-                        'Материал'
-                    )}
+                    ${platformEscape(title)}
                 </h2>
 
 
-                <button
-                    class="material-manager-button"
-                    onclick="
-                        document
-                            .getElementById(
-                                'materialFileInput'
-                            )
-                            .click()
-                    "
+                <label
+                    class="material-manager-label"
                 >
-                    📁 Загрузить файл
-                </button>
+                    Вставить ссылку
+                </label>
 
 
                 <input
-                    id="materialFileInput"
-                    type="file"
-                    style="display:none"
-                    onchange="
-                        uploadMaterialFile(
-                            this.files[0]
-                        )
+                    id="materialUrlInput"
+
+                    class="material-manager-input"
+
+                    type="url"
+
+                    placeholder="https://..."
+                >
+
+
+                <button
+                    id="saveMaterialUrlButton"
+
+                    class="material-manager-button"
+
+                    onclick="
+                        savePlatformMaterialUrl()
                     "
                 >
+                    🔗 Сохранить ссылку
+                </button>
 
 
                 <div
@@ -950,22 +961,55 @@ function showMaterialManager(
                 </div>
 
 
+                <label
+                    class="material-manager-label"
+                >
+                    Загрузить файл
+                </label>
+
+
                 <input
-                    id="materialUrlInput"
+                    id="materialFileInput"
+
                     class="material-manager-input"
-                    type="url"
-                    placeholder="Вставьте ссылку"
+
+                    type="file"
+
+                    accept="${accept}"
                 >
 
 
                 <button
+                    id="uploadMaterialFileButton"
+
                     class="material-manager-button"
+
                     onclick="
-                        saveMaterialUrl()
+                        uploadPlatformMaterialFile()
                     "
                 >
-                    🔗 Сохранить ссылку
+                    📁 Загрузить файл
                 </button>
+
+
+                <div
+                    class="material-manager-hint"
+                >
+                    ${
+                        isVideo
+
+                            ? 'Для видео можно указать ссылку или загрузить видеофайл.'
+
+                            : 'Для пособия можно указать ссылку на документ или загрузить PDF/DOC/DOCX.'
+                    }
+                </div>
+
+
+                <div
+                    id="materialManagerStatus"
+
+                    class="material-manager-status"
+                ></div>
 
             </div>
 
@@ -981,23 +1025,85 @@ function showMaterialManager(
 }
 
 
-// ============================================================
-// СОХРАНЕНИЕ ССЫЛКИ
-// ============================================================
+/* =========================================================
+   СТАТУС
+   ========================================================= */
 
-async function saveMaterialUrl() {
+function setMaterialManagerStatus(
+    text,
+    type
+) {
+
+    const box =
+        document.getElementById(
+            'materialManagerStatus'
+        );
+
+
+    if (!box) {
+        return;
+    }
+
+
+    box.className =
+        'material-manager-status ' +
+        (
+            type || ''
+        );
+
+
+    box.textContent =
+        text || '';
+
+}
+
+
+function setMaterialManagerBusy(
+    busy
+) {
+
+    const a =
+        document.getElementById(
+            'saveMaterialUrlButton'
+        );
+
+
+    const b =
+        document.getElementById(
+            'uploadMaterialFileButton'
+        );
+
+
+    if (a) {
+        a.disabled = busy;
+    }
+
+
+    if (b) {
+        b.disabled = busy;
+    }
+
+}
+
+
+/* =========================================================
+   СОХРАНЕНИЕ ССЫЛКИ
+   ========================================================= */
+
+async function savePlatformMaterialUrl() {
 
     if (
         !window.currentUserIsManager
     ) {
-
-        alert(
-            'Недостаточно прав.'
-        );
-
         return;
-
     }
+
+
+    const {
+        section,
+        direction
+    } =
+        materialManagerState;
 
 
     const input =
@@ -1007,15 +1113,14 @@ async function saveMaterialUrl() {
 
 
     const url =
-        input
-            ?.value
-            .trim();
+        input?.value.trim() || '';
 
 
     if (!url) {
 
-        alert(
-            'Вставьте ссылку.'
+        setMaterialManagerStatus(
+            'Вставьте ссылку.',
+            'error'
         );
 
         return;
@@ -1024,6 +1129,46 @@ async function saveMaterialUrl() {
 
 
     try {
+
+        new URL(url);
+
+    } catch (_) {
+
+        setMaterialManagerStatus(
+            'Введите корректную ссылку.',
+            'error'
+        );
+
+        return;
+
+    }
+
+
+    setMaterialManagerBusy(
+        true
+    );
+
+
+    setMaterialManagerStatus(
+        'Сохраняю ссылку...',
+        ''
+    );
+
+
+    try {
+
+        const session =
+            await getCurrentSession();
+
+
+        if (!session) {
+
+            throw new Error(
+                'Сессия пользователя не найдена.'
+            );
+
+        }
+
 
         const {
             error
@@ -1034,17 +1179,20 @@ async function saveMaterialUrl() {
                 )
                 .insert({
 
-                    section:
-                        materialManagerState.section,
+                    section,
 
-                    direction:
-                        materialManagerState.direction,
+                    direction,
 
-                    title:
-                        materialManagerState.title,
+                    material_type:
+                        'link',
 
-                    external_url:
-                        url
+                    url,
+
+                    file_path:
+                        null,
+
+                    created_by:
+                        session.user.id
 
                 });
 
@@ -1054,29 +1202,29 @@ async function saveMaterialUrl() {
         }
 
 
-        const manager =
-            document.getElementById(
-                'materialManager'
-            );
+        setMaterialManagerStatus(
+            'Ссылка сохранена.',
+            'ok'
+        );
 
 
-        if (manager) {
-            manager.remove();
-        }
+        await loadPlatformMaterials(
+            section
+        );
 
 
-        if (
-            materialManagerState.section ===
-            'videos'
-        ) {
+        setTimeout(
+            function() {
 
-            await loadVideos();
+                document
+                    .getElementById(
+                        'materialManager'
+                    )
+                    ?.remove();
 
-        } else {
-
-            await loadManuals();
-
-        }
+            },
+            700
+        );
 
 
     } catch (error) {
@@ -1087,9 +1235,20 @@ async function saveMaterialUrl() {
         );
 
 
-        alert(
-            error.message ||
-            'Не удалось сохранить ссылку.'
+        setMaterialManagerStatus(
+            'Не удалось сохранить ссылку: ' +
+            (
+                error.message ||
+                error
+            ),
+            'error'
+        );
+
+
+    } finally {
+
+        setMaterialManagerBusy(
+            false
         );
 
     }
@@ -1097,20 +1256,41 @@ async function saveMaterialUrl() {
 }
 
 
-// ============================================================
-// ЗАГРУЗКА ФАЙЛА В STORAGE
-// ============================================================
+/* =========================================================
+   ЗАГРУЗКА ФАЙЛА
+   ========================================================= */
 
-async function uploadMaterialFile(
-    file
-) {
+async function uploadPlatformMaterialFile() {
 
     if (
         !window.currentUserIsManager
     ) {
+        return;
+    }
 
-        alert(
-            'Недостаточно прав.'
+
+    const {
+        section,
+        direction
+    } =
+        materialManagerState;
+
+
+    const input =
+        document.getElementById(
+            'materialFileInput'
+        );
+
+
+    const file =
+        input?.files?.[0];
+
+
+    if (!file) {
+
+        setMaterialManagerStatus(
+            'Сначала выберите файл.',
+            'error'
         );
 
         return;
@@ -1118,36 +1298,96 @@ async function uploadMaterialFile(
     }
 
 
-    if (!file) {
+    const maxSize =
+        section === 'videos'
+
+            ? 500 * 1024 * 1024
+
+            : 100 * 1024 * 1024;
+
+
+    if (
+        file.size > maxSize
+    ) {
+
+        setMaterialManagerStatus(
+
+            section === 'videos'
+
+                ? 'Видео слишком большое. Максимальный размер — 500 МБ.'
+
+                : 'Файл слишком большой. Максимальный размер — 100 МБ.',
+
+            'error'
+        );
+
         return;
+
     }
+
+
+    setMaterialManagerBusy(
+        true
+    );
+
+
+    setMaterialManagerStatus(
+        'Загружаю файл в Storage...',
+        ''
+    );
 
 
     try {
 
+        const session =
+            await getCurrentSession();
+
+
+        if (!session) {
+
+            throw new Error(
+                'Сессия пользователя не найдена.'
+            );
+
+        }
+
+
         const safeName =
             file.name
+
+                .normalize('NFKD')
+
                 .replace(
-                    /[^a-zA-Zа-яА-Я0-9._-]/g,
+                    /[^a-zA-Z0-9._-]+/g,
                     '_'
-                );
+                )
+
+                .replace(
+                    /^_+|_+$/g,
+                    ''
+                )
+
+                ||
+                'file';
 
 
-        const timestamp =
-            Date.now();
+        const unique =
+            (
+                window.crypto &&
+                crypto.randomUUID
+            )
+
+                ? crypto.randomUUID()
+
+                : Date.now() +
+                  '_' +
+                  Math.random()
+                      .toString(36)
+                      .slice(2);
 
 
         const path =
-            `${
-                materialManagerState.section
-            }/${
-                materialManagerState.direction ||
-                'material'
-            }/${
-                timestamp
-            }_${
-                safeName
-            }`;
+            `${section}/${direction}/${unique}_${safeName}`;
 
 
         const {
@@ -1162,8 +1402,11 @@ async function uploadMaterialFile(
                     path,
                     file,
                     {
+                        cacheControl:
+                            '3600',
+
                         upsert:
-                            true
+                            false
                     }
                 );
 
@@ -1173,34 +1416,14 @@ async function uploadMaterialFile(
         }
 
 
-        const {
-            data
-        } =
-            supabaseClient
-                .storage
-                .from(
-                    PLATFORM_STORAGE_BUCKET
-                )
-                .getPublicUrl(
-                    path
-                );
-
-
-        const publicUrl =
-            data?.publicUrl;
-
-
-        if (!publicUrl) {
-
-            throw new Error(
-                'Не удалось получить ссылку на файл.'
-            );
-
-        }
+        setMaterialManagerStatus(
+            'Файл загружен. Сохраняю запись...',
+            ''
+        );
 
 
         const {
-            error: dbError
+            error: insertError
         } =
             await supabaseClient
                 .from(
@@ -1208,49 +1431,64 @@ async function uploadMaterialFile(
                 )
                 .insert({
 
-                    section:
-                        materialManagerState.section,
+                    section,
 
-                    direction:
-                        materialManagerState.direction,
+                    direction,
 
-                    title:
-                        materialManagerState.title,
+                    material_type:
+                        'file',
 
-                    file_url:
-                        publicUrl
+                    url:
+                        null,
+
+                    file_path:
+                        path,
+
+                    created_by:
+                        session.user.id
 
                 });
 
 
-        if (dbError) {
-            throw dbError;
-        }
+        if (insertError) {
 
+            await supabaseClient
+                .storage
+                .from(
+                    PLATFORM_STORAGE_BUCKET
+                )
+                .remove([
+                    path
+                ]);
 
-        const manager =
-            document.getElementById(
-                'materialManager'
-            );
-
-
-        if (manager) {
-            manager.remove();
-        }
-
-
-        if (
-            materialManagerState.section ===
-            'videos'
-        ) {
-
-            await loadVideos();
-
-        } else {
-
-            await loadManuals();
+            throw insertError;
 
         }
+
+
+        setMaterialManagerStatus(
+            'Файл успешно сохранён.',
+            'ok'
+        );
+
+
+        await loadPlatformMaterials(
+            section
+        );
+
+
+        setTimeout(
+            function() {
+
+                document
+                    .getElementById(
+                        'materialManager'
+                    )
+                    ?.remove();
+
+            },
+            700
+        );
 
 
     } catch (error) {
@@ -1261,9 +1499,20 @@ async function uploadMaterialFile(
         );
 
 
-        alert(
-            error.message ||
-            'Не удалось загрузить файл.'
+        setMaterialManagerStatus(
+            'Не удалось загрузить файл: ' +
+            (
+                error.message ||
+                error
+            ),
+            'error'
+        );
+
+
+    } finally {
+
+        setMaterialManagerBusy(
+            false
         );
 
     }
@@ -1271,126 +1520,96 @@ async function uploadMaterialFile(
 }
 
 
-// ============================================================
-// ТЕСТЫ
-// ============================================================
+/* =========================================================
+   СТАРЫЕ АЛИАСЫ
+   ========================================================= */
+
+async function saveMaterialUrl() {
+
+    await savePlatformMaterialUrl();
+
+}
+
+
+async function uploadMaterialFile(
+    file
+) {
+
+    await uploadPlatformMaterialFile();
+
+}
+
 
 function openTest(
     type,
     title
 ) {
 
-    showMaterialManager(
-        title || 'Тест',
-        'tests',
-        type || ''
-    );
+    if (
+        typeof showMaterialManager ===
+        'function' &&
+        window.currentUserIsManager
+    ) {
+
+        showMaterialManager(
+            'tests',
+            type || 'adult',
+            title || 'Тест'
+        );
+
+    } else {
+
+        alert(
+            'Раздел тестов будет подключён отдельно.'
+        );
+
+    }
 
 }
 
 
-// ============================================================
-// НАВИГАЦИЯ
-// ============================================================
-
-function manualsSetActiveSection(
+async function loadMaterials(
     section
 ) {
 
-    document
-        .querySelectorAll(
-            '.nav-item[data-section]'
-        )
-        .forEach(
-            function(button) {
-
-                button.classList.toggle(
-                    'active',
-                    button.dataset.section ===
-                    section
-                );
-
-            }
-        );
+    await loadPlatformMaterials(
+        section
+    );
 
 }
 
 
-// ============================================================
-// МОЯ БИБЛИОТЕКА
-// ============================================================
+function openMaterial(
+    url,
+    title
+) {
 
-const NUMEROLOGY_LIBRARY_URL =
-    'https://drive.google.com/drive/folders/1pGjVPKtGeHm5NKrcg0JLvy5M_XDTAaOv?usp=sharing';
+    const cleanUrl =
+        String(
+            url || ''
+        ).trim();
 
 
-function loadLibrary() {
+    if (cleanUrl) {
 
-    const contentCards =
-        document.getElementById(
-            'contentCards'
+        window.open(
+            cleanUrl,
+            '_blank',
+            'noopener,noreferrer'
         );
 
-
-    if (!contentCards) {
         return;
+
     }
 
 
-    contentCards.innerHTML = `
+    if (title) {
 
-        <div class="cards">
+        alert(
+            title +
+            '\n\nСсылка на материал пока не добавлена.'
+        );
 
-            <div
-                class="
-                    card
-                    library-main-card
-                "
-                onclick="openLibraryHome()"
-                role="button"
-                tabindex="0"
-            >
-
-                <div
-                    class="
-                        card-icon
-                        library-icon
-                    "
-                >
-                    📚
-                </div>
-
-
-                <div
-                    class="card-content"
-                >
-
-                    <h3>
-                        Библиотека<br>
-                        нумеролога
-                    </h3>
-
-                    <p>
-                        Все книги и материалы
-                    </p>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    `;
-
-}
-
-
-function openLibraryHome() {
-
-    window.open(
-        NUMEROLOGY_LIBRARY_URL,
-        '_blank',
-        'noopener,noreferrer'
-    );
+    }
 
 }
