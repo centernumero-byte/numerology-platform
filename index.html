@@ -589,7 +589,7 @@
     }
 
 }
-}
+
 .dashboard-wrap {
   width: 100%;
 }
@@ -697,6 +697,226 @@
   .stats-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+
+/* =========================================================
+   АВТОРИЗАЦИЯ — ЦЕНТР ЭКРАНА
+   ========================================================= */
+
+.auth-shell {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 99990 !important;
+
+    width: 100vw !important;
+    min-width: 100vw !important;
+    height: 100vh !important;
+    min-height: 100vh !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    padding: 30px !important;
+    margin: 0 !important;
+
+    box-sizing: border-box !important;
+
+    background:
+        radial-gradient(
+            circle at 50% 18%,
+            rgba(142,73,181,.24),
+            transparent 32%
+        ),
+        linear-gradient(
+            135deg,
+            #17102f 0%,
+            #211443 50%,
+            #17102f 100%
+        ) !important;
+}
+
+.auth-card {
+    position: relative !important;
+
+    width: min(430px, 92vw) !important;
+    max-width: 430px !important;
+
+    margin: 0 auto !important;
+    padding: 36px !important;
+
+    box-sizing: border-box !important;
+
+    border:
+        1px solid
+        rgba(225,180,52,.72) !important;
+
+    border-radius: 22px !important;
+
+    background:
+        linear-gradient(
+            145deg,
+            #302052 0%,
+            #21163d 100%
+        ) !important;
+
+    box-shadow:
+        0 25px 80px
+        rgba(0,0,0,.50) !important;
+
+    text-align: center !important;
+}
+
+.auth-card-register {
+    width: min(620px, 92vw) !important;
+    max-width: 620px !important;
+}
+
+.auth-symbol {
+    margin: 0 0 8px !important;
+    font-size: 50px !important;
+    line-height: 1 !important;
+    color: #f5d46b !important;
+}
+
+.auth-title {
+    font-family: Georgia, serif !important;
+    font-size: 29px !important;
+    line-height: 1.1 !important;
+    color: #f5d46b !important;
+}
+
+.auth-subtitle {
+    margin:
+        6px 0 24px !important;
+    color: #e7bd43 !important;
+    font-size: 16px !important;
+}
+
+.auth-card h2 {
+    margin:
+        0 0 20px !important;
+    color: #f6d66c !important;
+    font-family: Georgia, serif !important;
+    font-size: 28px !important;
+    line-height: 1.2 !important;
+    font-weight: 500 !important;
+}
+
+.auth-card input {
+    display: block !important;
+
+    width: 100% !important;
+
+    min-height: 48px !important;
+
+    margin: 9px 0 !important;
+    padding: 14px 15px !important;
+
+    box-sizing: border-box !important;
+
+    border:
+        1px solid
+        rgba(225,180,52,.48) !important;
+
+    border-radius: 11px !important;
+
+    background:
+        rgba(0,0,0,.18) !important;
+
+    color: #fff !important;
+
+    font-size: 16px !important;
+
+    outline: none !important;
+}
+
+.auth-card input::placeholder {
+    color: rgba(255,255,255,.66) !important;
+}
+
+.auth-card button {
+    display: block !important;
+
+    width: 100% !important;
+
+    min-height: 48px !important;
+
+    margin-top: 12px !important;
+    padding: 13px 16px !important;
+
+    box-sizing: border-box !important;
+
+    border:
+        1px solid
+        #d7aa31 !important;
+
+    border-radius: 11px !important;
+
+    background:
+        linear-gradient(
+            90deg,
+            #713199,
+            #5d2789
+        ) !important;
+
+    color: #f8d96d !important;
+
+    font-size: 16px !important;
+    font-weight: 600 !important;
+
+    cursor: pointer !important;
+}
+
+.auth-link {
+    background: transparent !important;
+    border: none !important;
+    color: #d9cba8 !important;
+}
+
+.auth-register {
+    background: transparent !important;
+}
+
+.auth-divider {
+    margin: 15px 0 !important;
+    color: #a99d83 !important;
+}
+
+.auth-message {
+    min-height: 22px !important;
+    margin-top: 14px !important;
+    line-height: 1.4 !important;
+}
+
+.auth-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px 10px !important;
+}
+
+.auth-description {
+    color: #ddd4c1 !important;
+    line-height: 1.5 !important;
+    margin-bottom: 18px !important;
+}
+
+@media (max-width: 680px) {
+    .auth-shell {
+        padding: 18px !important;
+    }
+
+    .auth-card,
+    .auth-card-register {
+        width: min(96vw, 620px) !important;
+        max-width: 96vw !important;
+        padding: 25px !important;
+    }
+
+    .auth-grid {
+        grid-template-columns: 1fr !important;
+    }
 }
 
 </style>
@@ -1964,55 +2184,45 @@ async function registerUser() {
 }
 
 function showForgotPassword() {
+    document.body.style.visibility = 'visible';
+
     document.body.innerHTML = `
-        <div style="
-            max-width:400px;
-            margin:80px auto;
-            padding:30px;
-            font-family:Arial;
-            text-align:center;
-        ">
-            <h2>Восстановление пароля</h2>
+        <div class="auth-shell">
+            <div class="auth-card">
 
-            <input
-                id="resetEmail"
-                type="email"
-                placeholder="Введите ваш Email"
-                style="
-                    width:100%;
-                    padding:12px;
-                    box-sizing:border-box;
-                    margin:15px 0;
-                "
-            >
+                <div class="auth-symbol">✧</div>
+                <div class="auth-title">NUMEROLOGY</div>
+                <div class="auth-subtitle">Platform</div>
 
-            <button
-                type="button"
-                onclick="sendPasswordReset()"
-                style="padding:12px 25px;cursor:pointer;"
-            >
-                Отправить ссылку
-            </button>
+                <h2>Восстановление пароля</h2>
 
-            <div
-                id="resetMessage"
-                style="margin-top:15px;"
-            ></div>
+                <input
+                    id="resetEmail"
+                    type="email"
+                    placeholder="Введите ваш Email"
+                >
 
-            <button
-                type="button"
-                onclick="showLogin()"
-                style="
-                    margin-top:20px;
-                    border:none;
-                    background:none;
-                    color:#555;
-                    text-decoration:underline;
-                    cursor:pointer;
-                "
-            >
-                ← Вернуться ко входу
-            </button>
+                <button
+                    type="button"
+                    onclick="sendPasswordReset()"
+                >
+                    Отправить ссылку
+                </button>
+
+                <div
+                    id="resetMessage"
+                    class="auth-message"
+                ></div>
+
+                <button
+                    class="auth-link"
+                    type="button"
+                    onclick="showLogin()"
+                >
+                    ← Вернуться ко входу
+                </button>
+
+            </div>
         </div>
     `;
 
