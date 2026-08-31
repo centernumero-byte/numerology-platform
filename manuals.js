@@ -119,10 +119,6 @@ function ensureMaterialStyles() {
 
     style.textContent = `
 
-        /* =============================================
-           ОСНОВНАЯ ОБЛАСТЬ
-           ============================================= */
-
         #contentCards.pm-content {
             display: block !important;
             width: 100% !important;
@@ -131,20 +127,10 @@ function ensureMaterialStyles() {
             padding: 0 !important;
         }
 
-
-        /* =============================================
-           КАРТОЧКИ ПЯТИ НАПРАВЛЕНИЙ
-           НЕ ИСПОЛЬЗУЕМ СТАРЫЙ .cards
-           ============================================= */
-
         .pm-direction-grid {
             width: 100%;
             display: grid;
-            grid-template-columns:
-                repeat(
-                    5,
-                    minmax(170px, 1fr)
-                );
+            grid-template-columns: repeat(5, minmax(170px, 1fr));
             gap: 20px;
             align-items: stretch;
         }
@@ -154,60 +140,39 @@ function ensureMaterialStyles() {
             min-width: 0 !important;
             min-height: 245px !important;
             box-sizing: border-box !important;
-
             display: flex !important;
             flex-direction: column !important;
             align-items: center !important;
             justify-content: center !important;
-
             padding: 28px 20px !important;
-
             border-radius: 18px !important;
             border: 1px solid #d7aa31 !important;
-
-            background:
-                linear-gradient(
-                    145deg,
-                    #176be8,
-                    #1453c8
-                ) !important;
-
+            background: linear-gradient(145deg, #176be8, #1453c8) !important;
             color: #fff !important;
-
             cursor: pointer;
             text-align: center;
-
-            transition:
-                transform .2s ease,
-                box-shadow .2s ease;
+            transition: transform .2s ease, box-shadow .2s ease;
         }
 
         .pm-direction-card:hover {
             transform: translateY(-4px);
-            box-shadow:
-                0 12px 30px
-                rgba(0,0,0,.25);
+            box-shadow: 0 12px 30px rgba(0,0,0,.25);
         }
 
         .pm-direction-card .pm-direction-icon {
             width: 78px;
             height: 78px;
-
             display: flex;
             align-items: center;
             justify-content: center;
-
             margin-bottom: 18px;
-
             font-size: 48px;
             line-height: 1;
         }
 
         .pm-direction-card h3 {
             margin: 0 0 10px !important;
-
             color: #fff4c7 !important;
-
             font-family: Georgia, serif !important;
             font-size: 22px !important;
             line-height: 1.15 !important;
@@ -215,53 +180,32 @@ function ensureMaterialStyles() {
 
         .pm-direction-card p {
             margin: 0 !important;
-
             color: #fff !important;
-
             font-size: 16px !important;
             font-weight: 600 !important;
         }
 
-
-        /* =============================================
-           ПИФАГОР
-           ============================================= */
-
         .pm-pythagoras {
             display: grid;
-
-            grid-template-columns:
-                repeat(3, 1fr);
-
+            grid-template-columns: repeat(3, 1fr);
             gap: 3px;
-
             width: 70px;
             height: 70px;
-
             padding: 5px;
-
             box-sizing: border-box;
-
             border-radius: 10px;
-
             background: rgba(255,255,255,.18);
+            margin-bottom: 18px;
         }
 
         .pm-pythagoras span {
             display: flex;
             align-items: center;
             justify-content: center;
-
             color: white;
-
             font-size: 15px;
             font-weight: 800;
         }
-
-
-        /* =============================================
-           СТРАНИЦА КОНКРЕТНОГО НАПРАВЛЕНИЯ
-           ============================================= */
 
         .pm-page {
             width: 100%;
@@ -272,32 +216,24 @@ function ensureMaterialStyles() {
 
         .pm-page-head {
             width: 100%;
-
             display: flex;
             align-items: flex-start;
             justify-content: space-between;
-
             gap: 30px;
-
             margin-bottom: 25px;
         }
 
         .pm-page-title {
             margin: 0;
-
             color: #f6d66c;
-
             font-family: Georgia, serif;
-
             font-size: 38px;
             line-height: 1.1;
         }
 
         .pm-page-subtitle {
             margin: 10px 0 0;
-
             color: #fff;
-
             font-size: 17px;
         }
 
@@ -305,26 +241,15 @@ function ensureMaterialStyles() {
             flex-shrink: 0;
         }
 
-
-        /* =============================================
-           НАЗАД
-           ============================================= */
-
         .pm-back {
             display: inline-flex;
             align-items: center;
-
             margin-bottom: 18px;
-
             padding: 0;
-
             border: none;
             background: transparent;
-
             color: #f6d66c;
-
             cursor: pointer;
-
             font-size: 17px;
             font-weight: 600;
         }
@@ -333,75 +258,44 @@ function ensureMaterialStyles() {
             text-decoration: underline;
         }
 
-
-        /* =============================================
-           КНОПКИ
-           ============================================= */
-
         .pm-button {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-
             min-height: 48px;
-
             box-sizing: border-box;
-
             padding: 12px 20px;
-
             border: 1px solid #d7aa31;
             border-radius: 12px;
-
-            background:
-                linear-gradient(
-                    135deg,
-                    #7041b0,
-                    #523083
-                );
-
+            background: linear-gradient(135deg, #7041b0, #523083);
             color: #fff4c7;
-
             cursor: pointer;
-
             font-size: 16px;
             font-weight: 700;
-
             white-space: nowrap;
-
-            transition:
-                transform .2s ease,
-                box-shadow .2s ease;
+            transition: transform .2s ease, box-shadow .2s ease;
         }
 
         .pm-button:hover {
             transform: translateY(-2px);
-
-            box-shadow:
-                0 8px 22px
-                rgba(0,0,0,.25);
+            box-shadow: 0 8px 22px rgba(0,0,0,.25);
         }
 
-
-        /* =============================================
-           ПАНЕЛЬ ДОБАВЛЕНИЯ
-           ============================================= */
+        .pm-button:disabled {
+            opacity: .55;
+            cursor: wait;
+            transform: none;
+        }
 
         .pm-add-panel {
             display: none;
-
             width: 100%;
-
             box-sizing: border-box;
-
             margin: 0 0 28px;
-
             padding: 25px;
-
             border: 1px solid rgba(215,170,49,.55);
             border-radius: 18px;
-
-            background:
-                rgba(18,13,48,.75);
+            background: rgba(18,13,48,.75);
         }
 
         .pm-add-panel.open {
@@ -410,89 +304,54 @@ function ensureMaterialStyles() {
 
         .pm-add-panel-title {
             margin-bottom: 22px;
-
             color: #f6d66c;
-
             font-family: Georgia, serif;
-
             font-size: 26px;
             font-weight: 700;
         }
 
-
-        /* =============================================
-           ДВЕ КОЛОНКИ
-           ============================================= */
-
         .pm-add-grid {
             width: 100%;
-
             display: grid;
-
-            grid-template-columns:
-                minmax(0, 1fr)
-                minmax(0, 1fr);
-
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
             gap: 24px;
         }
 
         .pm-add-box {
             width: 100%;
             min-width: 0;
-
             box-sizing: border-box;
-
             padding: 22px;
-
-            border: 1px solid
-                rgba(215,170,49,.3);
-
+            border: 1px solid rgba(215,170,49,.3);
             border-radius: 15px;
-
-            background:
-                rgba(255,255,255,.045);
+            background: rgba(255,255,255,.045);
         }
 
         .pm-add-label {
             display: block;
-
             margin-bottom: 12px;
-
             color: #fff4d0;
-
             font-size: 18px;
             font-weight: 700;
         }
 
-
-        /* =============================================
-           INPUTS
-           ============================================= */
-
-        .pm-input {
+        .pm-input,
+        .pm-file-input {
             display: block;
-
             width: 100% !important;
             max-width: 100% !important;
-
             box-sizing: border-box !important;
-
             min-height: 48px;
-
-            padding: 12px 14px;
-
-            border: 1px solid
-                rgba(215,170,49,.7);
-
+            border: 1px solid rgba(215,170,49,.7);
             border-radius: 10px;
-
             background: #17112f;
-
             color: white;
-
             outline: none;
-
             font-size: 15px;
+        }
+
+        .pm-input {
+            padding: 12px 14px;
         }
 
         .pm-input::placeholder {
@@ -504,56 +363,25 @@ function ensureMaterialStyles() {
         }
 
         .pm-file-input {
-            display: block;
-
-            width: 100% !important;
-
-            min-height: 48px;
-
-            box-sizing: border-box;
-
             margin-bottom: 14px;
-
             padding: 8px;
-
-            border-radius: 10px;
-
-            border: 1px solid
-                rgba(215,170,49,.6);
-
-            background: #17112f;
-
-            color: white;
         }
 
         .pm-file-row {
             display: block;
-
             width: 100%;
         }
 
-        .pm-file-row .pm-button {
-            width: 100%;
-        }
-
+        .pm-file-row .pm-button,
         .pm-add-box > .pm-button {
             width: 100%;
-
             margin-top: 14px;
         }
 
-
-        /* =============================================
-           СТАТУС
-           ============================================= */
-
         .pm-status {
             margin-top: 18px;
-
             color: #ddd5df;
-
             font-size: 15px;
-
             line-height: 1.5;
         }
 
@@ -567,70 +395,40 @@ function ensureMaterialStyles() {
 
         .pm-note {
             margin-top: 18px;
-
             color: #aaa2b4;
-
             font-size: 13px;
-
             line-height: 1.5;
         }
 
-
-        /* =============================================
-           СПИСОК МАТЕРИАЛОВ
-           ============================================= */
-
         .pm-materials {
             width: 100%;
-
             display: grid;
-
-            grid-template-columns:
-                repeat(
-                    auto-fill,
-                    minmax(320px, 1fr)
-                );
-
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: 20px;
         }
 
         .pm-material {
             width: 100%;
             min-width: 0;
-
             box-sizing: border-box;
-
             display: flex;
             flex-direction: column;
-
             padding: 22px;
-
-            border: 1px solid
-                rgba(215,170,49,.35);
-
+            border: 1px solid rgba(215,170,49,.35);
             border-radius: 16px;
-
-            background:
-                rgba(15,11,38,.7);
+            background: rgba(15,11,38,.7);
         }
 
         .pm-material-icon {
             width: 64px;
             height: 64px;
-
             display: flex;
             align-items: center;
             justify-content: center;
-
             margin-bottom: 15px;
-
             border-radius: 12px;
-
-            background:
-                rgba(91,48,139,.65);
-
+            background: rgba(91,48,139,.65);
             color: #f6d66c;
-
             font-size: 28px;
             font-weight: 800;
         }
@@ -648,130 +446,78 @@ function ensureMaterialStyles() {
 
         .pm-material-name {
             margin-bottom: 8px;
-
             color: white;
-
             font-size: 19px;
             font-weight: 700;
-
             line-height: 1.3;
-
             overflow-wrap: anywhere;
         }
 
         .pm-material-meta {
             color: #c9c1ce;
-
             font-size: 14px;
-
             line-height: 1.5;
-
             overflow-wrap: anywhere;
         }
 
         .pm-material-action {
             display: flex;
             flex-wrap: wrap;
-
             gap: 8px;
-
             margin-top: 18px;
         }
 
         .pm-open-button {
             min-height: 44px;
-
             padding: 10px 18px;
-
             border: 1px solid #d7aa31;
             border-radius: 9px;
-
             background: #63358d;
-
             color: #f8e7a8;
-
             cursor: pointer;
-
             font-size: 15px;
             font-weight: 700;
         }
 
         .pm-delete-button {
             min-height: 44px;
-
             padding: 10px 14px;
-
-            border: 1px solid
-                rgba(255,160,160,.4);
-
+            border: 1px solid rgba(255,160,160,.4);
             border-radius: 9px;
-
             background: transparent;
-
             color: #ffb4b4;
-
             cursor: pointer;
-
             font-size: 14px;
         }
 
-
-        /* =============================================
-           ПУСТО
-           ============================================= */
-
         .pm-empty {
             width: 100%;
-
             box-sizing: border-box;
-
             padding: 55px 25px;
-
             text-align: center;
-
-            border: 1px dashed
-                rgba(215,170,49,.4);
-
+            border: 1px dashed rgba(215,170,49,.4);
             border-radius: 16px;
-
             color: #c9c1ce;
-
-            background:
-                rgba(15,11,38,.35);
-
+            background: rgba(15,11,38,.35);
             grid-column: 1 / -1;
         }
 
         .pm-empty-title {
             margin-bottom: 10px;
-
             color: #f6d66c;
-
             font-family: Georgia, serif;
-
             font-size: 25px;
         }
 
-
-        /* =============================================
-           АДАПТИВ
-           ============================================= */
-
-        @media (max-width: 1100px) {
-
+        @media (max-width: 1200px) {
             .pm-direction-grid {
-                grid-template-columns:
-                    repeat(3, minmax(180px, 1fr));
+                grid-template-columns: repeat(3, minmax(180px, 1fr));
             }
-
         }
 
         @media (max-width: 800px) {
-
             .pm-direction-grid {
-                grid-template-columns:
-                    repeat(2, minmax(160px, 1fr));
-
+                grid-template-columns: repeat(2, minmax(160px, 1fr));
                 gap: 15px;
             }
 
@@ -805,7 +551,6 @@ function ensureMaterialStyles() {
         }
 
         @media (max-width: 520px) {
-
             .pm-direction-grid {
                 grid-template-columns: 1fr;
             }
@@ -821,7 +566,6 @@ function ensureMaterialStyles() {
             .pm-add-box {
                 padding: 16px;
             }
-
         }
     `;
 
@@ -836,15 +580,9 @@ function ensureMaterialStyles() {
 function pythagorasIconHtml() {
     return `
         <div class="pm-pythagoras">
-            <span>1</span>
-            <span>4</span>
-            <span>7</span>
-            <span>2</span>
-            <span>5</span>
-            <span>8</span>
-            <span>3</span>
-            <span>6</span>
-            <span>9</span>
+            <span>1</span><span>4</span><span>7</span>
+            <span>2</span><span>5</span><span>8</span>
+            <span>3</span><span>6</span><span>9</span>
         </div>
     `;
 }
@@ -855,37 +593,23 @@ function pythagorasIconHtml() {
    ========================================================= */
 
 async function loadPlatformMaterials(section) {
-
-    const contentCards =
-        document.getElementById('contentCards');
-
+    const contentCards = document.getElementById('contentCards');
     if (!contentCards) return;
 
     ensureMaterialStyles();
-
-    /* На уровне раздела приветствие ОСТАЁТСЯ */
     showPlatformWelcome();
-
     contentCards.classList.add('pm-content');
 
-    const subtitle =
-        section === 'videos'
-            ? 'Видео'
-            : 'Методическое пособие';
+    const subtitle = section === 'videos'
+        ? 'Видео'
+        : 'Методическое пособие';
 
     contentCards.innerHTML = `
         <div class="pm-direction-grid">
-
             ${PLATFORM_DIRECTIONS.map(item => {
-
-                const icon =
-                    item.key === 'pythagoras'
-                        ? pythagorasIconHtml()
-                        : `
-                            <div class="pm-direction-icon">
-                                ${item.icon}
-                            </div>
-                        `;
+                const icon = item.key === 'pythagoras'
+                    ? pythagorasIconHtml()
+                    : `<div class="pm-direction-icon">${item.icon}</div>`;
 
                 return `
                     <div
@@ -894,22 +618,9 @@ async function loadPlatformMaterials(section) {
                         data-direction="${item.key}"
                         role="button"
                         tabindex="0"
-                        onclick="
-                            openPlatformMaterial(
-                                '${section}',
-                                '${item.key}'
-                            )
-                        "
-                        onkeydown="
-                            if(event.key === 'Enter' || event.key === ' ') {
-                                openPlatformMaterial(
-                                    '${section}',
-                                    '${item.key}'
-                                );
-                            }
-                        "
+                        onclick="openPlatformMaterial('${section}','${item.key}')"
+                        onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openPlatformMaterial('${section}','${item.key}'); }"
                     >
-
                         ${icon}
 
                         <h3>
@@ -919,12 +630,9 @@ async function loadPlatformMaterials(section) {
                         <p>
                             ${subtitle}
                         </p>
-
                     </div>
                 `;
-
             }).join('')}
-
         </div>
     `;
 }
@@ -947,22 +655,13 @@ async function loadVideos() {
    ОТКРЫТИЕ КОНКРЕТНОГО НАПРАВЛЕНИЯ
    ========================================================= */
 
-async function openPlatformMaterial(
-    section,
-    direction
-) {
-
-    const contentCards =
-        document.getElementById('contentCards');
+async function openPlatformMaterial(section, direction) {
+    const contentCards = document.getElementById('contentCards');
 
     if (!contentCards) return;
 
     ensureMaterialStyles();
 
-    /*
-       Здесь мы уже провалились внутрь:
-       приветствие УБИРАЕМ.
-    */
     hidePlatformWelcome();
 
     contentCards.classList.add('pm-content');
@@ -983,19 +682,16 @@ async function openPlatformMaterial(
     };
 
     contentCards.innerHTML = `
-
         <div class="pm-page">
 
             <button
                 class="pm-back"
                 type="button"
-                onclick="
-                    ${
-                        section === 'videos'
-                            ? 'loadVideos()'
-                            : 'loadManuals()'
-                    }
-                "
+                onclick="${
+                    section === 'videos'
+                        ? 'loadVideos()'
+                        : 'loadManuals()'
+                }"
             >
                 ← Назад
             </button>
@@ -1024,9 +720,7 @@ async function openPlatformMaterial(
                                 <button
                                     class="pm-button"
                                     type="button"
-                                    onclick="
-                                        toggleMaterialAddPanel()
-                                    "
+                                    onclick="toggleMaterialAddPanel()"
                                 >
                                     ＋ Добавить материал
                                 </button>
@@ -1055,8 +749,6 @@ async function openPlatformMaterial(
 
                             <div class="pm-add-grid">
 
-
-                                <!-- ФАЙЛ / ВИДЕО -->
 
                                 <div class="pm-add-box">
 
@@ -1088,9 +780,7 @@ async function openPlatformMaterial(
                                         <button
                                             class="pm-button"
                                             type="button"
-                                            onclick="
-                                                uploadPlatformMaterialFile()
-                                            "
+                                            onclick="uploadPlatformMaterialFile()"
                                         >
                                             ${
                                                 section === 'videos'
@@ -1103,8 +793,6 @@ async function openPlatformMaterial(
 
                                 </div>
 
-
-                                <!-- ССЫЛКА -->
 
                                 <div class="pm-add-box">
 
@@ -1127,9 +815,7 @@ async function openPlatformMaterial(
                                     <button
                                         class="pm-button"
                                         type="button"
-                                        onclick="
-                                            savePlatformMaterialUrl()
-                                        "
+                                        onclick="savePlatformMaterialUrl()"
                                     >
                                         🔗 Сохранить ссылку
                                     </button>
@@ -1404,7 +1090,7 @@ function renderMaterialItem(material) {
                     type="button"
                     onclick="
                         downloadPlatformMaterial(
-                            '${material.id}'
+                            '${platformEscape(material.id)}'
                         )
                     "
                 >
@@ -1418,7 +1104,7 @@ function renderMaterialItem(material) {
                     type="button"
                     onclick="
                         goToPlatformMaterial(
-                            '${material.id}'
+                            '${platformEscape(material.id)}'
                         )
                     "
                 >
@@ -1436,7 +1122,7 @@ function renderMaterialItem(material) {
                     type="button"
                     onclick="
                         deletePlatformMaterial(
-                            '${material.id}'
+                            '${platformEscape(material.id)}'
                         )
                     "
                 >
@@ -1451,7 +1137,7 @@ function renderMaterialItem(material) {
 
         <div
             class="pm-material"
-            data-material-id="${material.id}"
+            data-material-id="${platformEscape(material.id)}"
         >
 
             <div
@@ -2073,14 +1759,26 @@ async function deletePlatformMaterial(
 
         if (material?.file_path) {
 
-            await supabaseClient
-                .storage
-                .from(
-                    PLATFORM_STORAGE_BUCKET
-                )
-                .remove([
-                    material.file_path
-                ]);
+            const {
+                error: storageError
+            } =
+                await supabaseClient
+                    .storage
+                    .from(
+                        PLATFORM_STORAGE_BUCKET
+                    )
+                    .remove([
+                        material.file_path
+                    ]);
+
+            if (storageError) {
+
+                console.warn(
+                    'Не удалось удалить файл из Storage:',
+                    storageError
+                );
+
+            }
         }
 
 
