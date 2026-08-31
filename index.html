@@ -589,7 +589,7 @@
     }
 
 }
-
+}
 .dashboard-wrap {
   width: 100%;
 }
@@ -697,226 +697,6 @@
   .stats-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-}
-
-
-/* =========================================================
-   АВТОРИЗАЦИЯ — ЦЕНТР ЭКРАНА
-   ========================================================= */
-
-.auth-shell {
-    position: fixed !important;
-    inset: 0 !important;
-    z-index: 99990 !important;
-
-    width: 100vw !important;
-    min-width: 100vw !important;
-    height: 100vh !important;
-    min-height: 100vh !important;
-
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-
-    padding: 30px !important;
-    margin: 0 !important;
-
-    box-sizing: border-box !important;
-
-    background:
-        radial-gradient(
-            circle at 50% 18%,
-            rgba(142,73,181,.24),
-            transparent 32%
-        ),
-        linear-gradient(
-            135deg,
-            #17102f 0%,
-            #211443 50%,
-            #17102f 100%
-        ) !important;
-}
-
-.auth-card {
-    position: relative !important;
-
-    width: min(430px, 92vw) !important;
-    max-width: 430px !important;
-
-    margin: 0 auto !important;
-    padding: 36px !important;
-
-    box-sizing: border-box !important;
-
-    border:
-        1px solid
-        rgba(225,180,52,.72) !important;
-
-    border-radius: 22px !important;
-
-    background:
-        linear-gradient(
-            145deg,
-            #302052 0%,
-            #21163d 100%
-        ) !important;
-
-    box-shadow:
-        0 25px 80px
-        rgba(0,0,0,.50) !important;
-
-    text-align: center !important;
-}
-
-.auth-card-register {
-    width: min(620px, 92vw) !important;
-    max-width: 620px !important;
-}
-
-.auth-symbol {
-    margin: 0 0 8px !important;
-    font-size: 50px !important;
-    line-height: 1 !important;
-    color: #f5d46b !important;
-}
-
-.auth-title {
-    font-family: Georgia, serif !important;
-    font-size: 29px !important;
-    line-height: 1.1 !important;
-    color: #f5d46b !important;
-}
-
-.auth-subtitle {
-    margin:
-        6px 0 24px !important;
-    color: #e7bd43 !important;
-    font-size: 16px !important;
-}
-
-.auth-card h2 {
-    margin:
-        0 0 20px !important;
-    color: #f6d66c !important;
-    font-family: Georgia, serif !important;
-    font-size: 28px !important;
-    line-height: 1.2 !important;
-    font-weight: 500 !important;
-}
-
-.auth-card input {
-    display: block !important;
-
-    width: 100% !important;
-
-    min-height: 48px !important;
-
-    margin: 9px 0 !important;
-    padding: 14px 15px !important;
-
-    box-sizing: border-box !important;
-
-    border:
-        1px solid
-        rgba(225,180,52,.48) !important;
-
-    border-radius: 11px !important;
-
-    background:
-        rgba(0,0,0,.18) !important;
-
-    color: #fff !important;
-
-    font-size: 16px !important;
-
-    outline: none !important;
-}
-
-.auth-card input::placeholder {
-    color: rgba(255,255,255,.66) !important;
-}
-
-.auth-card button {
-    display: block !important;
-
-    width: 100% !important;
-
-    min-height: 48px !important;
-
-    margin-top: 12px !important;
-    padding: 13px 16px !important;
-
-    box-sizing: border-box !important;
-
-    border:
-        1px solid
-        #d7aa31 !important;
-
-    border-radius: 11px !important;
-
-    background:
-        linear-gradient(
-            90deg,
-            #713199,
-            #5d2789
-        ) !important;
-
-    color: #f8d96d !important;
-
-    font-size: 16px !important;
-    font-weight: 600 !important;
-
-    cursor: pointer !important;
-}
-
-.auth-link {
-    background: transparent !important;
-    border: none !important;
-    color: #d9cba8 !important;
-}
-
-.auth-register {
-    background: transparent !important;
-}
-
-.auth-divider {
-    margin: 15px 0 !important;
-    color: #a99d83 !important;
-}
-
-.auth-message {
-    min-height: 22px !important;
-    margin-top: 14px !important;
-    line-height: 1.4 !important;
-}
-
-.auth-grid {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 8px 10px !important;
-}
-
-.auth-description {
-    color: #ddd4c1 !important;
-    line-height: 1.5 !important;
-    margin-bottom: 18px !important;
-}
-
-@media (max-width: 680px) {
-    .auth-shell {
-        padding: 18px !important;
-    }
-
-    .auth-card,
-    .auth-card-register {
-        width: min(96vw, 620px) !important;
-        max-width: 96vw !important;
-        padding: 25px !important;
-    }
-
-    .auth-grid {
-        grid-template-columns: 1fr !important;
-    }
 }
 
 </style>
@@ -1183,15 +963,6 @@ function findMaterialForMethod(materials, card) {
     }) || null;
 }
 
-function pythagorasIconHtml() {
-    return `
-        <div class="card-icon pythagoras-icon">
-            <span>1</span><span>4</span><span>7</span>
-            <span>2</span><span>5</span><span>8</span>
-            <span>3</span><span>6</span><span>9</span>
-        </div>
-    `;
-}
 
 function renderMethodCards(options) {
     const {
@@ -1268,51 +1039,6 @@ function openMaterial(url, title) {
     }
     showMaterialManager(title || 'Материал');
 }
-
-function showMaterialManager(title) {
-    const old = document.getElementById('materialManager');
-    if (old) old.remove();
-
-    const box = document.createElement('div');
-    box.id = 'materialManager';
-
-    box.innerHTML = `
-        <div class="material-manager-overlay">
-            <div class="material-manager">
-                <button class="material-manager-close"
-                    onclick="document.getElementById('materialManager').remove()">×</button>
-
-                <h2>${title}</h2>
-
-                <label>Вставить ссылку:</label>
-                <input id="materialUrlInput"
-                    type="url"
-                    placeholder="https://..."
-                    class="material-manager-input">
-
-                <button class="material-manager-button"
-                    onclick="saveMaterialUrl()">
-                    Сохранить ссылку
-                </button>
-
-                <div class="material-manager-or">или</div>
-
-                <label>Загрузить файл:</label>
-                <input id="materialFileInput"
-                    type="file"
-                    class="material-manager-input">
-
-                <button class="material-manager-button"
-                    onclick="uploadMaterialFile()">
-                    Загрузить
-                </button>
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(box);
-}
-
 
 function showMaterialManager(title) {
     const old = document.getElementById('materialManager');
@@ -1637,6 +1363,137 @@ async function renderAccess() {
     await loadAdminUsers();
 }
 
+// ===== УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ И ДОСТУПОМ =====
+
+async function loadAdminUsers() {
+    const box = document.getElementById('adminUsersTable');
+    const select = document.getElementById('accessUserSelect');
+    if (!box) return;
+
+    box.innerHTML = '<div class="empty-table">Загрузка пользователей...</div>';
+
+    const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('id, first_name, last_name, middle_name, email, phone, role, status')
+        .order('last_name', { ascending: true });
+
+    if (error) {
+        console.error('Ошибка загрузки пользователей:', error);
+        box.innerHTML = '<div class="empty-table">Не удалось загрузить пользователей. Проверьте RLS для таблицы profiles.</div>';
+        if (select) select.innerHTML = '<option value="">Не удалось загрузить</option>';
+        return;
+    }
+
+    const users = (data || []).filter(function(user) {
+        return String(user.role || '').toLowerCase() === 'client';
+    });
+
+    if (select) {
+        select.innerHTML = users.length
+            ? users.map(function(user) {
+                const fullName = [user.last_name, user.first_name, user.middle_name]
+                    .filter(Boolean).join(' ') || user.email || 'Пользователь';
+                return `<option value="${escapeHtml(user.id)}">${escapeHtml(fullName)} — ${escapeHtml(user.email || '')}</option>`;
+            }).join('')
+            : '<option value="">Нет зарегистрированных клиентов</option>';
+    }
+
+    if (!data || !data.length) {
+        box.innerHTML = '<div class="empty-table">Зарегистрированных пользователей пока нет.</div>';
+        return;
+    }
+
+    box.innerHTML = `
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Пользователь</th>
+                    <th>Email</th>
+                    <th>Телефон</th>
+                    <th>Роль</th>
+                    <th>Статус</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${data.map(function(user) {
+                    const fullName = [user.last_name, user.first_name, user.middle_name]
+                        .filter(Boolean).join(' ') || '—';
+                    return `<tr>
+                        <td>${escapeHtml(fullName)}</td>
+                        <td>${escapeHtml(user.email || '—')}</td>
+                        <td>${escapeHtml(user.phone || '—')}</td>
+                        <td>${escapeHtml(user.role || 'client')}</td>
+                        <td>${escapeHtml(user.status || '—')}</td>
+                    </tr>`;
+                }).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+async function grantPlatformAccess() {
+    const userId = document.getElementById('accessUserSelect')?.value || '';
+    const term = document.getElementById('accessTermSelect')?.value || 'unlimited';
+    const message = document.getElementById('accessAdminMessage');
+
+    const setAccessMessage = function(text, ok) {
+        if (!message) return;
+        message.textContent = text;
+        message.style.color = ok ? '#8fe3a1' : '#ff9d9d';
+    };
+
+    if (!userId) {
+        setAccessMessage('Сначала выберите пользователя.', false);
+        return;
+    }
+
+    setAccessMessage('Выдаю доступ...', true);
+
+    const startsAt = new Date();
+    let endsAt = null;
+    let unlimited = false;
+
+    if (term === 'unlimited') {
+        unlimited = true;
+    } else {
+        endsAt = new Date(startsAt.getTime() + Number(term) * 24 * 60 * 60 * 1000);
+    }
+
+    // Завершаем предыдущие активные доступы пользователя, чтобы не было
+    // нескольких одновременно действующих записей.
+    const { error: closeError } = await supabaseClient
+        .from('access_periods')
+        .update({ status: 'expired' })
+        .eq('profile_id', userId)
+        .eq('access_kind', 'platform')
+        .eq('status', 'active');
+
+    if (closeError) {
+        console.warn('Не удалось закрыть старый доступ:', closeError);
+    }
+
+    const { error } = await supabaseClient
+        .from('access_periods')
+        .insert({
+            profile_id: userId,
+            access_kind: 'platform',
+            status: 'active',
+            payment_status: 'paid',
+            starts_at: startsAt.toISOString(),
+            ends_at: endsAt ? endsAt.toISOString() : null,
+            is_unlimited: unlimited
+        });
+
+    if (error) {
+        console.error('Ошибка выдачи доступа:', error);
+        setAccessMessage('Не удалось выдать доступ: ' + (error.message || 'ошибка Supabase'), false);
+        return;
+    }
+
+    setAccessMessage('Доступ успешно выдан.', true);
+    await loadAdminUsers();
+}
+
 // ===== ОТЧЁТЫ И СТАТИСТИКА =====
 
 async function renderStatistics() {
@@ -1733,27 +1590,32 @@ async function openCalculator(type) {
         return;
     }
 
-    const { data: access, error } = await supabaseClient
-        .from("access_periods")
-        .select("id, status, payment_status, starts_at, ends_at, is_unlimited")
-        .eq("profile_id", session.user.id)
-        .eq("status", "active")
-        .eq("payment_status", "paid")
-        .limit(1)
-        .maybeSingle();
+    // Администратор и нумеролог имеют доступ без отдельной записи access_periods.
+    if (!window.currentUserIsManager) {
+        const { data: access, error } = await supabaseClient
+            .from("access_periods")
+            .select("id, status, payment_status, starts_at, ends_at, is_unlimited")
+            .eq("profile_id", session.user.id)
+            .eq("access_kind", "platform")
+            .eq("status", "active")
+            .eq("payment_status", "paid")
+            .order("starts_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
 
-    if (error || !access) {
-        alert("У вас нет активного доступа к платформе.");
-        return;
-    }
+        if (error || !access) {
+            alert("У вас нет активного доступа к платформе.");
+            return;
+        }
 
-    if (
-        !access.is_unlimited &&
-        access.ends_at &&
-        new Date(access.ends_at) < new Date()
-    ) {
-        alert("Срок вашего доступа к платформе истёк.");
-        return;
+        if (
+            !access.is_unlimited &&
+            access.ends_at &&
+            new Date(access.ends_at) < new Date()
+        ) {
+            alert("Срок вашего доступа к платформе истёк.");
+            return;
+        }
     }
   const names = {
     adult: "Взрослая матрица",
@@ -2184,45 +2046,55 @@ async function registerUser() {
 }
 
 function showForgotPassword() {
-    document.body.style.visibility = 'visible';
-
     document.body.innerHTML = `
-        <div class="auth-shell">
-            <div class="auth-card">
+        <div style="
+            max-width:400px;
+            margin:80px auto;
+            padding:30px;
+            font-family:Arial;
+            text-align:center;
+        ">
+            <h2>Восстановление пароля</h2>
 
-                <div class="auth-symbol">✧</div>
-                <div class="auth-title">NUMEROLOGY</div>
-                <div class="auth-subtitle">Platform</div>
+            <input
+                id="resetEmail"
+                type="email"
+                placeholder="Введите ваш Email"
+                style="
+                    width:100%;
+                    padding:12px;
+                    box-sizing:border-box;
+                    margin:15px 0;
+                "
+            >
 
-                <h2>Восстановление пароля</h2>
+            <button
+                type="button"
+                onclick="sendPasswordReset()"
+                style="padding:12px 25px;cursor:pointer;"
+            >
+                Отправить ссылку
+            </button>
 
-                <input
-                    id="resetEmail"
-                    type="email"
-                    placeholder="Введите ваш Email"
-                >
+            <div
+                id="resetMessage"
+                style="margin-top:15px;"
+            ></div>
 
-                <button
-                    type="button"
-                    onclick="sendPasswordReset()"
-                >
-                    Отправить ссылку
-                </button>
-
-                <div
-                    id="resetMessage"
-                    class="auth-message"
-                ></div>
-
-                <button
-                    class="auth-link"
-                    type="button"
-                    onclick="showLogin()"
-                >
-                    ← Вернуться ко входу
-                </button>
-
-            </div>
+            <button
+                type="button"
+                onclick="showLogin()"
+                style="
+                    margin-top:20px;
+                    border:none;
+                    background:none;
+                    color:#555;
+                    text-decoration:underline;
+                    cursor:pointer;
+                "
+            >
+                ← Вернуться ко входу
+            </button>
         </div>
     `;
 
