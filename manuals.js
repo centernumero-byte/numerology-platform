@@ -1,6 +1,5 @@
 /* =========================================================
-   MANUAL.JS
-   Методические пособия + Видео
+   MANUAL.JS — ИСПРАВЛЕННАЯ ВЕРСИЯ
    ========================================================= */
 
 const PLATFORM_MATERIALS_TABLE = 'platform_materials';
@@ -29,86 +28,43 @@ let materialManagerState = {
 
 
 /* =========================================================
-   ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+   ПРИВЕТСТВИЕ
+   На главной странице раздела — ПОКАЗЫВАЕМ.
+   Внутри конкретного направления — УБИРАЕМ.
    ========================================================= */
 
-function platformEscape(value) {
-    return String(value ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-}
+function setPlatformWelcome(show) {
 
-
-function platformFileName(path) {
-    if (!path) return 'Файл';
-
-    const name =
-        String(path).split('/').pop() || 'Файл';
-
-    return name.replace(
-        /^[0-9a-f-]{20,}_/i,
-        ''
+    const elements = document.querySelectorAll(
+        'h1, h2, h3, .welcome, .welcome-title, .page-title'
     );
-}
 
+    elements.forEach(el => {
 
-function platformFormatDate(value) {
-    if (!value) return '';
+        const text =
+            (el.textContent || '').trim();
 
-    const date = new Date(value);
+        if (
+            text.includes('Добро пожаловать') ||
+            text.includes('Добро пожаловать, Центр Нумера')
+        ) {
 
-    if (Number.isNaN(date.getTime())) {
-        return '';
-    }
-
-    return date.toLocaleString(
-        'ru-RU',
-        {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+            el.style.display =
+                show ? '' : 'none';
         }
-    );
-}
-
-
-function isManager() {
-    return window.currentUserIsManager === true;
-}
-
-
-async function getCurrentSession() {
-
-    const {
-        data: { session },
-        error
-    } = await supabaseClient.auth.getSession();
-
-    if (error) throw error;
-
-    return session;
+    });
 }
 
 
 /* =========================================================
    СТИЛИ
-   ВАЖНО:
-   - карточки направлений используют СТИЛИ TESTS;
-   - свои стили не меняют цвет карточек;
-   - форма добавления принудительно располагается
-     в две нормальные колонки;
    ========================================================= */
 
 function ensureMaterialStyles() {
 
     if (
         document.getElementById(
-            'platformMaterialStylesV3'
+            'platformMaterialStylesV4'
         )
     ) {
         return;
@@ -117,25 +73,67 @@ function ensureMaterialStyles() {
     const style = document.createElement('style');
 
     style.id =
-        'platformMaterialStylesV3';
+        'platformMaterialStylesV4';
 
     style.textContent = `
 
-        /* =================================================
-           СТРАНИЦА НАПРАВЛЕНИЯ
-           ================================================= */
+        /* ================================================
+           КАРТОЧКИ НАПРАВЛЕНИЙ
+           Цвета берём те же, что используются в ТЕСТАХ
+           ================================================ */
+
+        #contentCards .pm-direction-wrapper {
+            width: 100% !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
+        }
+
+
+        #contentCards .pm-direction-wrapper .cards {
+            width: 100% !important;
+
+            display: grid !important;
+
+            grid-template-columns:
+                repeat(5, minmax(170px, 1fr)) !important;
+
+            gap: 18px !important;
+
+            align-items: stretch !important;
+
+            box-sizing: border-box !important;
+        }
+
+
+        #contentCards .pm-direction-wrapper .card {
+            width: 100% !important;
+            min-width: 0 !important;
+
+            box-sizing: border-box !important;
+
+            cursor: pointer !important;
+        }
+
+
+        /* ================================================
+           ВНУТРИ НАПРАВЛЕНИЯ
+           ================================================ */
 
         #contentCards .pm-page {
             width: 100% !important;
-            max-width: 1180px !important;
-            margin: 0 auto !important;
+            max-width: none !important;
+
+            margin: 0 !important;
+            padding: 0 !important;
+
             box-sizing: border-box !important;
         }
 
 
         #contentCards .pm-back {
             display: inline-flex !important;
-            align-items: center !important;
 
             margin: 0 0 18px 0 !important;
             padding: 0 !important;
@@ -145,7 +143,7 @@ function ensureMaterialStyles() {
 
             color: #f6d66c !important;
 
-            font-size: 16px !important;
+            font-size: 17px !important;
             font-weight: 700 !important;
 
             cursor: pointer !important;
@@ -159,7 +157,7 @@ function ensureMaterialStyles() {
             align-items: flex-start !important;
             justify-content: space-between !important;
 
-            gap: 30px !important;
+            gap: 25px !important;
 
             margin: 0 0 25px 0 !important;
             padding: 0 !important;
@@ -168,15 +166,7 @@ function ensureMaterialStyles() {
         }
 
 
-        #contentCards .pm-page-head-left {
-            flex: 1 1 auto !important;
-            min-width: 0 !important;
-        }
-
-
         #contentCards .pm-page-title {
-            display: block !important;
-
             margin: 0 !important;
             padding: 0 !important;
 
@@ -184,50 +174,167 @@ function ensureMaterialStyles() {
 
             font-family: Georgia, serif !important;
 
-            font-size: 34px !important;
-            line-height: 1.2 !important;
-
-            white-space: normal !important;
+            font-size: 36px !important;
+            line-height: 1.15 !important;
         }
 
 
         #contentCards .pm-page-subtitle {
-            display: block !important;
-
             margin: 8px 0 0 0 !important;
-            padding: 0 !important;
 
-            color: #eee5d0 !important;
+            color: #ffffff !important;
 
-            font-size: 16px !important;
-            line-height: 1.4 !important;
+            font-size: 17px !important;
         }
 
 
-        #contentCards .pm-head-actions {
-            flex: 0 0 auto !important;
+        /* ================================================
+           ДОБАВИТЬ МАТЕРИАЛ
+           ================================================ */
 
-            display: block !important;
+        #contentCards .pm-add-panel {
+            display: none !important;
 
-            margin: 0 !important;
-            padding: 0 !important;
-        }
+            width: 100% !important;
 
-
-        /* =================================================
-           КНОПКИ
-           ================================================= */
-
-        #contentCards .pm-button {
-            display: inline-flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-
-            min-height: 44px !important;
+            margin: 0 0 30px 0 !important;
+            padding: 25px !important;
 
             box-sizing: border-box !important;
 
-            padding: 10px 19px !important;
+            border: 1px solid
+                rgba(215,170,49,.5) !important;
+
+            border-radius: 16px !important;
+
+            background:
+                rgba(20,13,48,.85) !important;
+        }
+
+
+        #contentCards .pm-add-panel.open {
+            display: block !important;
+        }
+
+
+        #contentCards .pm-add-panel-title {
+            margin: 0 0 22px 0 !important;
+
+            color: #f6d66c !important;
+
+            font-family: Georgia, serif !important;
+
+            font-size: 25px !important;
+            font-weight: 700 !important;
+        }
+
+
+        /* ДВЕ КОЛОНКИ — БОЛЬШЕ НИКАКОГО НАЛОЖЕНИЯ */
+
+        #contentCards .pm-add-grid {
+            width: 100% !important;
+
+            display: grid !important;
+
+            grid-template-columns:
+                minmax(0, 1fr)
+                minmax(0, 1fr) !important;
+
+            gap: 25px !important;
+
+            box-sizing: border-box !important;
+        }
+
+
+        #contentCards .pm-add-box {
+            width: 100% !important;
+            min-width: 0 !important;
+
+            display: flex !important;
+            flex-direction: column !important;
+
+            box-sizing: border-box !important;
+
+            padding: 22px !important;
+
+            border: 1px solid
+                rgba(215,170,49,.35) !important;
+
+            border-radius: 14px !important;
+
+            background:
+                rgba(255,255,255,.04) !important;
+        }
+
+
+        #contentCards .pm-add-label {
+            display: block !important;
+
+            margin: 0 0 14px 0 !important;
+
+            color: #ffffff !important;
+
+            font-size: 17px !important;
+            font-weight: 700 !important;
+        }
+
+
+        #contentCards .pm-file-row {
+            width: 100% !important;
+
+            display: flex !important;
+            flex-direction: column !important;
+
+            gap: 14px !important;
+        }
+
+
+        #contentCards .pm-input,
+        #contentCards .pm-file-input {
+            width: 100% !important;
+            min-width: 0 !important;
+
+            min-height: 48px !important;
+
+            padding: 11px 14px !important;
+
+            box-sizing: border-box !important;
+
+            border: 1px solid
+                rgba(215,170,49,.6) !important;
+
+            border-radius: 10px !important;
+
+            background: #17112f !important;
+
+            color: #ffffff !important;
+
+            font-size: 15px !important;
+        }
+
+
+        #contentCards .pm-add-box .pm-button {
+            align-self: flex-start !important;
+
+            margin-top: 12px !important;
+        }
+
+
+        /* ================================================
+           КНОПКА
+           ================================================ */
+
+        #contentCards .pm-button {
+            display: inline-flex !important;
+
+            align-items: center !important;
+            justify-content: center !important;
+
+            min-height: 46px !important;
+
+            padding: 10px 20px !important;
+
+            box-sizing: border-box !important;
 
             border: 1px solid #d7aa31 !important;
             border-radius: 11px !important;
@@ -245,71 +352,21 @@ function ensureMaterialStyles() {
             font-weight: 700 !important;
 
             cursor: pointer !important;
-
-            white-space: nowrap !important;
         }
 
 
-        #contentCards .pm-button:hover {
-            transform: translateY(-1px);
-        }
+        /* ================================================
+           МАТЕРИАЛЫ — НА ВСЮ ШИРИНУ СТРАНИЦЫ
+           НЕ В ОДИН СТОЛБИК
+           ================================================ */
 
-
-        /* =================================================
-           ДОБАВЛЕНИЕ МАТЕРИАЛА
-           ================================================= */
-
-        #contentCards .pm-add-panel {
-            display: none !important;
-
-            width: 100% !important;
-
-            box-sizing: border-box !important;
-
-            margin: 0 0 25px 0 !important;
-            padding: 22px !important;
-
-            border: 1px solid
-                rgba(215,170,49,.45) !important;
-
-            border-radius: 16px !important;
-
-            background:
-                rgba(20,13,48,.82) !important;
-        }
-
-
-        #contentCards .pm-add-panel.open {
-            display: block !important;
-        }
-
-
-        #contentCards .pm-add-panel-title {
-            display: block !important;
-
-            margin: 0 0 20px 0 !important;
-            padding: 0 !important;
-
-            color: #f6d66c !important;
-
-            font-family: Georgia, serif !important;
-
-            font-size: 23px !important;
-            line-height: 1.2 !important;
-            font-weight: 700 !important;
-        }
-
-
-        /* САМО ЭТА СЕТКА — ДВЕ КОЛОНКИ */
-
-        #contentCards .pm-add-grid {
+        #contentCards .pm-materials {
             width: 100% !important;
 
             display: grid !important;
 
             grid-template-columns:
-                minmax(0, 1fr)
-                minmax(0, 1fr) !important;
+                repeat(3, minmax(0, 1fr)) !important;
 
             gap: 20px !important;
 
@@ -319,155 +376,21 @@ function ensureMaterialStyles() {
         }
 
 
-        #contentCards .pm-add-box {
+        #contentCards .pm-material {
             width: 100% !important;
             min-width: 0 !important;
 
             display: flex !important;
             flex-direction: column !important;
-            align-items: stretch !important;
 
             box-sizing: border-box !important;
 
             padding: 20px !important;
 
             border: 1px solid
-                rgba(215,170,49,.30) !important;
+                rgba(215,170,49,.32) !important;
 
-            border-radius: 14px !important;
-
-            background:
-                rgba(255,255,255,.035) !important;
-        }
-
-
-        #contentCards .pm-add-label {
-            display: block !important;
-
-            width: 100% !important;
-
-            margin: 0 0 12px 0 !important;
-            padding: 0 !important;
-
-            color: #eee5d0 !important;
-
-            font-size: 16px !important;
-            line-height: 1.35 !important;
-            font-weight: 700 !important;
-        }
-
-
-        #contentCards .pm-file-row {
-            width: 100% !important;
-
-            display: flex !important;
-            flex-direction: column !important;
-            align-items: stretch !important;
-
-            gap: 12px !important;
-
-            box-sizing: border-box !important;
-        }
-
-
-        #contentCards .pm-input,
-        #contentCards .pm-file-input {
-            display: block !important;
-
-            width: 100% !important;
-            min-width: 0 !important;
-
-            min-height: 44px !important;
-
-            box-sizing: border-box !important;
-
-            padding: 10px 12px !important;
-
-            border: 1px solid
-                rgba(215,170,49,.60) !important;
-
-            border-radius: 10px !important;
-
-            background: #17112f !important;
-            color: #ffffff !important;
-
-            font-size: 14px !important;
-        }
-
-
-        #contentCards .pm-add-box .pm-button {
-            width: auto !important;
-            max-width: 100% !important;
-
-            align-self: flex-start !important;
-
-            margin-top: 12px !important;
-        }
-
-
-        #contentCards .pm-status {
-            display: block !important;
-
-            width: 100% !important;
-
-            min-height: 20px !important;
-
-            margin: 16px 0 0 0 !important;
-
-            color: #ddd5df !important;
-
-            font-size: 14px !important;
-            line-height: 1.5 !important;
-        }
-
-
-        #contentCards .pm-status.ok {
-            color: #a9e4b4 !important;
-        }
-
-
-        #contentCards .pm-status.error {
-            color: #ffb0b0 !important;
-        }
-
-
-        /* =================================================
-           СПИСОК МАТЕРИАЛОВ
-           ================================================= */
-
-        #contentCards .pm-materials {
-            width: 100% !important;
-
-            display: flex !important;
-            flex-direction: column !important;
-
-            gap: 12px !important;
-        }
-
-
-        #contentCards .pm-material {
-            width: 100% !important;
-            min-width: 0 !important;
-
-            display: grid !important;
-
-            grid-template-columns:
-                64px
-                minmax(0, 1fr)
-                auto !important;
-
-            align-items: center !important;
-
-            gap: 18px !important;
-
-            box-sizing: border-box !important;
-
-            padding: 16px 18px !important;
-
-            border: 1px solid
-                rgba(215,170,49,.28) !important;
-
-            border-radius: 14px !important;
+            border-radius: 15px !important;
 
             background:
                 rgba(15,11,38,.65) !important;
@@ -479,10 +402,11 @@ function ensureMaterialStyles() {
             height: 58px !important;
 
             display: flex !important;
+
             align-items: center !important;
             justify-content: center !important;
 
-            box-sizing: border-box !important;
+            margin-bottom: 15px !important;
 
             border-radius: 11px !important;
 
@@ -499,23 +423,27 @@ function ensureMaterialStyles() {
         #contentCards .pm-material-icon.pdf {
             background: #a93636 !important;
             color: #ffffff !important;
+
             font-size: 15px !important;
         }
 
 
         #contentCards .pm-material-info {
+            width: 100% !important;
+
             min-width: 0 !important;
+
+            flex: 1 !important;
         }
 
 
         #contentCards .pm-material-name {
-            margin: 0 0 6px 0 !important;
-            padding: 0 !important;
+            margin: 0 0 8px 0 !important;
 
             color: #ffffff !important;
 
             font-size: 18px !important;
-            line-height: 1.3 !important;
+            line-height: 1.35 !important;
             font-weight: 700 !important;
 
             overflow-wrap: anywhere !important;
@@ -523,6 +451,8 @@ function ensureMaterialStyles() {
 
 
         #contentCards .pm-material-meta {
+            margin: 0 !important;
+
             color: #c9c1ce !important;
 
             font-size: 14px !important;
@@ -532,27 +462,35 @@ function ensureMaterialStyles() {
         }
 
 
+        /* ================================================
+           КНОПКИ МАТЕРИАЛА
+           ================================================ */
+
         #contentCards .pm-material-action {
+            width: 100% !important;
+
             display: flex !important;
+
             align-items: center !important;
 
-            gap: 8px !important;
+            gap: 10px !important;
 
-            white-space: nowrap !important;
+            margin-top: 18px !important;
         }
 
 
         #contentCards .pm-open-button {
-            min-height: 42px !important;
+            flex: 1 !important;
 
-            box-sizing: border-box !important;
+            min-height: 43px !important;
 
-            padding: 9px 18px !important;
+            padding: 9px 14px !important;
 
             border: 1px solid #d7aa31 !important;
             border-radius: 9px !important;
 
             background: #63358d !important;
+
             color: #f8e7a8 !important;
 
             font-size: 15px !important;
@@ -563,9 +501,7 @@ function ensureMaterialStyles() {
 
 
         #contentCards .pm-delete-button {
-            min-height: 42px !important;
-
-            box-sizing: border-box !important;
+            min-height: 43px !important;
 
             padding: 9px 13px !important;
 
@@ -575,19 +511,22 @@ function ensureMaterialStyles() {
             border-radius: 9px !important;
 
             background: transparent !important;
+
             color: #ffb4b4 !important;
 
             cursor: pointer !important;
         }
 
 
-        /* =================================================
+        /* ================================================
            ПУСТО
-           ================================================= */
+           ================================================ */
 
         #contentCards .pm-empty {
+            grid-column: 1 / -1 !important;
+
             width: 100% !important;
-            min-height: 150px !important;
+            min-height: 180px !important;
 
             display: flex !important;
             flex-direction: column !important;
@@ -606,9 +545,6 @@ function ensureMaterialStyles() {
 
             border-radius: 16px !important;
 
-            background:
-                rgba(15,11,38,.35) !important;
-
             color: #c9c1ce !important;
         }
 
@@ -620,31 +556,63 @@ function ensureMaterialStyles() {
 
             font-family: Georgia, serif !important;
 
-            font-size: 24px !important;
-            line-height: 1.25 !important;
+            font-size: 25px !important;
             font-weight: 700 !important;
         }
 
 
-        /* =================================================
-           МОБИЛЬНЫЙ ЭКРАН
-           ================================================= */
+        /* ================================================
+           СТАТУС
+           ================================================ */
 
-        @media (max-width: 800px) {
+        #contentCards .pm-status {
+            width: 100% !important;
 
-            #contentCards .pm-page-head {
-                flex-direction: column !important;
-                gap: 15px !important;
+            margin-top: 16px !important;
+
+            color: #ddd5df !important;
+
+            font-size: 14px !important;
+        }
+
+
+        #contentCards .pm-status.ok {
+            color: #a9e4b4 !important;
+        }
+
+
+        #contentCards .pm-status.error {
+            color: #ffb0b0 !important;
+        }
+
+
+        /* ================================================
+           АДАПТИВ
+           ================================================ */
+
+        @media (max-width: 1100px) {
+
+            #contentCards .pm-direction-wrapper .cards {
+                grid-template-columns:
+                    repeat(3, minmax(170px, 1fr))
+                !important;
             }
 
 
-            #contentCards .pm-head-actions {
-                width: 100% !important;
+            #contentCards .pm-materials {
+                grid-template-columns:
+                    repeat(2, minmax(0, 1fr))
+                !important;
             }
+        }
 
 
-            #contentCards .pm-head-actions .pm-button {
-                width: 100% !important;
+        @media (max-width: 750px) {
+
+            #contentCards .pm-direction-wrapper .cards {
+                grid-template-columns:
+                    repeat(2, minmax(150px, 1fr))
+                !important;
             }
 
 
@@ -654,55 +622,26 @@ function ensureMaterialStyles() {
             }
 
 
-            #contentCards .pm-material {
+            #contentCards .pm-materials {
                 grid-template-columns:
-                    56px
-                    minmax(0, 1fr) !important;
+                    1fr !important;
             }
 
 
-            #contentCards .pm-material-action {
-                grid-column: 2 !important;
+            #contentCards .pm-page-head {
+                flex-direction: column !important;
+            }
 
+
+            #contentCards .pm-head-actions {
                 width: 100% !important;
-
-                flex-wrap: wrap !important;
             }
 
 
-            #contentCards .pm-material-action button {
-                flex: 0 0 auto !important;
+            #contentCards .pm-head-actions
+            .pm-button {
+                width: 100% !important;
             }
-
-
-            #contentCards .pm-page-title {
-                font-size: 28px !important;
-            }
-        }
-
-
-        /* =================================================
-           НАПРАВЛЕНИЯ
-           
-           ВАЖНО:
-           здесь НЕ задаём свой цвет.
-           Используются существующие .cards / .card /
-           .method-card — те же, что у раздела "Тесты".
-           ================================================= */
-
-        #contentCards .pm-direction-wrapper {
-            width: 100% !important;
-            box-sizing: border-box !important;
-        }
-
-
-        #contentCards .pm-direction-wrapper .cards {
-            width: 100% !important;
-        }
-
-
-        #contentCards .pm-direction-wrapper .card.method-card {
-            cursor: pointer !important;
         }
 
     `;
@@ -712,8 +651,7 @@ function ensureMaterialStyles() {
 
 
 /* =========================================================
-   КАРТОЧКИ НАПРАВЛЕНИЙ
-   Используем ТЕ ЖЕ .cards и .card, что у ТЕСТОВ.
+   ГЛАВНЫЕ КАРТОЧКИ РАЗДЕЛА
    ========================================================= */
 
 async function loadPlatformMaterials(section) {
@@ -726,6 +664,9 @@ async function loadPlatformMaterials(section) {
     if (!contentCards) return;
 
     ensureMaterialStyles();
+
+    /* Здесь приветствие ДОЛЖНО быть */
+    setPlatformWelcome(true);
 
     const subtitle =
         section === 'videos'
@@ -748,6 +689,7 @@ async function loadPlatformMaterials(section) {
                                     ${item.icon}
                                  </div>`;
 
+
                             if (
                                 item.key ===
                                 'pythagoras'
@@ -757,8 +699,8 @@ async function loadPlatformMaterials(section) {
                                     <div
                                         class="card-icon"
                                         style="
-                                            font-size: 26px;
-                                            line-height: 1.1;
+                                            font-size:26px;
+                                            line-height:1.1;
                                         "
                                     >
                                         ¹²
@@ -776,8 +718,6 @@ async function loadPlatformMaterials(section) {
                                         card
                                         method-card
                                     "
-                                    data-section="${section}"
-                                    data-direction="${item.key}"
                                     onclick="
                                         openPlatformMaterial(
                                             '${section}',
@@ -793,11 +733,7 @@ async function loadPlatformMaterials(section) {
                                     >
 
                                         <h3>
-                                            ${
-                                                platformEscape(
-                                                    item.title
-                                                )
-                                            }
+                                            ${item.title}
                                         </h3>
 
                                         <p>
@@ -823,10 +759,13 @@ async function loadPlatformMaterials(section) {
 
 
 /* =========================================================
-   РАЗДЕЛЫ
+   РАЗДЕЛЫ СЛЕВА
    ========================================================= */
 
 async function loadManuals() {
+
+    setPlatformWelcome(true);
+
     await loadPlatformMaterials(
         'manuals'
     );
@@ -834,6 +773,9 @@ async function loadManuals() {
 
 
 async function loadVideos() {
+
+    setPlatformWelcome(true);
+
     await loadPlatformMaterials(
         'videos'
     );
@@ -841,55 +783,7 @@ async function loadVideos() {
 
 
 /* =========================================================
-   ПОЛУЧИТЬ МАТЕРИАЛЫ
-   ========================================================= */
-
-async function getAllMaterials(
-    section,
-    direction
-) {
-
-    const {
-        data,
-        error
-    } =
-        await supabaseClient
-            .from(
-                PLATFORM_MATERIALS_TABLE
-            )
-            .select(`
-                id,
-                section,
-                direction,
-                material_type,
-                url,
-                file_path,
-                created_by,
-                created_at
-            `)
-            .eq(
-                'section',
-                section
-            )
-            .eq(
-                'direction',
-                direction
-            )
-            .order(
-                'created_at',
-                {
-                    ascending: false
-                }
-            );
-
-    if (error) throw error;
-
-    return data || [];
-}
-
-
-/* =========================================================
-   СТРАНИЦА НАПРАВЛЕНИЯ
+   ОТКРЫТЬ КОНКРЕТНОЕ НАПРАВЛЕНИЕ
    ========================================================= */
 
 async function openPlatformMaterial(
@@ -905,6 +799,16 @@ async function openPlatformMaterial(
     if (!contentCards) return;
 
     ensureMaterialStyles();
+
+
+    /*
+     * ВАЖНО:
+     * после входа именно во взрослую матрицу,
+     * детскую, совместимость и т.д.
+     * приветствие УБИРАЕМ.
+     */
+
+    setPlatformWelcome(false);
 
 
     const title =
@@ -940,14 +844,12 @@ async function openPlatformMaterial(
 
             <div class="pm-page-head">
 
-                <div
-                    class="pm-page-head-left"
-                >
+                <div>
 
                     <h2
                         class="pm-page-title"
                     >
-                        ${platformEscape(title)}
+                        ${title}
                     </h2>
 
                     <p
@@ -1006,10 +908,6 @@ async function openPlatformMaterial(
                                 class="pm-add-grid"
                             >
 
-                                <!-- =====================
-                                     ФАЙЛ
-                                     ===================== -->
-
                                 <div
                                     class="pm-add-box"
                                 >
@@ -1060,17 +958,12 @@ async function openPlatformMaterial(
                                 </div>
 
 
-                                <!-- =====================
-                                     ССЫЛКА
-                                     ===================== -->
-
                                 <div
                                     class="pm-add-box"
                                 >
 
                                     <label
                                         class="pm-add-label"
-                                        for="pmUrlInput"
                                     >
                                         Добавить ссылку
                                     </label>
@@ -1117,7 +1010,7 @@ async function openPlatformMaterial(
             >
 
                 <div class="pm-empty">
-                    Загружаю материалы...
+                    Загрузка материалов...
                 </div>
 
             </div>
@@ -1135,7 +1028,7 @@ async function openPlatformMaterial(
 
 
 /* =========================================================
-   ПАНЕЛЬ ДОБАВЛЕНИЯ
+   ОСТАЛЬНЫЕ ФУНКЦИИ
    ========================================================= */
 
 function toggleMaterialAddPanel() {
@@ -1153,9 +1046,49 @@ function toggleMaterialAddPanel() {
 }
 
 
-/* =========================================================
-   РЕНДЕР МАТЕРИАЛОВ
-   ========================================================= */
+async function getAllMaterials(
+    section,
+    direction
+) {
+
+    const {
+        data,
+        error
+    } =
+        await supabaseClient
+            .from(
+                PLATFORM_MATERIALS_TABLE
+            )
+            .select(`
+                id,
+                section,
+                direction,
+                material_type,
+                url,
+                file_path,
+                created_by,
+                created_at
+            `)
+            .eq(
+                'section',
+                section
+            )
+            .eq(
+                'direction',
+                direction
+            )
+            .order(
+                'created_at',
+                {
+                    ascending: false
+                }
+            );
+
+    if (error) throw error;
+
+    return data || [];
+}
+
 
 async function renderMaterialList(
     section,
@@ -1221,10 +1154,8 @@ async function renderMaterialList(
     catch (error) {
 
         console.error(
-            'Ошибка получения материалов:',
             error
         );
-
 
         list.innerHTML = `
 
@@ -1238,10 +1169,8 @@ async function renderMaterialList(
 
                 <div>
                     ${
-                        platformEscape(
-                            error.message ||
-                            String(error)
-                        )
+                        error.message ||
+                        String(error)
                     }
                 </div>
 
@@ -1252,10 +1181,6 @@ async function renderMaterialList(
 }
 
 
-/* =========================================================
-   ОДИН МАТЕРИАЛ
-   ========================================================= */
-
 function renderMaterialItem(
     material
 ) {
@@ -1265,58 +1190,24 @@ function renderMaterialItem(
         !!material.file_path;
 
 
-    const isLink =
-        material.material_type === 'link' &&
-        !!material.url;
-
-
-    let icon = '🔗';
-
-
-    if (isFile) {
-
-        const fileName =
-            platformFileName(
+    const icon =
+        isFile
+            ? (
                 material.file_path
-            );
-
-
-        const ext =
-            fileName
-                .split('.')
-                .pop()
-                .toLowerCase();
-
-
-        if (ext === 'pdf') {
-
-            icon = 'PDF';
-
-        }
-        else if (
-            [
-                'mp4',
-                'webm',
-                'mov',
-                'm4v'
-            ].includes(ext)
-        ) {
-
-            icon = '▶';
-
-        }
-        else {
-
-            icon = '📄';
-
-        }
-    }
+                    .toLowerCase()
+                    .endsWith('.pdf')
+                    ? 'PDF'
+                    : '📄'
+            )
+            : '🔗';
 
 
     const name =
         isFile
-            ? platformFileName(
+            ? (
                 material.file_path
+                    .split('/')
+                    .pop() || 'Файл'
             )
             : (
                 material.url ||
@@ -1324,83 +1215,23 @@ function renderMaterialItem(
             );
 
 
-    const action =
-        isFile
-
-            ? `
-
-                <button
-                    class="pm-open-button"
-                    type="button"
-                    onclick="
-                        downloadPlatformMaterial(
-                            '${material.id}'
-                        )
-                    "
-                >
-                    Скачать
-                </button>
-
-            `
-
-            : `
-
-                <button
-                    class="pm-open-button"
-                    type="button"
-                    onclick="
-                        goToPlatformMaterial(
-                            '${material.id}'
-                        )
-                    "
-                >
-                    Перейти
-                </button>
-
-            `;
-
-
-    const deleteButton =
-        isManager()
-
-            ? `
-
-                <button
-                    class="pm-delete-button"
-                    type="button"
-                    onclick="
-                        deletePlatformMaterial(
-                            '${material.id}'
-                        )
-                    "
-                >
-                    Удалить
-                </button>
-
-            `
-
-            : '';
-
-
     return `
 
         <div
             class="pm-material"
-            data-material-id="${material.id}"
         >
 
             <div
                 class="
                     pm-material-icon
                     ${
-                        isFile &&
                         icon === 'PDF'
                             ? 'pdf'
                             : ''
                     }
                 "
             >
-                ${platformEscape(icon)}
+                ${icon}
             </div>
 
 
@@ -1411,48 +1242,18 @@ function renderMaterialItem(
                 <div
                     class="pm-material-name"
                 >
-                    ${
-                        platformEscape(
-                            name
-                        )
-                    }
+                    ${platformEscape(name)}
                 </div>
 
 
                 <div
                     class="pm-material-meta"
                 >
-
                     ${
                         isFile
                             ? 'Файл'
                             : 'Внешняя ссылка'
                     }
-
-                    ${
-                        material.created_at
-                            ? ' • ' +
-                              platformEscape(
-                                  platformFormatDate(
-                                      material.created_at
-                                  )
-                              )
-                            : ''
-                    }
-
-                    ${
-                        isLink
-                            ? `
-                                <br>
-                                ${
-                                    platformEscape(
-                                        material.url
-                                    )
-                                }
-                            `
-                            : ''
-                    }
-
                 </div>
 
             </div>
@@ -1462,9 +1263,54 @@ function renderMaterialItem(
                 class="pm-material-action"
             >
 
-                ${action}
+                ${
+                    isFile
+                        ? `
+                            <button
+                                class="pm-open-button"
+                                type="button"
+                                onclick="
+                                    downloadPlatformMaterial(
+                                        '${material.id}'
+                                    )
+                                "
+                            >
+                                Скачать
+                            </button>
+                        `
+                        : `
+                            <button
+                                class="pm-open-button"
+                                type="button"
+                                onclick="
+                                    goToPlatformMaterial(
+                                        '${material.id}'
+                                    )
+                                "
+                            >
+                                Перейти
+                            </button>
+                        `
+                }
 
-                ${deleteButton}
+
+                ${
+                    isManager()
+                        ? `
+                            <button
+                                class="pm-delete-button"
+                                type="button"
+                                onclick="
+                                    deletePlatformMaterial(
+                                        '${material.id}'
+                                    )
+                                "
+                            >
+                                Удалить
+                            </button>
+                        `
+                        : ''
+                }
 
             </div>
 
@@ -1474,26 +1320,68 @@ function renderMaterialItem(
 }
 
 
+function platformEscape(value) {
+
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+
+function isManager() {
+
+    return window.currentUserIsManager === true;
+}
+
+
+async function getCurrentSession() {
+
+    const {
+        data: { session },
+        error
+    } =
+        await supabaseClient.auth.getSession();
+
+    if (error) throw error;
+
+    return session;
+}
+
+
+function setPMStatus(
+    text,
+    type
+) {
+
+    const box =
+        document.getElementById(
+            'pmStatus'
+        );
+
+    if (!box) return;
+
+    box.className =
+        'pm-status ' +
+        (type || '');
+
+    box.textContent =
+        text || '';
+}
+
+
 /* =========================================================
-   СОХРАНЕНИЕ ССЫЛКИ
+   СОХРАНИТЬ ССЫЛКУ
    ========================================================= */
 
 async function savePlatformMaterialUrl() {
-
-    if (!isManager()) return;
-
-
-    const {
-        section,
-        direction
-    } = materialManagerState;
-
 
     const input =
         document.getElementById(
             'pmUrlInput'
         );
-
 
     const url =
         input?.value.trim() || '';
@@ -1526,24 +1414,10 @@ async function savePlatformMaterialUrl() {
     }
 
 
-    setPMStatus(
-        'Сохраняю ссылку...',
-        ''
-    );
-
-
     try {
 
         const session =
             await getCurrentSession();
-
-
-        if (!session) {
-
-            throw new Error(
-                'Сессия пользователя не найдена.'
-            );
-        }
 
 
         const {
@@ -1554,19 +1428,26 @@ async function savePlatformMaterialUrl() {
                     PLATFORM_MATERIALS_TABLE
                 )
                 .insert({
-                    section,
-                    direction,
-                    material_type: 'link',
+                    section:
+                        materialManagerState.section,
+
+                    direction:
+                        materialManagerState.direction,
+
+                    material_type:
+                        'link',
+
                     url,
-                    file_path: null,
+
+                    file_path:
+                        null,
+
                     created_by:
                         session.user.id
                 });
 
 
-        if (error) {
-            throw error;
-        }
+        if (error) throw error;
 
 
         input.value = '';
@@ -1579,25 +1460,16 @@ async function savePlatformMaterialUrl() {
 
 
         await renderMaterialList(
-            section,
-            direction
+            materialManagerState.section,
+            materialManagerState.direction
         );
 
     }
     catch (error) {
 
-        console.error(
-            'Ошибка сохранения ссылки:',
-            error
-        );
-
-
         setPMStatus(
-            'Не удалось сохранить ссылку: ' +
-            (
-                error.message ||
-                String(error)
-            ),
+            error.message ||
+            String(error),
             'error'
         );
     }
@@ -1605,25 +1477,15 @@ async function savePlatformMaterialUrl() {
 
 
 /* =========================================================
-   ЗАГРУЗКА ФАЙЛА / ВИДЕО
+   ЗАГРУЗИТЬ ФАЙЛ
    ========================================================= */
 
 async function uploadPlatformMaterialFile() {
-
-    if (!isManager()) return;
-
-
-    const {
-        section,
-        direction
-    } = materialManagerState;
-
 
     const input =
         document.getElementById(
             'pmFileInput'
         );
-
 
     const file =
         input?.files?.[0];
@@ -1640,72 +1502,34 @@ async function uploadPlatformMaterialFile() {
     }
 
 
-    const maxSize =
-        section === 'videos'
-            ? 500 * 1024 * 1024
-            : 100 * 1024 * 1024;
-
-
-    if (file.size > maxSize) {
-
-        setPMStatus(
-            section === 'videos'
-                ? 'Видео слишком большое. Максимальный размер — 500 МБ.'
-                : 'Файл слишком большой. Максимальный размер — 100 МБ.',
-            'error'
-        );
-
-        return;
-    }
-
-
-    setPMStatus(
-        'Загружаю файл...',
-        ''
-    );
-
-
     try {
 
         const session =
             await getCurrentSession();
 
 
-        if (!session) {
-
-            throw new Error(
-                'Сессия пользователя не найдена.'
-            );
-        }
-
-
         const safeName =
             file.name
-                .normalize('NFKD')
                 .replace(
                     /[^a-zA-Z0-9._-]+/g,
                     '_'
-                )
-                .replace(
-                    /^_+|_+$/g,
-                    ''
-                )
-                || 'file';
+                );
 
 
         const unique =
-            window.crypto &&
-            crypto.randomUUID
-                ? crypto.randomUUID()
-                : Date.now() +
-                  '_' +
-                  Math.random()
-                      .toString(36)
-                      .slice(2);
+            crypto.randomUUID();
 
 
         const path =
-            `${section}/${direction}/${unique}_${safeName}`;
+            `${
+                materialManagerState.section
+            }/${
+                materialManagerState.direction
+            }/${
+                unique
+            }_${
+                safeName
+            }`;
 
 
         const {
@@ -1734,12 +1558,6 @@ async function uploadPlatformMaterialFile() {
         }
 
 
-        setPMStatus(
-            'Файл загружен. Сохраняю запись...',
-            ''
-        );
-
-
         const {
             error: insertError
         } =
@@ -1748,11 +1566,21 @@ async function uploadPlatformMaterialFile() {
                     PLATFORM_MATERIALS_TABLE
                 )
                 .insert({
-                    section,
-                    direction,
-                    material_type: 'file',
-                    url: null,
-                    file_path: path,
+                    section:
+                        materialManagerState.section,
+
+                    direction:
+                        materialManagerState.direction,
+
+                    material_type:
+                        'file',
+
+                    url:
+                        null,
+
+                    file_path:
+                        path,
+
                     created_by:
                         session.user.id
                 });
@@ -1783,25 +1611,16 @@ async function uploadPlatformMaterialFile() {
 
 
         await renderMaterialList(
-            section,
-            direction
+            materialManagerState.section,
+            materialManagerState.direction
         );
 
     }
     catch (error) {
 
-        console.error(
-            'Ошибка загрузки файла:',
-            error
-        );
-
-
         setPMStatus(
-            'Не удалось загрузить файл: ' +
-            (
-                error.message ||
-                String(error)
-            ),
+            error.message ||
+            String(error),
             'error'
         );
     }
@@ -1809,7 +1628,7 @@ async function uploadPlatformMaterialFile() {
 
 
 /* =========================================================
-   СКАЧИВАНИЕ
+   СКАЧАТЬ
    ========================================================= */
 
 async function downloadPlatformMaterial(
@@ -1819,15 +1638,15 @@ async function downloadPlatformMaterial(
     try {
 
         const {
-            data: material,
-            error: materialError
+            data,
+            error
         } =
             await supabaseClient
                 .from(
                     PLATFORM_MATERIALS_TABLE
                 )
                 .select(
-                    'id,file_path,material_type'
+                    'file_path'
                 )
                 .eq(
                     'id',
@@ -1836,22 +1655,12 @@ async function downloadPlatformMaterial(
                 .single();
 
 
-        if (materialError) {
-            throw materialError;
-        }
-
-
-        if (!material?.file_path) {
-
-            throw new Error(
-                'Файл не найден.'
-            );
-        }
+        if (error) throw error;
 
 
         const {
-            data,
-            error
+            data: signed,
+            error: signedError
         } =
             await supabaseClient
                 .storage
@@ -1859,55 +1668,34 @@ async function downloadPlatformMaterial(
                     PLATFORM_STORAGE_BUCKET
                 )
                 .createSignedUrl(
-                    material.file_path,
-                    60 * 60,
-                    {
-                        download:
-                            platformFileName(
-                                material.file_path
-                            )
-                    }
+                    data.file_path,
+                    3600
                 );
 
 
-        if (error) {
-            throw error;
+        if (signedError) {
+            throw signedError;
         }
 
 
-        if (!data?.signedUrl) {
-
-            throw new Error(
-                'Не удалось получить ссылку на скачивание.'
-            );
-        }
-
-
-        window.location.href =
-            data.signedUrl;
+        window.open(
+            signed.signedUrl,
+            '_blank'
+        );
 
     }
     catch (error) {
 
-        console.error(
-            'Ошибка скачивания:',
-            error
-        );
-
-
         alert(
-            'Не удалось скачать файл.\n\n' +
-            (
-                error.message ||
-                String(error)
-            )
+            'Не удалось открыть файл:\n' +
+            error.message
         );
     }
 }
 
 
 /* =========================================================
-   ОТКРЫТИЕ ССЫЛКИ
+   ОТКРЫТЬ ССЫЛКУ
    ========================================================= */
 
 async function goToPlatformMaterial(
@@ -1924,7 +1712,9 @@ async function goToPlatformMaterial(
                 .from(
                     PLATFORM_MATERIALS_TABLE
                 )
-                .select('url')
+                .select(
+                    'url'
+                )
                 .eq(
                     'id',
                     materialId
@@ -1932,17 +1722,7 @@ async function goToPlatformMaterial(
                 .single();
 
 
-        if (error) {
-            throw error;
-        }
-
-
-        if (!data?.url) {
-
-            throw new Error(
-                'Ссылка не найдена.'
-            );
-        }
+        if (error) throw error;
 
 
         window.open(
@@ -1954,18 +1734,9 @@ async function goToPlatformMaterial(
     }
     catch (error) {
 
-        console.error(
-            'Ошибка перехода по ссылке:',
-            error
-        );
-
-
         alert(
-            'Не удалось открыть ссылку.\n\n' +
-            (
-                error.message ||
-                String(error)
-            )
+            'Не удалось открыть ссылку:\n' +
+            error.message
         );
     }
 }
@@ -1978,9 +1749,6 @@ async function goToPlatformMaterial(
 async function deletePlatformMaterial(
     materialId
 ) {
-
-    if (!isManager()) return;
-
 
     if (
         !confirm(
@@ -2002,7 +1770,7 @@ async function deletePlatformMaterial(
                     PLATFORM_MATERIALS_TABLE
                 )
                 .select(
-                    'id,section,direction,file_path'
+                    'section,direction,file_path'
                 )
                 .eq(
                     'id',
@@ -2011,12 +1779,10 @@ async function deletePlatformMaterial(
                 .single();
 
 
-        if (getError) {
-            throw getError;
-        }
+        if (getError) throw getError;
 
 
-        if (material?.file_path) {
+        if (material.file_path) {
 
             await supabaseClient
                 .storage
@@ -2043,9 +1809,7 @@ async function deletePlatformMaterial(
                 );
 
 
-        if (error) {
-            throw error;
-        }
+        if (error) throw error;
 
 
         await renderMaterialList(
@@ -2056,54 +1820,16 @@ async function deletePlatformMaterial(
     }
     catch (error) {
 
-        console.error(
-            'Ошибка удаления:',
-            error
-        );
-
-
         alert(
-            'Не удалось удалить материал.\n\n' +
-            (
-                error.message ||
-                String(error)
-            )
+            'Не удалось удалить материал:\n' +
+            error.message
         );
     }
 }
 
 
 /* =========================================================
-   СТАТУС
-   ========================================================= */
-
-function setPMStatus(
-    text,
-    type
-) {
-
-    const box =
-        document.getElementById(
-            'pmStatus'
-        );
-
-    if (!box) return;
-
-
-    box.className =
-        'pm-status ' +
-        (
-            type || ''
-        );
-
-
-    box.textContent =
-        text || '';
-}
-
-
-/* =========================================================
-   СТАРЫЕ ИМЕНА ФУНКЦИЙ
+   СОВМЕСТИМОСТЬ СО СТАРЫМИ ВЫЗОВАМИ
    ========================================================= */
 
 async function saveMaterialUrl() {
