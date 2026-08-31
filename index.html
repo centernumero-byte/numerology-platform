@@ -365,7 +365,7 @@ body {
       <button class="nav-item" data-section="access" onclick="showSection('access')">
         <span class="nav-icon">🔑</span> Доступы
       </button>
-      <button class="nav-item" data-section="statistics" onclick="showSection('statistics')">
+      <button class="nav-item" id="navStatistics" data-section="statistics" onclick="showSection('statistics')">
         <span class="nav-icon">▥</span> Отчёты и статистика
       </button>
     </div>
@@ -459,13 +459,20 @@ const CONTENT_TYPES = [
 
 window.currentUserGrant = {};
 
+function itemGrantActive(item) {
+  if (!item || !item.granted) return false;
+  if (item.unlimited) return true;
+  if (!item.ends_at) return true;
+  return new Date(item.ends_at) >= new Date();
+}
+
 function hasGrant(section, direction) {
   if (window.currentUserIsManager) return true;
   const scope = window.currentUserGrant || {};
-  if (section === "library") return !!scope.library;
-  if (section === "my-calculations") return !!scope.my_calculations;
+  if (section === "library") return itemGrantActive(scope.library);
+  if (section === "my-calculations") return itemGrantActive(scope.my_calculations);
   if (!direction) return false;
-  return !!(scope[direction] && scope[direction][section]);
+  return itemGrantActive(scope[direction] && scope[direction][section]);
 }
 
 function hideWelcome() {
@@ -593,7 +600,11 @@ async function showSection(section) {
   if (section === "library") { loadLibrary(); return; }
   if (section === "my-calculations") { renderMyCalculations(); return; }
   if (section === "access") { await renderAccess(); return; }
-  if (section === "statistics") { await renderStatistics(); return; }
+  if (section === "statistics") {
+    if (!isAdmin && !window.currentUserIsManager) { renderLockedSection(section); return; }
+    await renderStatistics();
+    return;
+  }
 }
 
 /* ============================================================
@@ -1007,7 +1018,7 @@ async function renderAccess() {
     contentCards.innerHTML = `
       <div class="dashboard-wrap">
         <div class="dashboard-head">
-          <div><h2>Доступы</h2><p>Статус доступа к платформе.</p></div>
+          <div><h2>Доступы</h2><p>Что вам открыто и до какого срока.</p></div>
         </div>
         <div class="table-card" id="accessTable">Загрузка...</div>
       </div>`;
@@ -1018,20 +1029,46 @@ async function renderAccess() {
 
       const { data, error } = await supabaseClient
         .from("access_periods")
-        .select("access_kind, status, starts_at, ends_at, is_unlimited, payment_status")
+        .select("status, payment_status, starts_at, ends_at, is_unlimited, granted_scope")
         .eq("profile_id", session.user.id)
         .order("starts_at", { ascending: false })
         .limit(10);
       if (error) throw error;
 
-      const rows = (data || []).map(function (item) {
-        const active = hasActivePlatformAccess(item);
-        const end = item.is_unlimited ? "Без ограничений" : (item.ends_at ? new Date(item.ends_at).toLocaleDateString("ru-RU") : "—");
-        return `<tr><td>${escapeHtml(item.access_kind || "Платформа")}</td><td>${active ? "Активен" : escapeHtml(item.status || "Ожидает")}</td><td>${escapeHtml(item.payment_status || "—")}</td><td>${end}</td></tr>`;
+      const activePeriods = (data || []).filter(hasActivePlatformAccess);
+      const scope = activePeriods[0]?.granted_scope || {};
+
+      const itemStatus = (item) => {
+        if (!item || !item.granted) return `<span style="color:#c9baa0;">закрыто</span>`;
+        if (item.unlimited) return `<span style="color:#8fe3a1;">бессрочно</span>`;
+        if (!item.ends_at) return `<span style="color:#8fe3a1;">открыто</span>`;
+        const active = new Date(item.ends_at) >= new Date();
+        const date = new Date(item.ends_at).toLocaleDateString("ru-RU");
+        return active ? `<span style="color:#8fe3a1;">до ${date}</span>` : `<span style="color:#ff9d9d;">истёк ${date}</span>`;
+      };
+
+      const dirRows = DIRECTIONS.map(function (d) {
+        const row = scope[d.key] || {};
+        return `<tr>
+          <td>${escapeHtml(DIRECTION_NAMES[d.key])}</td>
+          ${CONTENT_TYPES.map(c => `<td>${itemStatus(row[c.key])}</td>`).join("")}
+        </tr>`;
       }).join("");
 
-      document.getElementById("accessTable").innerHTML = rows
-        ? `<table class="data-table"><thead><tr><th>Доступ</th><th>Статус</th><th>Оплата</th><th>До</th></tr></thead><tbody>${rows}</tbody></table>`
+      const table = `
+        <table class="data-table">
+          <thead><tr><th>Направление</th>${CONTENT_TYPES.map(c => `<th>${c.label}</th>`).join("")}</tr></thead>
+          <tbody>${dirRows}</tbody>
+        </table>
+        <table class="data-table" style="margin-top:14px;">
+          <tbody>
+            <tr><td>Библиотека учителя</td><td>${itemStatus(scope.library)}</td></tr>
+            <tr><td>Мои расчёты</td><td>${itemStatus(scope.my_calculations)}</td></tr>
+          </tbody>
+        </table>`;
+
+      document.getElementById("accessTable").innerHTML = activePeriods.length
+        ? table
         : `<div class="empty-table">Доступ пока не выдан.<br><br>Обратитесь к администратору или учителю.</div>`;
     } catch (error) {
       console.error("Ошибка загрузки доступа:", error);
@@ -1054,20 +1091,10 @@ async function renderAccess() {
 
       <div class="table-card" style="margin-bottom:18px;">
         <div class="table-title">Выдать доступ</div>
-        <div style="display:grid;grid-template-columns:2fr 1fr auto;gap:12px;align-items:end;margin-bottom:18px;">
+        <div style="margin-bottom:18px;max-width:500px;">
           <label>
-            <span style="display:block;margin-bottom:7px;">Пользователь</span>
+            <span style="display:block;margin-bottom:7px;">Пользователь (email)</span>
             <select id="accessUserSelect" class="material-manager-input" style="margin-bottom:0;"></select>
-          </label>
-          <label>
-            <span style="display:block;margin-bottom:7px;">Срок</span>
-            <select id="accessTermSelect" class="material-manager-input" style="margin-bottom:0;">
-              <option value="unlimited">Бессрочно</option>
-              <option value="30">1 месяц</option>
-              <option value="90">3 месяца</option>
-              <option value="180">6 месяцев</option>
-              <option value="365">12 месяцев</option>
-            </select>
           </label>
         </div>
 
@@ -1078,25 +1105,32 @@ async function renderAccess() {
         <div style="overflow-x:auto;margin-bottom:16px;">
           <table class="data-table">
             <thead>
-              <tr><th>Направление</th>${CONTENT_TYPES.map(c => `<th>${c.label}</th>`).join("")}</tr>
+              <tr><th>Направление</th>${CONTENT_TYPES.map(c => `<th>${c.label}</th>`).join("")}<th>Срок</th></tr>
             </thead>
             <tbody>
               ${DIRECTIONS.map(d => `
                 <tr>
                   <td>${escapeHtml(DIRECTION_NAMES[d.key])}</td>
                   ${CONTENT_TYPES.map(c => `<td><input type="checkbox" class="scope-cell" data-direction="${d.key}" data-type="${c.key}"></td>`).join("")}
+                  <td>${termSelectHtml("scope-term-row", `data-direction="${d.key}"`)}</td>
                 </tr>`).join("")}
             </tbody>
           </table>
         </div>
 
-        <div style="display:flex;gap:24px;margin-bottom:16px;">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-            <input type="checkbox" id="scopeLibrary" class="scope-flag"> Библиотека учителя
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-            <input type="checkbox" id="scopeMyCalc" class="scope-flag"> Мои расчёты
-          </label>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px;">
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;min-width:220px;">
+              <input type="checkbox" id="scopeLibrary" class="scope-flag"> Библиотека учителя
+            </label>
+            ${termSelectHtml("", 'id="scopeLibraryTerm"')}
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;min-width:220px;">
+              <input type="checkbox" id="scopeMyCalc" class="scope-flag"> Мои расчёты
+            </label>
+            ${termSelectHtml("", 'id="scopeMyCalcTerm"')}
+          </div>
         </div>
 
         <button class="material-manager-button" style="width:auto;" onclick="grantPlatformAccess()">Выдать доступ</button>
@@ -1131,7 +1165,7 @@ async function renderAccess() {
             <select id="attachStudentSelect" class="material-manager-input" style="margin-bottom:0;"></select>
           </label>
           <label>
-            <span style="display:block;margin-bottom:7px;">Нумеролог</span>
+            <span style="display:block;margin-bottom:7px;">Учитель</span>
             <select id="attachTeacherSelect" class="material-manager-input" style="margin-bottom:0;"></select>
           </label>
           <button class="material-manager-button" style="width:auto;height:47px;margin-top:0;" onclick="attachStudentToTeacher()">Прикрепить</button>
@@ -1164,7 +1198,7 @@ async function loadAdminUsers() {
 
   let query = supabaseClient
     .from("profiles")
-    .select("id, first_name, last_name, middle_name, email, phone, role, status, teacher_id")
+    .select("id, first_name, last_name, middle_name, email, phone, role, status, teacher_id, created_at")
     .order("last_name", { ascending: true });
 
   if (!isRealAdmin) query = query.eq("teacher_id", session.user.id);
@@ -1185,7 +1219,7 @@ async function loadAdminUsers() {
   if (isRealAdmin && adminUsersFilterTeacher) {
     const { data: allData } = await supabaseClient
       .from("profiles")
-      .select("id, first_name, last_name, middle_name, email, phone, role, status, teacher_id")
+      .select("id, first_name, last_name, middle_name, email, phone, role, status, teacher_id, created_at")
       .order("last_name", { ascending: true });
     fillAccessSelects(allData || [], nameOf);
   } else {
@@ -1221,22 +1255,32 @@ async function loadAdminUsers() {
   }
 
   const teacherName = (teacherId) => {
-    if (!teacherId) return "—";
+    if (!teacherId) return "Не назначен";
     const t = users.find(u => u.id === teacherId);
     return t ? nameOf(t) : "—";
   };
 
+  const teachersSorted = users
+    .filter(u => u.role === "numerologist")
+    .slice()
+    .sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+  const teacherNumber = {};
+  teachersSorted.forEach((t, i) => { teacherNumber[t.id] = i + 1; });
+
   box.innerHTML = backLink + `
     <table class="data-table">
-      <thead><tr><th>Пользователь</th><th>Email</th><th>Телефон</th><th>Роль</th>${isRealAdmin ? "<th>Нумеролог</th>" : ""}<th>Статус</th></tr></thead>
+      <thead><tr><th>Пользователь</th><th>Email</th><th>Телефон</th><th>Роль</th>${isRealAdmin ? "<th>Учитель</th>" : ""}<th>Статус</th></tr></thead>
       <tbody>
         ${users.map(function (user) {
           const isClickableNumerologist = isRealAdmin && user.role === "numerologist" && !adminUsersFilterTeacher;
           const rowAttrs = isClickableNumerologist
             ? `style="cursor:pointer;" onclick='viewNumerologistStudents(${JSON.stringify(user.id)},${JSON.stringify(nameOf(user))})'`
             : "";
+          const displayName = isClickableNumerologist
+            ? `Учитель ${teacherNumber[user.id]} — ${escapeHtml(nameOf(user))} →`
+            : escapeHtml(nameOf(user));
           return `<tr ${rowAttrs}>
-            <td>${escapeHtml(nameOf(user))}${isClickableNumerologist ? " →" : ""}</td>
+            <td>${displayName}</td>
             <td>${escapeHtml(user.email || "—")}</td>
             <td>${escapeHtml(user.phone || "—")}</td>
             <td>${escapeHtml(user.role || "student")}</td>
@@ -1296,6 +1340,27 @@ async function attachStudentToTeacher() {
   await loadAdminUsers();
 }
 
+const TERM_OPTIONS = [
+  { value: "unlimited", label: "Бессрочно" },
+  { value: "30", label: "1 месяц" },
+  { value: "90", label: "3 месяца" },
+  { value: "180", label: "6 месяцев" },
+  { value: "365", label: "12 месяцев" }
+];
+
+function termSelectHtml(extraClass, attrs) {
+  return `<select class="material-manager-input ${extraClass || ""}" ${attrs || ""} style="margin-bottom:0;padding:8px 10px;width:auto;">
+    ${TERM_OPTIONS.map(t => `<option value="${t.value}">${t.label}</option>`).join("")}
+  </select>`;
+}
+
+function computeEndsAt(termValue) {
+  if (termValue === "unlimited") return { unlimited: true, ends_at: null };
+  const days = Number(termValue);
+  const d = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+  return { unlimited: false, ends_at: d.toISOString() };
+}
+
 function toggleScopeAll(checked) {
   document.querySelectorAll(".scope-cell, .scope-flag").forEach(function (el) { el.checked = checked; });
 }
@@ -1303,24 +1368,35 @@ function toggleScopeAll(checked) {
 function collectScope() {
   const scope = {};
   DIRECTIONS.forEach(function (d) { scope[d.key] = {}; });
+
   document.querySelectorAll(".scope-cell").forEach(function (el) {
-    scope[el.dataset.direction][el.dataset.type] = el.checked;
+    const dir = el.dataset.direction, type = el.dataset.type;
+    if (!el.checked) { scope[dir][type] = { granted: false }; return; }
+    const termSelect = document.querySelector(`.scope-term-row[data-direction="${dir}"]`);
+    const term = termSelect ? termSelect.value : "unlimited";
+    scope[dir][type] = Object.assign({ granted: true }, computeEndsAt(term));
   });
-  scope.library = document.getElementById("scopeLibrary")?.checked || false;
-  scope.my_calculations = document.getElementById("scopeMyCalc")?.checked || false;
+
+  const libChecked = document.getElementById("scopeLibrary")?.checked;
+  const libTerm = document.getElementById("scopeLibraryTerm")?.value || "unlimited";
+  scope.library = libChecked ? Object.assign({ granted: true }, computeEndsAt(libTerm)) : { granted: false };
+
+  const calcChecked = document.getElementById("scopeMyCalc")?.checked;
+  const calcTerm = document.getElementById("scopeMyCalcTerm")?.value || "unlimited";
+  scope.my_calculations = calcChecked ? Object.assign({ granted: true }, computeEndsAt(calcTerm)) : { granted: false };
+
   return scope;
 }
 
 function scopeHasAnything(scope) {
   return Object.keys(scope).some(function (key) {
-    if (key === "library" || key === "my_calculations") return !!scope[key];
-    return Object.values(scope[key] || {}).some(Boolean);
+    if (key === "library" || key === "my_calculations") return !!scope[key]?.granted;
+    return Object.values(scope[key] || {}).some(function (item) { return item && item.granted; });
   });
 }
 
 async function grantPlatformAccess() {
   const userId = document.getElementById("accessUserSelect")?.value || "";
-  const term = document.getElementById("accessTermSelect")?.value || "unlimited";
   const message = document.getElementById("accessAdminMessage");
 
   const setMsg = function (text, ok) {
@@ -1337,9 +1413,6 @@ async function grantPlatformAccess() {
   setMsg("Выдаю доступ...", true);
 
   const startsAt = new Date();
-  let endsAt = null, unlimited = false;
-  if (term === "unlimited") unlimited = true;
-  else endsAt = new Date(startsAt.getTime() + Number(term) * 24 * 60 * 60 * 1000);
 
   const { error: closeError } = await supabaseClient
     .from("access_periods")
@@ -1348,13 +1421,15 @@ async function grantPlatformAccess() {
     .eq("status", "active");
   if (closeError) console.warn("Не удалось закрыть старый доступ:", closeError);
 
+  // Срок хранится по каждому пункту внутри granted_scope,
+  // поэтому сама запись access_periods — просто контейнер без общего срока.
   const { error } = await supabaseClient.from("access_periods").insert({
     profile_id: userId,
     status: "active",
     payment_status: "paid",
     starts_at: startsAt.toISOString(),
-    ends_at: endsAt ? endsAt.toISOString() : null,
-    is_unlimited: unlimited,
+    ends_at: null,
+    is_unlimited: true,
     granted_scope: scope
   });
 
@@ -1457,6 +1532,9 @@ function showRegister(message = "") {
         <div class="auth-subtitle">Platform</div>
         <h2>Регистрация</h2>
         <p class="auth-description">Создайте аккаунт. После регистрации доступ к разделам открывает администратор или учитель.</p>
+        <p class="auth-description" style="color:#f6d66c;font-size:14px;">
+          ⚠️ Указывайте email, которым вы пользуетесь регулярно — именно на него вам откроют доступ, запомните его.
+        </p>
         <div class="auth-grid">
           <input id="registerLastName" type="text" placeholder="Фамилия *">
           <input id="registerFirstName" type="text" placeholder="Имя *">
@@ -1667,7 +1745,7 @@ async function checkAuth() {
     const isManager = isManagerRole(role) || isAdminEmail(userEmail);
 
     let hasAccess = false;
-    let mergedScope = {};
+    let currentGrant = {};
     if (isManager) {
       hasAccess = true;
     } else {
@@ -1681,26 +1759,14 @@ async function checkAuth() {
       } else {
         const activePeriods = (access || []).filter(hasActivePlatformAccess);
         hasAccess = activePeriods.length > 0;
-        activePeriods.forEach(function (period) {
-          const scope = period.granted_scope || {};
-          Object.keys(scope).forEach(function (key) {
-            if (key === "library" || key === "my_calculations") {
-              mergedScope[key] = mergedScope[key] || !!scope[key];
-            } else {
-              mergedScope[key] = mergedScope[key] || {};
-              Object.keys(scope[key] || {}).forEach(function (ct) {
-                mergedScope[key][ct] = mergedScope[key][ct] || !!scope[key][ct];
-              });
-            }
-          });
-        });
+        currentGrant = activePeriods[0]?.granted_scope || {};
       }
     }
 
     window.currentUserRole = isAdminEmail(userEmail) ? "admin" : role;
     window.currentUserIsManager = isManager;
     window.currentUserHasAccess = hasAccess;
-    window.currentUserGrant = mergedScope;
+    window.currentUserGrant = currentGrant;
 
     const displayName = isManager
       ? "Центр Нумера"
@@ -1710,6 +1776,9 @@ async function checkAuth() {
     const emailNode = document.getElementById("clientEmail");
     if (nameNode) nameNode.textContent = displayName;
     if (emailNode) emailNode.textContent = profile?.email || user.email || "";
+
+    const navStats = document.getElementById("navStatistics");
+    if (navStats) navStats.style.display = window.currentUserIsManager ? "" : "none";
 
     document.body.style.visibility = "visible";
     startInactivityTimer();
