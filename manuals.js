@@ -1,32 +1,18 @@
 /* =========================================================
-   manuals.js
+   MANUALS.JS
    NUMEROLOGY PLATFORM
 
    МЕТОДИЧЕСКИЕ ПОСОБИЯ + ВИДЕО
 
-   СХЕМА:
+   ВАЖНО:
 
-   Методические пособия
-        ↓
-   Взрослая матрица
-        ↓
-   полноценная страница
-        ↓
-   Все материалы
-        ↓
-   [ Добавить материал ]
+   Эта версия специально отключает влияние
+   старой сетки карточек на страницу материалов.
 
-   Добавить материал:
-        - загрузить файл
-        - добавить ссылку
-
-   Для файла:
-        [ Скачать ]
-
-   Для ссылки:
-        [ Перейти ]
-
-   Видео работает по той же схеме.
+   Страница открывается НЕ как popup,
+   НЕ как карточка,
+   а как полноценная широкая страница
+   внутри основной области платформы.
 
    ========================================================= */
 
@@ -35,11 +21,9 @@
    НАСТРОЙКИ
    ========================================================= */
 
-const PLATFORM_MATERIALS_TABLE =
-    'platform_materials';
+const PLATFORM_MATERIALS_TABLE = 'platform_materials';
 
-const PLATFORM_STORAGE_BUCKET =
-    'methodicals';
+const PLATFORM_STORAGE_BUCKET = 'methodicals';
 
 
 /* =========================================================
@@ -83,19 +67,15 @@ const PLATFORM_DIRECTIONS = [
 
 const PLATFORM_NAMES =
     Object.fromEntries(
-
-        PLATFORM_DIRECTIONS.map(
-            item => [
-                item.key,
-                item.title
-            ]
-        )
-
+        PLATFORM_DIRECTIONS.map(item => [
+            item.key,
+            item.title
+        ])
     );
 
 
 /* =========================================================
-   ТЕКУЩИЙ РАЗДЕЛ
+   СОСТОЯНИЕ
    ========================================================= */
 
 let materialManagerState = {
@@ -115,47 +95,28 @@ let materialManagerState = {
 
 function isPlatformManager() {
 
-    return (
-        window.currentUserIsManager === true
-    );
+    return window.currentUserIsManager === true;
 
 }
 
 
 /* =========================================================
-   ЭКРАНИРОВАНИЕ ТЕКСТА
+   ЭКРАНИРОВАНИЕ
    ========================================================= */
 
 function platformEscape(value) {
 
-    return String(
-        value ?? ''
-    )
+    return String(value ?? '')
 
-        .replace(
-            /&/g,
-            '&amp;'
-        )
+        .replace(/&/g, '&amp;')
 
-        .replace(
-            /</g,
-            '&lt;'
-        )
+        .replace(/</g, '&lt;')
 
-        .replace(
-            />/g,
-            '&gt;'
-        )
+        .replace(/>/g, '&gt;')
 
-        .replace(
-            /"/g,
-            '&quot;'
-        )
+        .replace(/"/g, '&quot;')
 
-        .replace(
-            /'/g,
-            '&#039;'
-        );
+        .replace(/'/g, '&#039;');
 
 }
 
@@ -170,21 +131,11 @@ function platformFormatDate(value) {
         return '';
     }
 
+    const date = new Date(value);
 
-    const date =
-        new Date(value);
-
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-
+    if (Number.isNaN(date.getTime())) {
         return '';
-
     }
-
 
     return date.toLocaleString(
         'ru-RU',
@@ -210,23 +161,10 @@ function platformFileName(path) {
         return 'Файл';
     }
 
-
-    const parts =
-        String(path)
-            .split('/');
-
+    const parts = String(path).split('/');
 
     const name =
-        parts[
-            parts.length - 1
-        ] || 'Файл';
-
-
-    /*
-       Убираем UUID,
-       который мы добавляем
-       перед именем файла.
-    */
+        parts[parts.length - 1] || 'Файл';
 
     return name.replace(
         /^[0-9a-f-]{20,}_/i,
@@ -248,15 +186,11 @@ async function getCurrentSession() {
         },
         error
     } =
-        await supabaseClient
-            .auth
-            .getSession();
-
+        await supabaseClient.auth.getSession();
 
     if (error) {
         throw error;
     }
-
 
     return session;
 
@@ -264,7 +198,120 @@ async function getCurrentSession() {
 
 
 /* =========================================================
-   СТИЛИ НОВОЙ СТРАНИЦЫ
+   ГЛАВНОЕ ИСПРАВЛЕНИЕ ШИРИНЫ
+   =========================================================
+
+   Старая платформа использует grid для contentCards.
+
+   Из-за этого pm-page становилась одной маленькой
+   карточкой.
+
+   Здесь мы принудительно говорим браузеру:
+
+   contentCards = полноценная широкая область
+
+   pm-page = 100% ширины
+
+   add-panel = 100% ширины
+
+   add-grid = две нормальные колонки
+
+   ========================================================= */
+
+function fixMaterialsLayout() {
+
+    const contentCards =
+        document.getElementById(
+            'contentCards'
+        );
+
+    if (!contentCards) {
+        return;
+    }
+
+
+    /*
+       Убираем влияние старой grid-сетки
+    */
+
+    contentCards.style.setProperty(
+        'display',
+        'block',
+        'important'
+    );
+
+    contentCards.style.setProperty(
+        'width',
+        '100%',
+        'important'
+    );
+
+    contentCards.style.setProperty(
+        'max-width',
+        'none',
+        'important'
+    );
+
+    contentCards.style.setProperty(
+        'min-width',
+        '0',
+        'important'
+    );
+
+    contentCards.style.setProperty(
+        'box-sizing',
+        'border-box',
+        'important'
+    );
+
+    contentCards.style.setProperty(
+        'grid-column',
+        '1 / -1',
+        'important'
+    );
+
+    contentCards.style.setProperty(
+        'grid-template-columns',
+        'none',
+        'important'
+    );
+
+
+    /*
+       Также исправляем непосредственного родителя,
+       если старая сетка пытается ограничить ширину.
+    */
+
+    const parent =
+        contentCards.parentElement;
+
+    if (parent) {
+
+        parent.style.setProperty(
+            'width',
+            '100%',
+            'important'
+        );
+
+        parent.style.setProperty(
+            'max-width',
+            'none',
+            'important'
+        );
+
+        parent.style.setProperty(
+            'min-width',
+            '0',
+            'important'
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   СТИЛИ
    ========================================================= */
 
 function ensureMaterialStyles() {
@@ -274,16 +321,12 @@ function ensureMaterialStyles() {
             'platformMaterialStyles'
         )
     ) {
-
         return;
-
     }
 
 
     const style =
-        document.createElement(
-            'style'
-        );
+        document.createElement('style');
 
 
     style.id =
@@ -292,34 +335,93 @@ function ensureMaterialStyles() {
 
     style.textContent = `
 
-        /* ================================================
-           СТРАНИЦА МАТЕРИАЛОВ
-           ================================================ */
+        /* =================================================
+           ГЛАВНОЕ ИСПРАВЛЕНИЕ
+           ================================================= */
 
-        .pm-page {
+        #contentCards {
 
-            width: 100%;
+            display: block !important;
 
-            max-width: 1180px;
+            width: 100% !important;
 
-            margin: 0 auto;
+            max-width: none !important;
+
+            min-width: 0 !important;
+
+            box-sizing: border-box !important;
+
+            grid-column: 1 / -1 !important;
 
         }
 
 
+        #contentCards > .pm-page {
+
+            display: block !important;
+
+            width: 100% !important;
+
+            max-width: none !important;
+
+            min-width: 0 !important;
+
+            box-sizing: border-box !important;
+
+        }
+
+
+        /* =================================================
+           ПОЛНОЦЕННАЯ СТРАНИЦА
+           ================================================= */
+
+        .pm-page {
+
+            width: 100% !important;
+
+            max-width: none !important;
+
+            min-width: 0 !important;
+
+            margin: 0 !important;
+
+            padding: 0 10px 40px 10px;
+
+            box-sizing: border-box;
+
+        }
+
+
+        /* =================================================
+           ВЕРХНЯЯ СТРОКА
+           ================================================= */
+
         .pm-page-head {
 
-            display: flex;
+            width: 100% !important;
 
-            align-items: center;
+            display: flex !important;
 
-            justify-content: space-between;
+            align-items: flex-start !important;
 
-            gap: 20px;
+            justify-content: space-between !important;
 
-            margin-bottom: 24px;
+            gap: 30px !important;
 
-            flex-wrap: wrap;
+            margin-bottom: 25px;
+
+            flex-wrap: nowrap !important;
+
+            box-sizing: border-box;
+
+        }
+
+
+        .pm-page-head > div:first-child {
+
+            flex: 1 1 auto !important;
+
+            min-width: 0 !important;
 
         }
 
@@ -332,27 +434,29 @@ function ensureMaterialStyles() {
 
             font-family: Georgia, serif;
 
-            font-size: 32px;
+            font-size: 34px;
 
             line-height: 1.2;
+
+            font-weight: 700;
 
         }
 
 
         .pm-page-subtitle {
 
-            margin: 8px 0 0;
+            margin: 10px 0 0;
 
-            color: #ddd5df;
+            color: #eee5df;
 
-            font-size: 17px;
+            font-size: 18px;
 
         }
 
 
-        /* ================================================
+        /* =================================================
            НАЗАД
-           ================================================ */
+           ================================================= */
 
         .pm-back {
 
@@ -360,9 +464,7 @@ function ensureMaterialStyles() {
 
             align-items: center;
 
-            gap: 8px;
-
-            margin-bottom: 18px;
+            margin: 0 0 20px 0;
 
             padding: 0;
 
@@ -374,7 +476,9 @@ function ensureMaterialStyles() {
 
             cursor: pointer;
 
-            font-size: 16px;
+            font-size: 17px;
+
+            font-weight: 600;
 
         }
 
@@ -386,23 +490,46 @@ function ensureMaterialStyles() {
         }
 
 
-        /* ================================================
-           КНОПКА ДОБАВИТЬ
-           ================================================ */
+        /* =================================================
+           КНОПКА ДОБАВИТЬ МАТЕРИАЛ
+
+           ИМЕННО СПРАВА ВВЕРХУ
+           ================================================= */
+
+        .pm-page-head .pm-button {
+
+            flex: 0 0 auto !important;
+
+            width: auto !important;
+
+            min-width: 210px;
+
+            white-space: nowrap;
+
+        }
+
 
         .pm-button {
+
+            display: inline-flex;
+
+            align-items: center;
+
+            justify-content: center;
 
             border: 1px solid #d7aa31;
 
             border-radius: 10px;
 
-            padding: 12px 20px;
+            padding: 12px 22px;
+
+            min-height: 48px;
 
             background:
                 linear-gradient(
                     135deg,
-                    #713da0,
-                    #4f2878
+                    #7542a4,
+                    #52297f
                 );
 
             color: #f8e7a8;
@@ -413,6 +540,8 @@ function ensureMaterialStyles() {
 
             font-weight: 600;
 
+            box-sizing: border-box;
+
         }
 
 
@@ -420,76 +549,102 @@ function ensureMaterialStyles() {
 
             box-shadow:
                 0 5px 18px
-                rgba(80, 38, 120, .4);
+                rgba(80,38,120,.4);
 
         }
 
 
-        /* ================================================
+        /* =================================================
            ПАНЕЛЬ ДОБАВЛЕНИЯ
-           ================================================ */
+
+           ВСЯ ШИРИНА
+           ================================================= */
 
         .pm-add-panel {
 
             display: none;
 
-            margin-bottom: 22px;
+            width: 100% !important;
 
-            padding: 22px;
+            max-width: none !important;
 
-            border: 1px solid
+            box-sizing: border-box;
+
+            margin: 0 0 25px 0;
+
+            padding: 25px;
+
+            border:
+                1px solid
                 rgba(215,170,49,.45);
 
             border-radius: 16px;
 
             background:
-                rgba(20,13,48,.8);
+                rgba(20,13,48,.82);
 
         }
 
 
         .pm-add-panel.open {
 
-            display: block;
+            display: block !important;
 
         }
 
 
         .pm-add-title {
 
-            margin: 0 0 20px;
+            margin: 0 0 22px;
 
             color: #f6d66c;
 
             font-family: Georgia, serif;
 
-            font-size: 22px;
+            font-size: 24px;
 
         }
 
 
+        /* =================================================
+           ДВЕ КОЛОНКИ
+
+           ЛЕВАЯ — ФАЙЛ
+           ПРАВАЯ — ССЫЛКА
+           ================================================= */
+
         .pm-add-grid {
 
-            display: grid;
+            display: grid !important;
 
             grid-template-columns:
-                repeat(
-                    2,
-                    minmax(0, 1fr)
-                );
+                minmax(0, 1fr)
+                minmax(0, 1fr) !important;
 
-            gap: 20px;
+            width: 100% !important;
+
+            max-width: none !important;
+
+            gap: 22px !important;
+
+            box-sizing: border-box;
 
         }
 
 
         .pm-add-box {
 
-            padding: 20px;
+            width: 100% !important;
+
+            min-width: 0 !important;
+
+            box-sizing: border-box;
+
+            padding: 22px;
 
             border:
                 1px solid
-                rgba(215,170,49,.25);
+                rgba(215,170,49,.30);
 
             border-radius: 13px;
 
@@ -503,11 +658,11 @@ function ensureMaterialStyles() {
 
             display: block;
 
-            margin-bottom: 10px;
+            margin-bottom: 12px;
 
             color: #eee5d0;
 
-            font-size: 16px;
+            font-size: 17px;
 
             font-weight: 600;
 
@@ -516,11 +671,17 @@ function ensureMaterialStyles() {
 
         .pm-input {
 
-            width: 100%;
+            display: block;
+
+            width: 100% !important;
+
+            max-width: none !important;
+
+            min-width: 0 !important;
 
             box-sizing: border-box;
 
-            padding: 12px;
+            padding: 13px 14px;
 
             border:
                 1px solid
@@ -539,6 +700,13 @@ function ensureMaterialStyles() {
         }
 
 
+        .pm-input[type="file"] {
+
+            min-height: 48px;
+
+        }
+
+
         .pm-input::placeholder {
 
             color: #aaa1b4;
@@ -548,14 +716,23 @@ function ensureMaterialStyles() {
 
         .pm-add-action {
 
-            margin-top: 12px;
+            margin-top: 15px;
+
+        }
+
+
+        .pm-add-action .pm-button {
+
+            width: auto !important;
 
         }
 
 
         .pm-status {
 
-            margin-top: 15px;
+            width: 100%;
+
+            margin-top: 18px;
 
             color: #d9d0dc;
 
@@ -578,39 +755,72 @@ function ensureMaterialStyles() {
         }
 
 
-        /* ================================================
-           СПИСОК МАТЕРИАЛОВ
-           ================================================ */
+        .pm-note {
 
-        .pm-materials {
+            margin-top: 18px;
 
-            display: flex;
+            color: #bcb3c5;
 
-            flex-direction: column;
+            font-size: 14px;
 
-            gap: 12px;
+            line-height: 1.5;
 
         }
 
 
+        /* =================================================
+           СПИСОК МАТЕРИАЛОВ
+
+           ВСЯ ШИРИНА
+           ================================================= */
+
+        .pm-materials {
+
+            display: flex !important;
+
+            flex-direction: column !important;
+
+            width: 100% !important;
+
+            max-width: none !important;
+
+            gap: 12px;
+
+            box-sizing: border-box;
+
+        }
+
+
+        /* =================================================
+           ОДИН МАТЕРИАЛ
+           ================================================= */
+
         .pm-material {
 
-            display: grid;
+            display: grid !important;
 
             grid-template-columns:
-                62px
+                64px
                 minmax(0,1fr)
-                auto;
-
-            gap: 17px;
+                auto !important;
 
             align-items: center;
 
-            padding: 16px 18px;
+            width: 100% !important;
+
+            max-width: none !important;
+
+            min-width: 0 !important;
+
+            box-sizing: border-box;
+
+            gap: 18px;
+
+            padding: 17px 20px;
 
             border:
                 1px solid
-                rgba(215,170,49,.25);
+                rgba(215,170,49,.28);
 
             border-radius: 14px;
 
@@ -620,9 +830,9 @@ function ensureMaterialStyles() {
         }
 
 
-        /* ================================================
-           ИКОНКА МАТЕРИАЛА
-           ================================================ */
+        /* =================================================
+           ИКОНКА
+           ================================================= */
 
         .pm-material-icon {
 
@@ -644,6 +854,8 @@ function ensureMaterialStyles() {
             color: #f6d66c;
 
             font-size: 27px;
+
+            box-sizing: border-box;
 
         }
 
@@ -671,13 +883,15 @@ function ensureMaterialStyles() {
         }
 
 
-        /* ================================================
-           ТЕКСТ
-           ================================================ */
+        /* =================================================
+           ИНФОРМАЦИЯ
+           ================================================= */
 
         .pm-material-info {
 
             min-width: 0;
+
+            width: 100%;
 
         }
 
@@ -689,6 +903,8 @@ function ensureMaterialStyles() {
             color: white;
 
             font-size: 18px;
+
+            line-height: 1.3;
 
             font-weight: 700;
 
@@ -712,26 +928,32 @@ function ensureMaterialStyles() {
 
         .pm-material-url {
 
-            margin-top: 3px;
+            margin-top: 4px;
 
             color: #a99bc0;
 
             font-size: 13px;
+
+            line-height: 1.4;
 
             word-break: break-all;
 
         }
 
 
-        /* ================================================
-           КНОПКИ МАТЕРИАЛА
-           ================================================ */
+        /* =================================================
+           КНОПКА СКАЧАТЬ / ПЕРЕЙТИ
+
+           СПРАВА
+           ================================================= */
 
         .pm-material-action {
 
-            display: flex;
+            display: flex !important;
 
             align-items: center;
+
+            justify-content: flex-end;
 
             gap: 8px;
 
@@ -742,13 +964,23 @@ function ensureMaterialStyles() {
 
         .pm-action-button {
 
+            display: inline-flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            min-width: 110px;
+
+            min-height: 42px;
+
             border:
                 1px solid
                 #d7aa31;
 
             border-radius: 9px;
 
-            padding: 10px 18px;
+            padding: 9px 17px;
 
             background: #63358d;
 
@@ -759,6 +991,8 @@ function ensureMaterialStyles() {
             font-size: 15px;
 
             font-weight: 600;
+
+            box-sizing: border-box;
 
         }
 
@@ -778,7 +1012,9 @@ function ensureMaterialStyles() {
 
             border-radius: 9px;
 
-            padding: 10px 12px;
+            padding: 9px 12px;
+
+            min-height: 42px;
 
             background: transparent;
 
@@ -789,13 +1025,19 @@ function ensureMaterialStyles() {
         }
 
 
-        /* ================================================
-           ЕСЛИ МАТЕРИАЛОВ НЕТ
-           ================================================ */
+        /* =================================================
+           НЕТ МАТЕРИАЛОВ
+           ================================================= */
 
         .pm-empty {
 
-            padding: 55px 25px;
+            width: 100% !important;
+
+            max-width: none !important;
+
+            box-sizing: border-box;
+
+            padding: 50px 25px;
 
             text-align: center;
 
@@ -815,7 +1057,7 @@ function ensureMaterialStyles() {
 
         .pm-empty-title {
 
-            margin-bottom: 9px;
+            margin-bottom: 10px;
 
             color: #f6d66c;
 
@@ -826,15 +1068,49 @@ function ensureMaterialStyles() {
         }
 
 
-        /* ================================================
-           МОБИЛЬНЫЙ ЭКРАН
-           ================================================ */
+        /* =================================================
+           МОБИЛЬНАЯ ВЕРСИЯ
+           ================================================= */
 
-        @media (max-width: 800px) {
+        @media (max-width: 900px) {
+
+            .pm-page-head {
+
+                flex-wrap: wrap !important;
+
+            }
+
+
+            .pm-page-head .pm-button {
+
+                width: auto !important;
+
+            }
+
 
             .pm-add-grid {
 
-                grid-template-columns: 1fr;
+                grid-template-columns: 1fr !important;
+
+            }
+
+        }
+
+
+        @media (max-width: 650px) {
+
+            .pm-page {
+
+                padding-left: 5px;
+
+                padding-right: 5px;
+
+            }
+
+
+            .pm-page-title {
+
+                font-size: 27px;
 
             }
 
@@ -842,8 +1118,8 @@ function ensureMaterialStyles() {
             .pm-material {
 
                 grid-template-columns:
-                    52px
-                    minmax(0,1fr);
+                    55px
+                    minmax(0,1fr) !important;
 
             }
 
@@ -852,12 +1128,7 @@ function ensureMaterialStyles() {
 
                 grid-column: 2;
 
-            }
-
-
-            .pm-page-title {
-
-                font-size: 26px;
+                justify-content: flex-start;
 
             }
 
@@ -866,55 +1137,21 @@ function ensureMaterialStyles() {
     `;
 
 
-    document.head.appendChild(
-        style
-    );
+    document.head.appendChild(style);
 
 }
 
 
 /* =========================================================
-   ИКОНКА ПИФАГОРА
+   КАРТОЧКИ НАПРАВЛЕНИЙ
    ========================================================= */
 
-function pythagorasIconHtml() {
-
-    return `
-
-        <div class="card-icon pythagoras-icon">
-
-            <span>1</span>
-            <span>4</span>
-            <span>7</span>
-
-            <span>2</span>
-            <span>5</span>
-            <span>8</span>
-
-            <span>3</span>
-            <span>6</span>
-            <span>9</span>
-
-        </div>
-
-    `;
-
-}
-
-
-/* =========================================================
-   СТРАНИЦА РАЗДЕЛА
-   ========================================================= */
-
-async function loadPlatformMaterials(
-    section
-) {
+async function loadPlatformMaterials(section) {
 
     const contentCards =
         document.getElementById(
             'contentCards'
         );
-
 
     if (!contentCards) {
         return;
@@ -922,6 +1159,8 @@ async function loadPlatformMaterials(
 
 
     ensureMaterialStyles();
+
+    fixMaterialsLayout();
 
 
     const subtitle =
@@ -934,75 +1173,58 @@ async function loadPlatformMaterials(
 
         <div class="cards">
 
-            ${PLATFORM_DIRECTIONS.map(
-                item => {
+            ${PLATFORM_DIRECTIONS.map(item => {
 
-                    const icon =
-                        item.key ===
-                        'pythagoras'
+                return `
 
-                            ? pythagorasIconHtml()
+                    <div
+                        class="card method-card"
 
-                            : `
-                                <div
-                                    class="card-icon"
-                                >
-                                    ${item.icon}
-                                </div>
-                            `;
+                        data-section="${section}"
 
+                        data-direction="${item.key}"
 
-                    return `
+                        onclick="
+                            openPlatformMaterial(
+                                '${section}',
+                                '${item.key}'
+                            )
+                        "
+
+                        role="button"
+
+                        tabindex="0"
+                    >
 
                         <div
-                            class="card method-card"
+                            class="card-icon"
+                        >
+                            ${item.icon}
+                        </div>
 
-                            data-section="
-                                ${section}
-                            "
 
-                            data-direction="
-                                ${item.key}
-                            "
-
-                            onclick="
-                                openPlatformMaterial(
-                                    '${section}',
-                                    '${item.key}'
-                                )
-                            "
-
-                            role="button"
-
-                            tabindex="0"
+                        <div
+                            class="card-content"
                         >
 
-                            ${icon}
+                            <h3>
+                                ${platformEscape(
+                                    item.title
+                                )}
+                            </h3>
 
 
-                            <div
-                                class="card-content"
-                            >
-
-                                <h3>
-                                    ${platformEscape(
-                                        item.title
-                                    )}
-                                </h3>
-
-
-                                <p>
-                                    ${subtitle}
-                                </p>
-
-                            </div>
+                            <p>
+                                ${subtitle}
+                            </p>
 
                         </div>
 
-                    `;
+                    </div>
 
-                }
-            ).join('')}
+                `;
+
+            }).join('')}
 
         </div>
 
@@ -1096,7 +1318,7 @@ async function getAllMaterials(
 
 
 /* =========================================================
-   ПОЛНОЦЕННАЯ СТРАНИЦА НАПРАВЛЕНИЯ
+   ПОЛНОЦЕННАЯ СТРАНИЦА
    ========================================================= */
 
 async function openPlatformMaterial(
@@ -1109,7 +1331,6 @@ async function openPlatformMaterial(
             'contentCards'
         );
 
-
     if (!contentCards) {
         return;
     }
@@ -1117,11 +1338,11 @@ async function openPlatformMaterial(
 
     ensureMaterialStyles();
 
+    fixMaterialsLayout();
+
 
     const title =
-        PLATFORM_NAMES[
-            direction
-        ]
+        PLATFORM_NAMES[direction]
         ||
         'Материал';
 
@@ -1136,36 +1357,36 @@ async function openPlatformMaterial(
 
     materialManagerState = {
 
-        section:
-            section,
+        section: section,
 
-        direction:
-            direction,
+        direction: direction,
 
-        title:
-            title
+        title: title
 
     };
 
 
     /*
-       ВОТ ЗДЕСЬ ГЛАВНОЕ:
+       ВАЖНО:
 
-       Мы НЕ создаём popup.
+       Здесь НЕ создаётся modal.
+       НЕ создаётся popup.
+       НЕ создаётся окно поверх страницы.
 
-       Мы полностью заменяем
-       содержимое contentCards
+       contentCards полностью заменяется
        полноценной страницей.
     */
 
     contentCards.innerHTML = `
 
-        <div class="pm-page">
+        <div
+            class="pm-page"
+        >
 
 
-            <!-- =========================================
+            <!-- =====================================
                  НАЗАД
-                 ========================================= -->
+                 ===================================== -->
 
             <button
                 class="pm-back"
@@ -1186,12 +1407,13 @@ async function openPlatformMaterial(
             </button>
 
 
-            <!-- =========================================
-                 ЗАГОЛОВОК И КНОПКА
-                 ========================================= -->
+            <!-- =====================================
+                 ЗАГОЛОВОК + ДОБАВИТЬ
+                 ===================================== -->
 
-            <div class="pm-page-head">
-
+            <div
+                class="pm-page-head"
+            >
 
                 <div>
 
@@ -1227,7 +1449,9 @@ async function openPlatformMaterial(
                                     toggleMaterialAddPanel()
                                 "
                             >
+
                                 ＋ Добавить материал
+
                             </button>
 
                           `
@@ -1235,13 +1459,12 @@ async function openPlatformMaterial(
                         : ''
                 }
 
-
             </div>
 
 
-            <!-- =========================================
-                 ДОБАВЛЕНИЕ
-                 ========================================= -->
+            <!-- =====================================
+                 ДОБАВЛЕНИЕ МАТЕРИАЛА
+                 ===================================== -->
 
             ${
                 isPlatformManager()
@@ -1267,9 +1490,9 @@ async function openPlatformMaterial(
                             >
 
 
-                                <!-- ======================
+                                <!-- =================
                                      ФАЙЛ
-                                     ====================== -->
+                                     ================= -->
 
                                 <div
                                     class="pm-add-box"
@@ -1341,9 +1564,9 @@ async function openPlatformMaterial(
                                 </div>
 
 
-                                <!-- ======================
+                                <!-- =================
                                      ССЫЛКА
-                                     ====================== -->
+                                     ================= -->
 
                                 <div
                                     class="pm-add-box"
@@ -1410,7 +1633,7 @@ async function openPlatformMaterial(
                                     section ===
                                     'videos'
 
-                                        ? 'Можно добавить внешнюю ссылку на видео или загрузить видеофайл непосредственно в платформу.'
+                                        ? 'Можно добавить внешнюю ссылку на видео или загрузить видео непосредственно в платформу.'
 
                                         : 'Можно добавить ссылку на Google Диск, Яндекс Диск, Mail.ru или другой облачный сервис, либо загрузить файл непосредственно в платформу.'
                                 }
@@ -1427,9 +1650,9 @@ async function openPlatformMaterial(
             }
 
 
-            <!-- =========================================
-                 ВСЕ МАТЕРИАЛЫ
-                 ========================================= -->
+            <!-- =====================================
+                 СПИСОК
+                 ===================================== -->
 
             <div
                 id="pmMaterialsList"
@@ -1453,6 +1676,14 @@ async function openPlatformMaterial(
     `;
 
 
+    /*
+       После вставки HTML
+       ещё раз принудительно исправляем ширину.
+    */
+
+    fixMaterialsLayout();
+
+
     await renderMaterialList(
         section,
         direction
@@ -1462,7 +1693,7 @@ async function openPlatformMaterial(
 
 
 /* =========================================================
-   ОТКРЫТЬ ПАНЕЛЬ ДОБАВЛЕНИЯ
+   ОТКРЫТЬ / ЗАКРЫТЬ ДОБАВЛЕНИЕ
    ========================================================= */
 
 function toggleMaterialAddPanel() {
@@ -1471,7 +1702,6 @@ function toggleMaterialAddPanel() {
         document.getElementById(
             'pmAddPanel'
         );
-
 
     if (!panel) {
         return;
@@ -1486,7 +1716,7 @@ function toggleMaterialAddPanel() {
 
 
 /* =========================================================
-   ПОКАЗАТЬ СТАТУС
+   СТАТУС
    ========================================================= */
 
 function setPMStatus(
@@ -1499,7 +1729,6 @@ function setPMStatus(
             'pmStatus'
         );
 
-
     if (!status) {
         return;
     }
@@ -1507,10 +1736,7 @@ function setPMStatus(
 
     status.className =
         'pm-status ' +
-        (
-            type ||
-            ''
-        );
+        (type || '');
 
 
     status.textContent =
@@ -1520,7 +1746,7 @@ function setPMStatus(
 
 
 /* =========================================================
-   ОТРИСОВКА ВСЕХ МАТЕРИАЛОВ
+   СПИСОК
    ========================================================= */
 
 async function renderMaterialList(
@@ -1532,7 +1758,6 @@ async function renderMaterialList(
         document.getElementById(
             'pmMaterialsList'
         );
-
 
     if (!list) {
         return;
@@ -1548,9 +1773,7 @@ async function renderMaterialList(
             );
 
 
-        if (
-            !materials.length
-        ) {
+        if (!materials.length) {
 
             list.innerHTML = `
 
@@ -1561,11 +1784,14 @@ async function renderMaterialList(
                     <div
                         class="pm-empty-title"
                     >
+
                         Материалов пока нет
+
                     </div>
 
 
                     <div>
+
                         ${
                             isPlatformManager()
 
@@ -1573,6 +1799,7 @@ async function renderMaterialList(
 
                                 : 'Материалы пока не добавлены.'
                         }
+
                     </div>
 
                 </div>
@@ -1586,7 +1813,6 @@ async function renderMaterialList(
 
         list.innerHTML =
             materials
-
                 .map(
                     material =>
                         renderMaterialItem(
@@ -1594,7 +1820,6 @@ async function renderMaterialList(
                             section
                         )
                 )
-
                 .join('');
 
 
@@ -1645,29 +1870,22 @@ function renderMaterialItem(
 ) {
 
     const isFile =
-        material.material_type ===
-            'file'
+        material.material_type === 'file'
         &&
         material.file_path;
 
 
     const isLink =
-        material.material_type ===
-            'link'
+        material.material_type === 'link'
         &&
         material.url;
 
 
-    let icon =
-        '🔗';
+    let icon = '🔗';
 
+    let iconClass = '';
 
-    let iconClass =
-        '';
-
-
-    let name =
-        'Материал';
+    let name = 'Материал';
 
 
     if (isFile) {
@@ -1690,44 +1908,35 @@ function renderMaterialItem(
 
 
         if (
-            section ===
-            'videos'
+            section === 'videos'
             ||
             [
                 'mp4',
                 'webm',
                 'mov',
                 'm4v'
-            ].includes(
-                extension
-            )
+            ].includes(extension)
         ) {
 
-            icon =
-                '▶';
+            icon = '▶';
 
-            iconClass =
-                'video';
+            iconClass = 'video';
 
         }
 
         else if (
-            extension ===
-            'pdf'
+            extension === 'pdf'
         ) {
 
-            icon =
-                'PDF';
+            icon = 'PDF';
 
-            iconClass =
-                'pdf';
+            iconClass = 'pdf';
 
         }
 
         else {
 
-            icon =
-                '📄';
+            icon = '📄';
 
         }
 
@@ -1736,12 +1945,9 @@ function renderMaterialItem(
 
     else if (isLink) {
 
-        icon =
-            '🔗';
+        icon = '🔗';
 
-
-        name =
-            'Внешняя ссылка';
+        name = 'Внешняя ссылка';
 
     }
 
@@ -1752,8 +1958,7 @@ function renderMaterialItem(
         );
 
 
-    let action =
-        '';
+    let action = '';
 
 
     if (isFile) {
@@ -1771,7 +1976,9 @@ function renderMaterialItem(
                     )
                 "
             >
+
                 Скачать
+
             </button>
 
         `;
@@ -1779,7 +1986,7 @@ function renderMaterialItem(
     }
 
 
-    else if (isLink) {
+    if (isLink) {
 
         action = `
 
@@ -1794,7 +2001,9 @@ function renderMaterialItem(
                     )
                 "
             >
+
                 Перейти
+
             </button>
 
         `;
@@ -1818,7 +2027,9 @@ function renderMaterialItem(
                         )
                     "
                 >
+
                     Удалить
+
                 </button>
 
               `
@@ -1831,15 +2042,9 @@ function renderMaterialItem(
         <div
             class="pm-material"
 
-            data-material-id="
-                ${material.id}
-            "
+            data-material-id="${material.id}"
         >
 
-
-            <!-- =========================================
-                 ИКОНКА
-                 ========================================= -->
 
             <div
                 class="
@@ -1848,16 +2053,10 @@ function renderMaterialItem(
                 "
             >
 
-                ${platformEscape(
-                    icon
-                )}
+                ${platformEscape(icon)}
 
             </div>
 
-
-            <!-- =========================================
-                 ИНФОРМАЦИЯ
-                 ========================================= -->
 
             <div
                 class="pm-material-info"
@@ -1867,9 +2066,7 @@ function renderMaterialItem(
                     class="pm-material-name"
                 >
 
-                    ${platformEscape(
-                        name
-                    )}
+                    ${platformEscape(name)}
 
                 </div>
 
@@ -1880,9 +2077,7 @@ function renderMaterialItem(
 
                     ${
                         isFile
-
                             ? 'Файл'
-
                             : 'Внешняя ссылка'
                     }
 
@@ -1890,10 +2085,7 @@ function renderMaterialItem(
                     ${
                         date
                             ? ' • ' +
-                              platformEscape(
-                                  date
-                              )
-
+                              platformEscape(date)
                             : ''
                     }
 
@@ -1908,9 +2100,11 @@ function renderMaterialItem(
                             <div
                                 class="pm-material-url"
                             >
+
                                 ${platformEscape(
                                     material.url
                                 )}
+
                             </div>
 
                           `
@@ -1920,10 +2114,6 @@ function renderMaterialItem(
 
             </div>
 
-
-            <!-- =========================================
-                 ДЕЙСТВИЯ
-                 ========================================= -->
 
             <div
                 class="pm-material-action"
@@ -1944,14 +2134,12 @@ function renderMaterialItem(
 
 
 /* =========================================================
-   СОХРАНИТЬ ВНЕШНЮЮ ССЫЛКУ
+   СОХРАНЕНИЕ ССЫЛКИ
    ========================================================= */
 
 async function savePlatformMaterialUrl() {
 
-    if (
-        !isPlatformManager()
-    ) {
+    if (!isPlatformManager()) {
         return;
     }
 
@@ -1970,9 +2158,7 @@ async function savePlatformMaterialUrl() {
 
 
     const url =
-        input?.value.trim()
-        ||
-        '';
+        input?.value.trim() || '';
 
 
     if (!url) {
@@ -1989,14 +2175,12 @@ async function savePlatformMaterialUrl() {
 
     try {
 
-        new URL(
-            url
-        );
+        new URL(url);
 
     } catch (_) {
 
         setPMStatus(
-            'Введите корректную ссылку, начинающуюся с https:// или http://.',
+            'Введите корректную ссылку.',
             'error'
         );
 
@@ -2037,20 +2221,15 @@ async function savePlatformMaterialUrl() {
 
                 .insert({
 
-                    section:
-                        section,
+                    section: section,
 
-                    direction:
-                        direction,
+                    direction: direction,
 
-                    material_type:
-                        'link',
+                    material_type: 'link',
 
-                    url:
-                        url,
+                    url: url,
 
-                    file_path:
-                        null,
+                    file_path: null,
 
                     created_by:
                         session.user.id
@@ -2063,8 +2242,7 @@ async function savePlatformMaterialUrl() {
         }
 
 
-        input.value =
-            '';
+        input.value = '';
 
 
         setPMStatus(
@@ -2088,13 +2266,11 @@ async function savePlatformMaterialUrl() {
 
 
         setPMStatus(
-
             'Не удалось сохранить ссылку: ' +
             (
                 error.message ||
                 String(error)
             ),
-
             'error'
         );
 
@@ -2104,14 +2280,12 @@ async function savePlatformMaterialUrl() {
 
 
 /* =========================================================
-   ЗАГРУЗИТЬ ФАЙЛ / ВИДЕО
+   ЗАГРУЗКА ФАЙЛА / ВИДЕО
    ========================================================= */
 
 async function uploadPlatformMaterialFile() {
 
-    if (
-        !isPlatformManager()
-    ) {
+    if (!isPlatformManager()) {
         return;
     }
 
@@ -2145,38 +2319,19 @@ async function uploadPlatformMaterialFile() {
     }
 
 
-    /*
-       Лимит:
-
-       Методические пособия:
-       100 МБ
-
-       Видео:
-       500 МБ
-    */
-
     const maxSize =
-        section ===
-        'videos'
+        section === 'videos'
 
-            ? 500 *
-              1024 *
-              1024
+            ? 500 * 1024 * 1024
 
-            : 100 *
-              1024 *
-              1024;
+            : 100 * 1024 * 1024;
 
 
-    if (
-        file.size >
-        maxSize
-    ) {
+    if (file.size > maxSize) {
 
         setPMStatus(
 
-            section ===
-            'videos'
+            section === 'videos'
 
                 ? 'Видео слишком большое. Максимальный размер — 500 МБ.'
 
@@ -2211,16 +2366,10 @@ async function uploadPlatformMaterialFile() {
         }
 
 
-        /*
-           Нормализуем имя файла
-        */
-
         const safeName =
             file.name
 
-                .normalize(
-                    'NFKD'
-                )
+                .normalize('NFKD')
 
                 .replace(
                     /[^a-zA-Z0-9._-]+/g,
@@ -2236,10 +2385,6 @@ async function uploadPlatformMaterialFile() {
                 'file';
 
 
-        /*
-           Уникальное имя
-        */
-
         const unique =
             window.crypto &&
             typeof crypto.randomUUID ===
@@ -2254,20 +2399,9 @@ async function uploadPlatformMaterialFile() {
                     .slice(2);
 
 
-        /*
-           Путь в Storage
-
-           manuals/adult/...
-           videos/adult/...
-        */
-
         const path =
             `${section}/${direction}/${unique}_${safeName}`;
 
-
-        /*
-           Загружаем в Storage
-        */
 
         const {
             error: uploadError
@@ -2285,11 +2419,9 @@ async function uploadPlatformMaterialFile() {
                     file,
                     {
 
-                        cacheControl:
-                            '3600',
+                        cacheControl: '3600',
 
-                        upsert:
-                            false,
+                        upsert: false,
 
                         contentType:
                             file.type ||
@@ -2305,15 +2437,10 @@ async function uploadPlatformMaterialFile() {
 
 
         setPMStatus(
-            'Файл загружен. Сохраняю информацию...',
+            'Файл загружен. Сохраняю...',
             ''
         );
 
-
-        /*
-           Записываем материал
-           в platform_materials
-        */
 
         const {
             error: insertError
@@ -2326,32 +2453,21 @@ async function uploadPlatformMaterialFile() {
 
                 .insert({
 
-                    section:
-                        section,
+                    section: section,
 
-                    direction:
-                        direction,
+                    direction: direction,
 
-                    material_type:
-                        'file',
+                    material_type: 'file',
 
-                    url:
-                        null,
+                    url: null,
 
-                    file_path:
-                        path,
+                    file_path: path,
 
                     created_by:
                         session.user.id
 
                 });
 
-
-        /*
-           Если запись в таблицу
-           не создалась —
-           удаляем файл.
-        */
 
         if (insertError) {
 
@@ -2373,8 +2489,7 @@ async function uploadPlatformMaterialFile() {
         }
 
 
-        input.value =
-            '';
+        input.value = '';
 
 
         setPMStatus(
@@ -2398,13 +2513,11 @@ async function uploadPlatformMaterialFile() {
 
 
         setPMStatus(
-
             'Не удалось загрузить файл: ' +
             (
                 error.message ||
                 String(error)
             ),
-
             'error'
         );
 
@@ -2450,9 +2563,7 @@ async function downloadPlatformMaterial(
         }
 
 
-        if (
-            !material?.file_path
-        ) {
+        if (!material?.file_path) {
 
             throw new Error(
                 'Файл не найден.'
@@ -2466,14 +2577,6 @@ async function downloadPlatformMaterial(
                 material.file_path
             );
 
-
-        /*
-           Создаём временную
-           ссылку на приватный файл.
-
-           download заставляет
-           браузер скачать файл.
-        */
 
         const {
             data,
@@ -2494,10 +2597,7 @@ async function downloadPlatformMaterial(
                     60 * 60,
 
                     {
-
-                        download:
-                            fileName
-
+                        download: fileName
                     }
 
                 );
@@ -2508,9 +2608,7 @@ async function downloadPlatformMaterial(
         }
 
 
-        if (
-            !data?.signedUrl
-        ) {
+        if (!data?.signedUrl) {
 
             throw new Error(
                 'Не удалось получить ссылку на скачивание.'
@@ -2519,15 +2617,8 @@ async function downloadPlatformMaterial(
         }
 
 
-        /*
-           Именно скачивание,
-           а не открытие файла.
-        */
-
         const link =
-            document.createElement(
-                'a'
-            );
+            document.createElement('a');
 
 
         link.href =
@@ -2562,14 +2653,11 @@ async function downloadPlatformMaterial(
 
 
         alert(
-
             'Не удалось скачать файл.\n\n' +
-
             (
                 error.message ||
                 String(error)
             )
-
         );
 
     }
@@ -2578,7 +2666,7 @@ async function downloadPlatformMaterial(
 
 
 /* =========================================================
-   ПЕРЕЙТИ ПО ССЫЛКЕ
+   ПЕРЕЙТИ ПО ВНЕШНЕЙ ССЫЛКЕ
    ========================================================= */
 
 async function goToPlatformMaterial(
@@ -2623,18 +2711,6 @@ async function goToPlatformMaterial(
         }
 
 
-        /*
-           Ссылка ведёт
-           непосредственно туда,
-           куда её добавил администратор:
-
-           Google Диск
-           Яндекс Диск
-           Mail.ru
-           YouTube
-           любой другой сервис.
-        */
-
         window.open(
             data.url,
             '_blank',
@@ -2651,14 +2727,11 @@ async function goToPlatformMaterial(
 
 
         alert(
-
             'Не удалось открыть ссылку.\n\n' +
-
             (
                 error.message ||
                 String(error)
             )
-
         );
 
     }
@@ -2667,16 +2740,14 @@ async function goToPlatformMaterial(
 
 
 /* =========================================================
-   УДАЛИТЬ МАТЕРИАЛ
+   УДАЛЕНИЕ
    ========================================================= */
 
 async function deletePlatformMaterial(
     materialId
 ) {
 
-    if (
-        !isPlatformManager()
-    ) {
+    if (!isPlatformManager()) {
         return;
     }
 
@@ -2721,48 +2792,22 @@ async function deletePlatformMaterial(
         }
 
 
-        /*
-           Если это файл —
-           удаляем его из Storage.
-        */
+        if (material?.file_path) {
 
-        if (
-            material?.file_path
-        ) {
+            await supabaseClient
 
-            const {
-                error:
-                    storageError
-            } =
-                await supabaseClient
+                .storage
 
-                    .storage
+                .from(
+                    PLATFORM_STORAGE_BUCKET
+                )
 
-                    .from(
-                        PLATFORM_STORAGE_BUCKET
-                    )
-
-                    .remove([
-                        material.file_path
-                    ]);
-
-
-            if (storageError) {
-
-                console.warn(
-                    'Ошибка удаления файла из Storage:',
-                    storageError
-                );
-
-            }
+                .remove([
+                    material.file_path
+                ]);
 
         }
 
-
-        /*
-           Удаляем запись
-           из platform_materials.
-        */
 
         const {
             error
@@ -2786,36 +2831,26 @@ async function deletePlatformMaterial(
         }
 
 
-        /*
-           Обновляем страницу
-        */
-
         await renderMaterialList(
-
             material.section,
-
             material.direction
-
         );
 
 
     } catch (error) {
 
         console.error(
-            'Ошибка удаления материала:',
+            'Ошибка удаления:',
             error
         );
 
 
         alert(
-
             'Не удалось удалить материал.\n\n' +
-
             (
                 error.message ||
                 String(error)
             )
-
         );
 
     }
@@ -2825,9 +2860,6 @@ async function deletePlatformMaterial(
 
 /* =========================================================
    СОВМЕСТИМОСТЬ СО СТАРЫМ INDEX.HTML
-   ---------------------------------------------------------
-   Оставляем старые имена функций,
-   чтобы index.html не ломался.
    ========================================================= */
 
 async function saveMaterialUrl() {
@@ -2856,7 +2888,7 @@ async function loadMaterials(
 
 
 /* =========================================================
-   СТАРАЯ ФУНКЦИЯ OPEN MATERIAL
+   СТАРАЯ ФУНКЦИЯ
    ========================================================= */
 
 function openMaterial(
@@ -2864,9 +2896,7 @@ function openMaterial(
     title
 ) {
 
-    if (
-        url
-    ) {
+    if (url) {
 
         window.open(
             url,
