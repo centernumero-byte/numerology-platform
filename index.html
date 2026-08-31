@@ -376,7 +376,7 @@ body {
   </aside>
 
   <main class="main">
-    <div class="top">
+    <div class="top" id="welcomeTop">
       <div class="welcome">
         <h1>Добро пожаловать, <span id="clientName">Центр Нумера</span>! ✨</h1>
       </div>
@@ -449,6 +449,16 @@ const DIRECTIONS = [
   { key: "pythagoras",    icon: "pythagoras", title: "Квадрат<br>Пифагора" }
 ];
 const DIRECTION_NAMES = Object.fromEntries(DIRECTIONS.map(d => [d.key, d.title.replace("<br>", " ")]));
+const SECTION_LABELS = { manuals: "Методическое пособие", videos: "Видео", tests: "Тест" };
+
+function hideWelcome() {
+  const el = document.getElementById("welcomeTop");
+  if (el) el.style.display = "none";
+}
+function showWelcome() {
+  const el = document.getElementById("welcomeTop");
+  if (el) el.style.display = "";
+}
 
 function pythagorasIconHtml() {
   return `
@@ -479,9 +489,8 @@ function renderDirectionCards(section, action, materialFlags) {
       click = `onclick="openCalculator('${card.key}')"`;
       subtitle = "Калькулятор";
     } else {
-      click = `onclick="openPlatformMaterial('${section}','${card.key}',${JSON.stringify(DIRECTION_NAMES[card.key])})"`;
-      subtitle = materialFlags[card.key] ? "Материал добавлен" : "Материал пока не добавлен";
-      if (materialFlags[card.key]) extraClass = " has-material";
+      click = `onclick='openDirectionMaterials(${JSON.stringify(section)},${JSON.stringify(card.key)},${JSON.stringify(DIRECTION_NAMES[card.key])})'`;
+      subtitle = SECTION_LABELS[section] || "Материал";
     }
 
     return `
@@ -534,6 +543,7 @@ async function showSection(section) {
   const contentCards = document.getElementById("contentCards");
   if (!contentCards) return;
 
+  showWelcome();
   setActiveSection(section);
 
   // Центр Нумера всегда администратор, независимо от того, что успело подгрузиться.
@@ -557,9 +567,9 @@ async function showSection(section) {
   }
 
   if (section === "calculators") { renderCalculators(); return; }
-  if (section === "manuals") { await loadPlatformMaterials("manuals", "Методические пособия"); return; }
-  if (section === "videos") { await loadPlatformMaterials("videos", "Видео"); return; }
-  if (section === "tests") { await loadPlatformMaterials("tests", "Тесты"); return; }
+  if (section === "manuals") { await loadPlatformMaterials("manuals"); return; }
+  if (section === "videos") { await loadPlatformMaterials("videos"); return; }
+  if (section === "tests") { await loadPlatformMaterials("tests"); return; }
   if (section === "library") { loadLibrary(); return; }
   if (section === "my-calculations") { renderMyCalculations(); return; }
   if (section === "access") { await renderAccess(); return; }
@@ -677,92 +687,95 @@ const PLATFORM_MATERIALS_TABLE = "platform_materials";
 const PLATFORM_STORAGE_BUCKET = "methodicals";
 
 let materialManagerState = { section: "", direction: "", title: "" };
+let currentMaterialsView = null;
+let currentDirectionMaterials = [];
 
-const SECTION_TITLES = { manuals: "Методические пособия", videos: "Видео", tests: "Тесты" };
-
-async function loadPlatformMaterials(section, sectionTitle) {
+async function loadPlatformMaterials(section) {
   const contentCards = document.getElementById("contentCards");
   if (!contentCards) return;
-
+  currentMaterialsView = null;
   contentCards.className = "cards";
-  contentCards.innerHTML = `<div class="section-title"><h2>${sectionTitle || SECTION_TITLES[section] || "Материалы"}</h2></div>` +
-    `<div class="cards" style="margin-top:0;" id="directionCards">` + renderDirectionCards(section, "material") + `</div>`;
-  // Обернём в контейнер, section-title не внутри .cards
+  contentCards.innerHTML = renderDirectionCards(section, "material");
+}
+
+/* Полноценная страница конкретного направления: список материалов + добавление. */
+async function openDirectionMaterials(section, direction, title) {
+  currentMaterialsView = { section, direction, title };
+  hideWelcome();
+
+  const contentCards = document.getElementById("contentCards");
+  if (!contentCards) return;
   contentCards.className = "";
   contentCards.innerHTML = `
-    <div class="section-title"><h2>${sectionTitle || SECTION_TITLES[section] || "Материалы"}</h2></div>
-    <div class="cards" id="directionCards">${renderDirectionCards(section, "material")}</div>`;
+    <div class="materials-page">
+      <button class="back-link" onclick="showSection(${JSON.stringify(section)})">← Назад</button>
+      <div class="materials-head">
+        <h2>${escapeHtml(title)} — ${escapeHtml(SECTION_LABELS[section] || "Материалы")}</h2>
+        ${window.currentUserIsManager
+          ? `<button class="materials-add-btn" onclick="showMaterialManager(${JSON.stringify(section)},${JSON.stringify(direction)},${JSON.stringify(title)})">Добавить материал +</button>`
+          : ""}
+      </div>
+      <div id="materialsListBox">Загрузка...</div>
+    </div>`;
+
+  await loadDirectionMaterialsList();
+}
+
+async function loadDirectionMaterialsList() {
+  const box = document.getElementById("materialsListBox");
+  if (!box || !currentMaterialsView) return;
+  const { section, direction } = currentMaterialsView;
 
   try {
     const { data, error } = await supabaseClient
       .from(PLATFORM_MATERIALS_TABLE)
-      .select("id, section, direction, material_type, url, file_path, created_at")
+      .select("id, material_type, url, file_path, created_at")
       .eq("section", section)
+      .eq("direction", direction)
       .order("created_at", { ascending: false });
-
     if (error) throw error;
 
-    const latestByDirection = {};
-    (data || []).forEach(function (item) {
-      if (!latestByDirection[item.direction]) latestByDirection[item.direction] = item;
-    });
+    currentDirectionMaterials = data || [];
 
-    const flags = {};
-    Object.keys(latestByDirection).forEach(k => flags[k] = true);
+    if (!currentDirectionMaterials.length) {
+      box.innerHTML = `<div class="table-card"><div class="empty-table">Материал пока не добавлен.</div></div>`;
+      return;
+    }
 
-    const directionCards = document.getElementById("directionCards");
-    if (directionCards) directionCards.innerHTML = renderDirectionCards(section, "material", flags);
-
+    box.innerHTML = currentDirectionMaterials.map(function (item) {
+      const isLink = item.material_type === "link";
+      const icon = isLink ? "🔗" : (section === "videos" ? "▶" : "📄");
+      const label = isLink ? "Ссылка" : (section === "videos" ? "Видеофайл" : "Файл");
+      const meta = isLink ? escapeHtml(item.url || "") : escapeHtml((item.file_path || "").split("/").pop());
+      const date = item.created_at ? new Date(item.created_at).toLocaleDateString("ru-RU") : "";
+      return `
+        <div class="material-row">
+          <div class="material-row-icon">${icon}</div>
+          <div class="material-row-body">
+            <div class="material-row-title">${label}</div>
+            <div class="material-row-meta">${meta}${date ? " · " + date : ""}</div>
+          </div>
+          <button class="material-row-open" onclick="openMaterialById(${JSON.stringify(item.id)})">Открыть</button>
+        </div>`;
+    }).join("");
   } catch (error) {
-    console.error("Ошибка загрузки материалов platform_materials:", error);
+    console.error("Ошибка загрузки списка материалов:", error);
+    box.innerHTML = `<div class="table-card"><div class="empty-table">Не удалось загрузить материалы.</div></div>`;
   }
 }
 
-async function getCurrentMaterial(section, direction) {
-  const { data, error } = await supabaseClient
-    .from(PLATFORM_MATERIALS_TABLE)
-    .select("id, section, direction, material_type, url, file_path, created_by, created_at")
-    .eq("section", section)
-    .eq("direction", direction)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (error) throw error;
-  return data || null;
-}
-
-async function openPlatformMaterial(section, direction, title) {
+async function openMaterialById(id) {
+  const item = currentDirectionMaterials.find(m => String(m.id) === String(id));
+  if (!item) return;
   try {
-    const material = await getCurrentMaterial(section, direction);
-
-    if (!material) {
-      if (window.currentUserIsManager) {
-        showMaterialManager(section, direction, title);
-      } else {
-        alert(`${title}\n\nМатериал пока не добавлен.`);
-      }
-      return;
-    }
-
-    if (material.url) {
-      window.open(material.url, "_blank", "noopener,noreferrer");
-      return;
-    }
-
-    if (material.file_path) {
-      const { data, error } = await supabaseClient
-        .storage.from(PLATFORM_STORAGE_BUCKET)
-        .createSignedUrl(material.file_path, 60 * 60);
+    if (item.url) { window.open(item.url, "_blank", "noopener,noreferrer"); return; }
+    if (item.file_path) {
+      const { data, error } = await supabaseClient.storage
+        .from(PLATFORM_STORAGE_BUCKET)
+        .createSignedUrl(item.file_path, 60 * 60);
       if (error) throw error;
       if (!data?.signedUrl) throw new Error("Не удалось получить ссылку на файл.");
       window.open(data.signedUrl, "_blank", "noopener,noreferrer");
-      return;
-    }
-
-    if (window.currentUserIsManager) {
-      showMaterialManager(section, direction, title);
-    } else {
-      alert(`${title}\n\nМатериал пока не добавлен.`);
     }
   } catch (error) {
     console.error("Ошибка открытия материала:", error);
@@ -846,7 +859,7 @@ async function savePlatformMaterialUrl() {
     if (error) throw error;
 
     setMaterialManagerStatus("Ссылка сохранена.", "ok");
-    await loadPlatformMaterials(section);
+    await loadDirectionMaterialsList();
     setTimeout(() => document.getElementById("materialManager")?.remove(), 700);
   } catch (error) {
     console.error("Ошибка сохранения ссылки:", error);
@@ -901,7 +914,7 @@ async function uploadPlatformMaterialFile() {
     }
 
     setMaterialManagerStatus("Файл успешно сохранён.", "ok");
-    await loadPlatformMaterials(section);
+    await loadDirectionMaterialsList();
     setTimeout(() => document.getElementById("materialManager")?.remove(), 700);
   } catch (error) {
     console.error("Ошибка загрузки файла:", error);
