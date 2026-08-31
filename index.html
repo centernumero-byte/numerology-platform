@@ -357,7 +357,7 @@ body {
         <span class="nav-icon">✎</span> Тесты
       </button>
       <button class="nav-item" data-section="library" onclick="showSection('library')">
-        <span class="nav-icon">📚</span> Библиотека нумеролога
+        <span class="nav-icon">📚</span> Библиотека учителя
       </button>
       <button class="nav-item" data-section="my-calculations" onclick="showSection('my-calculations')">
         <span class="nav-icon">▤</span> Мои расчёты
@@ -434,7 +434,7 @@ function escapeHtml(value) {
     .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 function showNoAccessMessage() {
-  alert("У вас нет доступа к этому разделу. Обратитесь к администратору или нумерологу.");
+  alert("У вас нет доступа к этому разделу. Обратитесь к администратору или учителю.");
 }
 
 /* ============================================================
@@ -450,6 +450,23 @@ const DIRECTIONS = [
 ];
 const DIRECTION_NAMES = Object.fromEntries(DIRECTIONS.map(d => [d.key, d.title.replace("<br>", " ")]));
 const SECTION_LABELS = { manuals: "Методическое пособие", videos: "Видео", tests: "Тест" };
+const CONTENT_TYPES = [
+  { key: "calculators", label: "Калькуляторы" },
+  { key: "manuals", label: "Методички" },
+  { key: "videos", label: "Видео" },
+  { key: "tests", label: "Тесты" }
+];
+
+window.currentUserGrant = {};
+
+function hasGrant(section, direction) {
+  if (window.currentUserIsManager) return true;
+  const scope = window.currentUserGrant || {};
+  if (section === "library") return !!scope.library;
+  if (section === "my-calculations") return !!scope.my_calculations;
+  if (!direction) return false;
+  return !!(scope[direction] && scope[direction][section]);
+}
 
 function hideWelcome() {
   const el = document.getElementById("welcomeTop");
@@ -513,7 +530,7 @@ function renderLockedSection(section) {
   if (!contentCards) return;
   const titles = {
     calculators: "Калькуляторы", manuals: "Методические пособия", videos: "Видео",
-    tests: "Тесты", library: "Библиотека нумеролога", "my-calculations": "Мои расчёты"
+    tests: "Тесты", library: "Библиотека учителя", "my-calculations": "Мои расчёты"
   };
   contentCards.className = "";
   contentCards.innerHTML = `
@@ -530,7 +547,7 @@ function renderLockedSection(section) {
         <h2>У вас нет доступа к этому разделу</h2>
         <p>
           Вы успешно зарегистрированы в Numerology Platform.<br>
-          Чтобы открыть раздел, администратор или нумеролог должен выдать вам доступ.
+          Чтобы открыть раздел, администратор или учитель должен выдать вам доступ.
         </p>
         <button class="material-manager-button" style="width:auto;margin-top:24px;" onclick="showSection('access')">
           Посмотреть статус доступа
@@ -561,9 +578,12 @@ async function showSection(section) {
   }
 
   const protectedSections = ["calculators", "manuals", "videos", "tests", "library", "my-calculations"];
-  if (!isAdmin && protectedSections.includes(section) && !window.currentUserHasAccess) {
-    renderLockedSection(section);
-    return;
+  if (!isAdmin && protectedSections.includes(section)) {
+    if (!window.currentUserHasAccess) { renderLockedSection(section); return; }
+    if ((section === "library" || section === "my-calculations") && !hasGrant(section)) {
+      renderLockedSection(section);
+      return;
+    }
   }
 
   if (section === "calculators") { renderCalculators(); return; }
@@ -588,30 +608,12 @@ function renderCalculators() {
 }
 
 async function openCalculator(type) {
-  if (!window.currentUserIsManager && !window.currentUserHasAccess) {
+  if (!window.currentUserIsManager && !hasGrant("calculators", type)) {
     showNoAccessMessage();
     return;
   }
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (!session) { showLogin(); return; }
-
-  if (!window.currentUserIsManager) {
-    const { data: access, error } = await supabaseClient
-      .from("access_periods")
-      .select("id, status, payment_status, starts_at, ends_at, is_unlimited")
-      .eq("profile_id", session.user.id)
-      .eq("status", "active")
-      .eq("payment_status", "paid")
-      .order("starts_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (error || !access) { alert("У вас нет активного доступа к платформе."); return; }
-    if (!access.is_unlimited && access.ends_at && new Date(access.ends_at) < new Date()) {
-      alert("Срок вашего доступа к платформе истёк.");
-      return;
-    }
-  }
 
   const title = DIRECTION_NAMES[type] || "Расчёт";
 
@@ -706,6 +708,20 @@ async function openDirectionMaterials(section, direction, title) {
   const contentCards = document.getElementById("contentCards");
   if (!contentCards) return;
   contentCards.className = "";
+
+  if (!window.currentUserIsManager && !hasGrant(section, direction)) {
+    contentCards.innerHTML = `
+      <div class="materials-page">
+        <button class="back-link" onclick='showSection(${JSON.stringify(section)})'>← Назад</button>
+        <div class="access-locked">
+          <div class="access-locked-icon">🔒</div>
+          <h2>Нет доступа к этому разделу</h2>
+          <p>Обратитесь к администратору или учителю, чтобы открыть «${escapeHtml(title)}».</p>
+        </div>
+      </div>`;
+    return;
+  }
+
   contentCards.innerHTML = `
     <div class="materials-page">
       <button class="back-link" onclick='showSection(${JSON.stringify(section)})'>← Назад</button>
@@ -935,12 +951,12 @@ function loadLibrary() {
   if (!contentCards) return;
   contentCards.className = "";
   contentCards.innerHTML = `
-    <div class="section-title"><h2>Библиотека нумеролога</h2></div>
+    <div class="section-title"><h2>Библиотека учителя</h2></div>
     <div class="cards">
       <div class="card library-main-card" onclick="openLibraryHome()" role="button" tabindex="0">
         <div class="card-icon library-icon">📚</div>
         <div class="card-content">
-          <h3>Библиотека<br>нумеролога</h3>
+          <h3>Библиотека<br>учителя</h3>
           <p>Все книги по нумерологии<br>и эзотерике</p>
         </div>
       </div>
@@ -1016,7 +1032,7 @@ async function renderAccess() {
 
       document.getElementById("accessTable").innerHTML = rows
         ? `<table class="data-table"><thead><tr><th>Доступ</th><th>Статус</th><th>Оплата</th><th>До</th></tr></thead><tbody>${rows}</tbody></table>`
-        : `<div class="empty-table">Доступ пока не выдан.<br><br>Обратитесь к администратору или нумерологу.</div>`;
+        : `<div class="empty-table">Доступ пока не выдан.<br><br>Обратитесь к администратору или учителю.</div>`;
     } catch (error) {
       console.error("Ошибка загрузки доступа:", error);
       document.getElementById("accessTable").innerHTML = `<div class="empty-table">Не удалось загрузить статус доступа.</div>`;
@@ -1024,43 +1040,107 @@ async function renderAccess() {
     return;
   }
 
+  const isRealAdmin = window.currentUserRole === "admin";
+
   contentCards.innerHTML = `
     <div class="dashboard-wrap">
       <div class="dashboard-head">
-        <div><h2>Доступы пользователей</h2><p>Управление доступом зарегистрированных пользователей.</p></div>
-        <div class="dashboard-badge">Управление</div>
+        <div>
+          <h2>${isRealAdmin ? "Доступы пользователей" : "Мои ученицы"}</h2>
+          <p>${isRealAdmin ? "Управление доступом всех зарегистрированных пользователей." : "Доступ виден и управляется только для ваших учениц."}</p>
+        </div>
+        <div class="dashboard-badge">${isRealAdmin ? "Администратор" : "Учитель"}</div>
       </div>
 
       <div class="table-card" style="margin-bottom:18px;">
         <div class="table-title">Выдать доступ</div>
-        <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:12px;align-items:end;">
+        <div style="display:grid;grid-template-columns:2fr 1fr auto;gap:12px;align-items:end;margin-bottom:18px;">
           <label>
             <span style="display:block;margin-bottom:7px;">Пользователь</span>
             <select id="accessUserSelect" class="material-manager-input" style="margin-bottom:0;"></select>
           </label>
           <label>
-            <span style="display:block;margin-bottom:7px;">Доступ</span>
-            <select id="accessKindSelect" class="material-manager-input" style="margin-bottom:0;">
-              <option value="platform">Платформа</option>
-            </select>
-          </label>
-          <label>
             <span style="display:block;margin-bottom:7px;">Срок</span>
             <select id="accessTermSelect" class="material-manager-input" style="margin-bottom:0;">
-              <option value="unlimited">Без ограничений</option>
-              <option value="30">30 дней</option>
-              <option value="90">90 дней</option>
-              <option value="180">180 дней</option>
-              <option value="365">1 год</option>
+              <option value="unlimited">Бессрочно</option>
+              <option value="30">1 месяц</option>
+              <option value="90">3 месяца</option>
+              <option value="180">6 месяцев</option>
+              <option value="365">12 месяцев</option>
             </select>
           </label>
-          <button class="material-manager-button" style="width:auto;height:47px;margin-top:0;" onclick="grantPlatformAccess()">Выдать</button>
         </div>
+
+        <label style="display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer;">
+          <input type="checkbox" id="scopeSelectAll" onchange="toggleScopeAll(this.checked)"> Выбрать всё
+        </label>
+
+        <div style="overflow-x:auto;margin-bottom:16px;">
+          <table class="data-table">
+            <thead>
+              <tr><th>Направление</th>${CONTENT_TYPES.map(c => `<th>${c.label}</th>`).join("")}</tr>
+            </thead>
+            <tbody>
+              ${DIRECTIONS.map(d => `
+                <tr>
+                  <td>${escapeHtml(DIRECTION_NAMES[d.key])}</td>
+                  ${CONTENT_TYPES.map(c => `<td><input type="checkbox" class="scope-cell" data-direction="${d.key}" data-type="${c.key}"></td>`).join("")}
+                </tr>`).join("")}
+            </tbody>
+          </table>
+        </div>
+
+        <div style="display:flex;gap:24px;margin-bottom:16px;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+            <input type="checkbox" id="scopeLibrary" class="scope-flag"> Библиотека учителя
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+            <input type="checkbox" id="scopeMyCalc" class="scope-flag"> Мои расчёты
+          </label>
+        </div>
+
+        <button class="material-manager-button" style="width:auto;" onclick="grantPlatformAccess()">Выдать доступ</button>
         <div id="accessAdminMessage" style="margin-top:12px;"></div>
       </div>
 
+      ${isRealAdmin ? `
+      <div class="table-card" style="margin-bottom:18px;">
+        <div class="table-title">Назначить роль</div>
+        <div style="display:grid;grid-template-columns:2fr 1fr auto;gap:12px;align-items:end;">
+          <label>
+            <span style="display:block;margin-bottom:7px;">Пользователь</span>
+            <select id="roleUserSelect" class="material-manager-input" style="margin-bottom:0;"></select>
+          </label>
+          <label>
+            <span style="display:block;margin-bottom:7px;">Роль</span>
+            <select id="roleValueSelect" class="material-manager-input" style="margin-bottom:0;">
+              <option value="student">Ученица</option>
+              <option value="numerologist">Учитель</option>
+            </select>
+          </label>
+          <button class="material-manager-button" style="width:auto;height:47px;margin-top:0;" onclick="setUserRole()">Назначить</button>
+        </div>
+        <div id="roleAdminMessage" style="margin-top:12px;"></div>
+      </div>
+
+      <div class="table-card" style="margin-bottom:18px;">
+        <div class="table-title">Прикрепить ученицу к учителю</div>
+        <div style="display:grid;grid-template-columns:2fr 2fr auto;gap:12px;align-items:end;">
+          <label>
+            <span style="display:block;margin-bottom:7px;">Ученица</span>
+            <select id="attachStudentSelect" class="material-manager-input" style="margin-bottom:0;"></select>
+          </label>
+          <label>
+            <span style="display:block;margin-bottom:7px;">Нумеролог</span>
+            <select id="attachTeacherSelect" class="material-manager-input" style="margin-bottom:0;"></select>
+          </label>
+          <button class="material-manager-button" style="width:auto;height:47px;margin-top:0;" onclick="attachStudentToTeacher()">Прикрепить</button>
+        </div>
+        <div id="attachAdminMessage" style="margin-top:12px;"></div>
+      </div>` : ""}
+
       <div class="table-card">
-        <div class="table-title">Зарегистрированные пользователи</div>
+        <div class="table-title">${isRealAdmin ? "Зарегистрированные пользователи" : "Мои ученицы"}</div>
         <div id="adminUsersTable">Загрузка...</div>
       </div>
     </div>`;
@@ -1068,56 +1148,174 @@ async function renderAccess() {
   await loadAdminUsers();
 }
 
+let adminUsersFilterTeacher = null; // { id, name } — admin drilled into one numerologist's students
+
 async function loadAdminUsers() {
   const box = document.getElementById("adminUsersTable");
-  const select = document.getElementById("accessUserSelect");
+  const accessSelect = document.getElementById("accessUserSelect");
+  const roleSelect = document.getElementById("roleUserSelect");
+  const attachStudentSelect = document.getElementById("attachStudentSelect");
+  const attachTeacherSelect = document.getElementById("attachTeacherSelect");
   if (!box) return;
-  box.innerHTML = '<div class="empty-table">Загрузка пользователей...</div>';
+  box.innerHTML = '<div class="empty-table">Загрузка...</div>';
 
-  const { data, error } = await supabaseClient
+  const isRealAdmin = window.currentUserRole === "admin";
+  const { data: { session } } = await supabaseClient.auth.getSession();
+
+  let query = supabaseClient
     .from("profiles")
-    .select("id, first_name, last_name, middle_name, email, phone, role, status")
+    .select("id, first_name, last_name, middle_name, email, phone, role, status, teacher_id")
     .order("last_name", { ascending: true });
+
+  if (!isRealAdmin) query = query.eq("teacher_id", session.user.id);
+  else if (adminUsersFilterTeacher) query = query.eq("teacher_id", adminUsersFilterTeacher.id);
+
+  const { data, error } = await query;
 
   if (error) {
     console.error("Ошибка загрузки пользователей:", error);
     box.innerHTML = '<div class="empty-table">Не удалось загрузить пользователей.</div>';
-    if (select) select.innerHTML = '<option value="">Не удалось загрузить</option>';
     return;
   }
 
   const users = data || [];
+  const nameOf = (u) => [u.last_name, u.first_name, u.middle_name].filter(Boolean).join(" ") || u.email || "Пользователь";
 
-  if (select) {
-    select.innerHTML = users.length
-      ? users.map(function (user) {
-          const name = [user.last_name, user.first_name, user.middle_name].filter(Boolean).join(" ");
-          return `<option value="${escapeHtml(user.id)}">${escapeHtml(name || user.email || "Пользователь")}${user.email ? " — " + escapeHtml(user.email) : ""}</option>`;
-        }).join("")
-      : '<option value="">Нет зарегистрированных пользователей</option>';
+  // Селекты доступа/ролей всегда строятся из ПОЛНОГО списка, не из отфильтрованного вида.
+  if (isRealAdmin && adminUsersFilterTeacher) {
+    const { data: allData } = await supabaseClient
+      .from("profiles")
+      .select("id, first_name, last_name, middle_name, email, phone, role, status, teacher_id")
+      .order("last_name", { ascending: true });
+    fillAccessSelects(allData || [], nameOf);
+  } else {
+    fillAccessSelects(users, nameOf);
   }
 
+  function fillAccessSelects(list, nameFn) {
+    const fillSelect = (el, opts, emptyLabel) => {
+      if (!el) return;
+      el.innerHTML = opts.length
+        ? opts.map(u => `<option value="${escapeHtml(u.id)}">${escapeHtml(nameFn(u))}${u.email ? " — " + escapeHtml(u.email) : ""}</option>`).join("")
+        : `<option value="">${emptyLabel}</option>`;
+    };
+    fillSelect(accessSelect, list, "Нет пользователей");
+    if (isRealAdmin) {
+      fillSelect(roleSelect, list, "Нет пользователей");
+      fillSelect(attachStudentSelect, list.filter(u => (u.role || "student") !== "numerologist" && (u.role || "student") !== "admin"), "Нет учениц");
+      fillSelect(attachTeacherSelect, list.filter(u => u.role === "numerologist"), "Нет учителей");
+    }
+  }
+
+  const backLink = (isRealAdmin && adminUsersFilterTeacher)
+    ? `<button class="back-link" onclick='closeNumerologistDrilldown()'>← Все пользователи</button>`
+    : "";
+
   if (!users.length) {
-    box.innerHTML = '<div class="empty-table">Зарегистрированных пользователей пока нет.</div>';
+    box.innerHTML = backLink + `<div class="empty-table">${
+      adminUsersFilterTeacher
+        ? "У этого учителя пока нет учениц."
+        : (isRealAdmin ? "Зарегистрированных пользователей пока нет." : "У вас пока нет учениц. Попросите администратора прикрепить их к вам.")
+    }</div>`;
     return;
   }
 
-  box.innerHTML = `
+  const teacherName = (teacherId) => {
+    if (!teacherId) return "—";
+    const t = users.find(u => u.id === teacherId);
+    return t ? nameOf(t) : "—";
+  };
+
+  box.innerHTML = backLink + `
     <table class="data-table">
-      <thead><tr><th>Пользователь</th><th>Email</th><th>Телефон</th><th>Роль</th><th>Статус</th></tr></thead>
+      <thead><tr><th>Пользователь</th><th>Email</th><th>Телефон</th><th>Роль</th>${isRealAdmin ? "<th>Нумеролог</th>" : ""}<th>Статус</th></tr></thead>
       <tbody>
         ${users.map(function (user) {
-          const name = [user.last_name, user.first_name, user.middle_name].filter(Boolean).join(" ");
-          return `<tr>
-            <td>${escapeHtml(name || "—")}</td>
+          const isClickableNumerologist = isRealAdmin && user.role === "numerologist" && !adminUsersFilterTeacher;
+          const rowAttrs = isClickableNumerologist
+            ? `style="cursor:pointer;" onclick='viewNumerologistStudents(${JSON.stringify(user.id)},${JSON.stringify(nameOf(user))})'`
+            : "";
+          return `<tr ${rowAttrs}>
+            <td>${escapeHtml(nameOf(user))}${isClickableNumerologist ? " →" : ""}</td>
             <td>${escapeHtml(user.email || "—")}</td>
             <td>${escapeHtml(user.phone || "—")}</td>
             <td>${escapeHtml(user.role || "student")}</td>
+            ${isRealAdmin ? `<td>${escapeHtml(teacherName(user.teacher_id))}</td>` : ""}
             <td>${escapeHtml(user.status || "—")}</td>
           </tr>`;
         }).join("")}
       </tbody>
     </table>`;
+}
+
+function viewNumerologistStudents(id, name) {
+  adminUsersFilterTeacher = { id, name };
+  loadAdminUsers();
+}
+
+function closeNumerologistDrilldown() {
+  adminUsersFilterTeacher = null;
+  loadAdminUsers();
+}
+
+async function setUserRole() {
+  const userId = document.getElementById("roleUserSelect")?.value || "";
+  const role = document.getElementById("roleValueSelect")?.value || "student";
+  const message = document.getElementById("roleAdminMessage");
+  const setMsg = (text, ok) => { if (message) { message.textContent = text; message.style.color = ok ? "#8fe3a1" : "#ff9d9d"; } };
+
+  if (!userId) { setMsg("Сначала выберите пользователя.", false); return; }
+  setMsg("Назначаю роль...", true);
+
+  const { error } = await supabaseClient.from("profiles").update({ role }).eq("id", userId);
+  if (error) {
+    console.error("Ошибка назначения роли:", error);
+    setMsg("Не удалось назначить роль: " + (error.message || "ошибка Supabase"), false);
+    return;
+  }
+  setMsg("Роль назначена.", true);
+  await loadAdminUsers();
+}
+
+async function attachStudentToTeacher() {
+  const studentId = document.getElementById("attachStudentSelect")?.value || "";
+  const teacherId = document.getElementById("attachTeacherSelect")?.value || "";
+  const message = document.getElementById("attachAdminMessage");
+  const setMsg = (text, ok) => { if (message) { message.textContent = text; message.style.color = ok ? "#8fe3a1" : "#ff9d9d"; } };
+
+  if (!studentId || !teacherId) { setMsg("Выберите ученицу и учителя.", false); return; }
+  setMsg("Прикрепляю...", true);
+
+  const { error } = await supabaseClient.from("profiles").update({ teacher_id: teacherId }).eq("id", studentId);
+  if (error) {
+    console.error("Ошибка прикрепления:", error);
+    setMsg("Не удалось прикрепить: " + (error.message || "ошибка Supabase"), false);
+    return;
+  }
+  setMsg("Ученица прикреплена к учителю.", true);
+  await loadAdminUsers();
+}
+
+function toggleScopeAll(checked) {
+  document.querySelectorAll(".scope-cell, .scope-flag").forEach(function (el) { el.checked = checked; });
+}
+
+function collectScope() {
+  const scope = {};
+  DIRECTIONS.forEach(function (d) { scope[d.key] = {}; });
+  document.querySelectorAll(".scope-cell").forEach(function (el) {
+    scope[el.dataset.direction][el.dataset.type] = el.checked;
+  });
+  scope.library = document.getElementById("scopeLibrary")?.checked || false;
+  scope.my_calculations = document.getElementById("scopeMyCalc")?.checked || false;
+  return scope;
+}
+
+function scopeHasAnything(scope) {
+  return Object.keys(scope).some(function (key) {
+    if (key === "library" || key === "my_calculations") return !!scope[key];
+    return Object.values(scope[key] || {}).some(Boolean);
+  });
 }
 
 async function grantPlatformAccess() {
@@ -1132,6 +1330,10 @@ async function grantPlatformAccess() {
   };
 
   if (!userId) { setMsg("Сначала выберите пользователя.", false); return; }
+
+  const scope = collectScope();
+  if (!scopeHasAnything(scope)) { setMsg("Отметьте хотя бы один пункт доступа.", false); return; }
+
   setMsg("Выдаю доступ...", true);
 
   const startsAt = new Date();
@@ -1152,7 +1354,8 @@ async function grantPlatformAccess() {
     payment_status: "paid",
     starts_at: startsAt.toISOString(),
     ends_at: endsAt ? endsAt.toISOString() : null,
-    is_unlimited: unlimited
+    is_unlimited: unlimited,
+    granted_scope: scope
   });
 
   if (error) {
@@ -1164,6 +1367,7 @@ async function grantPlatformAccess() {
   setMsg("Доступ успешно выдан.", true);
   await loadAdminUsers();
 }
+
 
 /* ============================================================
    ОТЧЁТЫ И СТАТИСТИКА
@@ -1252,7 +1456,7 @@ function showRegister(message = "") {
         <div class="auth-title">NUMEROLOGY</div>
         <div class="auth-subtitle">Platform</div>
         <h2>Регистрация</h2>
-        <p class="auth-description">Создайте аккаунт. После регистрации доступ к разделам открывает администратор или нумеролог.</p>
+        <p class="auth-description">Создайте аккаунт. После регистрации доступ к разделам открывает администратор или учитель.</p>
         <div class="auth-grid">
           <input id="registerLastName" type="text" placeholder="Фамилия *">
           <input id="registerFirstName" type="text" placeholder="Имя *">
@@ -1333,7 +1537,7 @@ async function registerUser() {
     setMessage("Регистрация завершена. Сейчас откроется платформа.", true);
     setTimeout(() => location.reload(), 900);
   } else {
-    setMessage("Регистрация создана. Подтвердите email и войдите. Доступ к разделам откроет администратор или нумеролог.", true);
+    setMessage("Регистрация создана. Подтвердите email и войдите. Доступ к разделам откроет администратор или учитель.", true);
   }
 }
 
@@ -1463,21 +1667,40 @@ async function checkAuth() {
     const isManager = isManagerRole(role) || isAdminEmail(userEmail);
 
     let hasAccess = false;
+    let mergedScope = {};
     if (isManager) {
       hasAccess = true;
     } else {
       const { data: access, error: accessError } = await supabaseClient
         .from("access_periods")
-        .select("id, status, starts_at, ends_at, is_unlimited, payment_status")
+        .select("id, status, starts_at, ends_at, is_unlimited, payment_status, granted_scope")
         .eq("profile_id", user.id)
         .order("starts_at", { ascending: false });
-      if (accessError) console.error("Ошибка проверки доступа:", accessError);
-      else hasAccess = (access || []).some(hasActivePlatformAccess);
+      if (accessError) {
+        console.error("Ошибка проверки доступа:", accessError);
+      } else {
+        const activePeriods = (access || []).filter(hasActivePlatformAccess);
+        hasAccess = activePeriods.length > 0;
+        activePeriods.forEach(function (period) {
+          const scope = period.granted_scope || {};
+          Object.keys(scope).forEach(function (key) {
+            if (key === "library" || key === "my_calculations") {
+              mergedScope[key] = mergedScope[key] || !!scope[key];
+            } else {
+              mergedScope[key] = mergedScope[key] || {};
+              Object.keys(scope[key] || {}).forEach(function (ct) {
+                mergedScope[key][ct] = mergedScope[key][ct] || !!scope[key][ct];
+              });
+            }
+          });
+        });
+      }
     }
 
-    window.currentUserRole = isManager ? "admin" : role;
+    window.currentUserRole = isAdminEmail(userEmail) ? "admin" : role;
     window.currentUserIsManager = isManager;
     window.currentUserHasAccess = hasAccess;
+    window.currentUserGrant = mergedScope;
 
     const displayName = isManager
       ? "Центр Нумера"
