@@ -139,18 +139,19 @@ function injectManualStyles() {
     style.textContent = `
 
         #manualCards {
-            display: flex !important;
-            flex-wrap: nowrap !important;
-            gap: 18px !important;
+            display: grid !important;
+            grid-template-columns: repeat(5, 180px) !important;
+            gap: 20px !important;
             width: 100% !important;
-            align-items: stretch !important;
+            justify-content: start !important;
+            align-items: start !important;
         }
 
         #manualCards .method-card {
-            flex: 1 1 0 !important;
-            width: auto !important;
-            min-width: 0 !important;
-            max-width: 220px !important;
+            width: 180px !important;
+            min-width: 180px !important;
+            max-width: 180px !important;
+            height: 250px !important;
             min-height: 250px !important;
 
             display: flex !important;
@@ -348,15 +349,27 @@ function injectManualStyles() {
             line-height: 1.5;
         }
 
-        @media (max-width: 1000px) {
+        @media (max-width: 1100px) {
 
             #manualCards {
-                flex-wrap: wrap !important;
+                grid-template-columns:
+                    repeat(3, 180px) !important;
             }
+        }
 
-            #manualCards .method-card {
-                flex: 1 1 180px !important;
-                max-width: none !important;
+        @media (max-width: 700px) {
+
+            #manualCards {
+                grid-template-columns:
+                    repeat(2, 180px) !important;
+            }
+        }
+
+        @media (max-width: 460px) {
+
+            #manualCards {
+                grid-template-columns:
+                    180px !important;
             }
         }
     `;
