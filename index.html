@@ -708,11 +708,11 @@ async function openDirectionMaterials(section, direction, title) {
   contentCards.className = "";
   contentCards.innerHTML = `
     <div class="materials-page">
-      <button class="back-link" onclick="showSection(${JSON.stringify(section)})">← Назад</button>
+      <button class="back-link" onclick='showSection(${JSON.stringify(section)})'>← Назад</button>
       <div class="materials-head">
         <h2>${escapeHtml(title)} — ${escapeHtml(SECTION_LABELS[section] || "Материалы")}</h2>
         ${window.currentUserIsManager
-          ? `<button class="materials-add-btn" onclick="showMaterialManager(${JSON.stringify(section)},${JSON.stringify(direction)},${JSON.stringify(title)})">Добавить материал +</button>`
+          ? `<button class="materials-add-btn" onclick='showMaterialManager(${JSON.stringify(section)},${JSON.stringify(direction)},${JSON.stringify(title)})'>Добавить материал +</button>`
           : ""}
       </div>
       <div id="materialsListBox">Загрузка...</div>
@@ -755,7 +755,7 @@ async function loadDirectionMaterialsList() {
             <div class="material-row-title">${label}</div>
             <div class="material-row-meta">${meta}${date ? " · " + date : ""}</div>
           </div>
-          <button class="material-row-open" onclick="openMaterialById(${JSON.stringify(item.id)})">Открыть</button>
+          <button class="material-row-open" onclick='openMaterialById(${JSON.stringify(item.id)})'>Открыть</button>
         </div>`;
     }).join("");
   } catch (error) {
