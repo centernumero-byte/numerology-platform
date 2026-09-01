@@ -330,6 +330,52 @@ body {
   .stats-grid { grid-template-columns: 1fr; }
   .material-row { flex-wrap: wrap; }
 }
+
+/* ===================== АККОРДЕОН РЕЗУЛЬТАТА РАСЧЁТА ===================== */
+
+.accordion-item {
+  border: 1px solid rgba(225,180,52,.4);
+  border-radius: 12px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.accordion-header {
+  width: 100%;
+  text-align: left;
+  padding: 14px 16px;
+  background: rgba(255,255,255,.04);
+  border: none;
+  color: #f6d66c;
+  font-family: Georgia, serif;
+  font-size: 17px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.accordion-header:hover { background: rgba(255,255,255,.08); }
+.accordion-body {
+  padding: 16px;
+  border-top: 1px solid rgba(225,180,52,.25);
+  color: #eee5d0;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+.accordion-body.hidden { display: none; }
+.key-numbers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+}
+.key-number-box {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(225,180,52,.25);
+}
+.key-number-box strong { display: block; font-size: 22px; color: #f6d66c; }
+.key-number-box span { font-size: 12px; color: #b8ad98; }
+
 </style>
 </head>
 <body>
@@ -393,6 +439,7 @@ body {
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="adult-matrix-engine.js"></script>
 <script>
 
 /* ============================================================
@@ -681,13 +728,94 @@ function calculate(type) {
   }
   if (!result) return;
 
+  if (type === "adult" && window.AdultMatrixEngine) {
+    renderAdultMatrixResult(name, birthDate, result);
+    return;
+  }
+
   result.innerHTML = `
     <div style="padding:20px;border:1px solid rgba(225,180,52,.5);border-radius:14px;background:rgba(0,0,0,.12);">
       <h3 style="margin-top:0;color:#f6d66c;font-family:Georgia,serif;">${DIRECTION_NAMES[type] || "Расчёт"}</h3>
       <p>Имя: <strong>${escapeHtml(name)}</strong></p>
       <p>Дата рождения: <strong>${escapeHtml(birthDate)}</strong></p>
-      <p style="margin-bottom:0;color:#d9d0bd;">Расчёт будет выполнен в соответствии с выбранной системой нумерологии.</p>
+      <p style="margin-bottom:0;color:#d9d0bd;">Этот раздел ещё не подключён к реальному расчёту.</p>
     </div>`;
+}
+
+function renderAdultMatrixResult(name, birthDate, container) {
+  const [day, month, year] = birthDate.split(".").map(Number);
+
+  let res;
+  try {
+    res = window.AdultMatrixEngine.getResult(day, month, year, name);
+  } catch (error) {
+    console.error("Ошибка расчёта матрицы:", error);
+    container.innerHTML = `<div style="color:#ff9d9d;padding:16px;">Не удалось выполнить расчёт: ${escapeHtml(error.message || String(error))}</div>`;
+    return;
+  }
+
+  const keyNumbersHtml = Object.entries(res.keyNumbers).map(function ([label, value]) {
+    return `<div class="key-number-box"><strong>${escapeHtml(String(value))}</strong><span>${escapeHtml(label)}</span></div>`;
+  }).join("");
+
+  const chakraRowsHtml = res.chakras.map(function (c) {
+    return `<tr><td>${escapeHtml(c.name)}</td><td>${c.energy}</td><td>${c.physics}</td><td>${c.emotions}</td></tr>`;
+  }).join("");
+
+  const programsHtml = res.programs.length
+    ? res.programs.map(function (p, i) {
+        return `
+          <div class="accordion-item">
+            <button type="button" class="accordion-header" onclick="toggleAccordionBody('prog-${i}')">
+              <span>${escapeHtml(p.title)}</span>
+              <span>▾</span>
+            </button>
+            <div class="accordion-body hidden" id="prog-${i}">${escapeHtml(p.fullText)}</div>
+          </div>`;
+      }).join("")
+    : `<p style="color:#b8ad98;">Активных программ не найдено.</p>`;
+
+  container.innerHTML = `
+    <div style="max-width:760px;">
+      <p style="color:#b8ad98;font-size:13px;margin-bottom:16px;">
+        Пробная версия расчёта — тексты будут доработаны позже. Проверяем правильность чисел.
+      </p>
+
+      <div class="accordion-item">
+        <button type="button" class="accordion-header" onclick="toggleAccordionBody('acc-key')">
+          <span>Ключевые числа</span><span>▾</span>
+        </button>
+        <div class="accordion-body" id="acc-key">
+          <div class="key-numbers-grid">${keyNumbersHtml}</div>
+        </div>
+      </div>
+
+      <div class="accordion-item">
+        <button type="button" class="accordion-header" onclick="toggleAccordionBody('acc-health')">
+          <span>Карта здоровья</span><span>▾</span>
+        </button>
+        <div class="accordion-body hidden" id="acc-health">
+          <table class="data-table">
+            <thead><tr><th>Чакра</th><th>Энергия</th><th>Физика</th><th>Эмоции</th></tr></thead>
+            <tbody>${chakraRowsHtml}</tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="accordion-item">
+        <button type="button" class="accordion-header" onclick="toggleAccordionBody('acc-programs')">
+          <span>Программы (${res.programs.length})</span><span>▾</span>
+        </button>
+        <div class="accordion-body hidden" id="acc-programs">
+          ${programsHtml}
+        </div>
+      </div>
+    </div>`;
+}
+
+function toggleAccordionBody(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle("hidden");
 }
 
 /* ============================================================
