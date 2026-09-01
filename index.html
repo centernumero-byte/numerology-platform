@@ -747,31 +747,99 @@ function renderAdultMatrixResult(name, birthDate, container) {
 
   let res;
   try {
-    res = window.AdultMatrixEngine.getResult(day, month, year, name);
+    res = window.AdultMatrixEngine.getFullResult(day, month, year, name);
   } catch (error) {
     console.error("Ошибка расчёта матрицы:", error);
     container.innerHTML = `<div style="color:#ff9d9d;padding:16px;">Не удалось выполнить расчёт: ${escapeHtml(error.message || String(error))}</div>`;
     return;
   }
 
-  const keyNumbersHtml = Object.entries(res.keyNumbers).map(function ([label, value]) {
-    return `<div class="key-number-box"><strong>${escapeHtml(String(value))}</strong><span>${escapeHtml(label)}</span></div>`;
+  let idCounter = 0;
+  const nextId = () => "acc-" + (idCounter++);
+
+  function accordionItem(title, bodyHtml) {
+    const id = nextId();
+    return `
+      <div class="accordion-item">
+        <button type="button" class="accordion-header" onclick="toggleAccordionBody('${id}')">
+          <span>${escapeHtml(title)}</span><span>▾</span>
+        </button>
+        <div class="accordion-body hidden" id="${id}">${bodyHtml}</div>
+      </div>`;
+  }
+
+  // Взрослая расшифровка: заголовок -> (число, текст) один или несколько раз подряд.
+  const rasshifrovkaHtml = res.rasshifrovka.map(function (block) {
+    const body = block.entries.map(function (e) {
+      return `<p style="color:#f6d66c;font-family:Georgia,serif;font-size:20px;margin:0 0 6px;">${escapeHtml(String(e.number))}</p>
+              <p style="margin:0 0 18px;">${escapeHtml(e.text)}</p>`;
+    }).join("");
+    return accordionItem(block.title, body);
   }).join("");
 
-  const chakraRowsHtml = res.chakras.map(function (c) {
-    return `<tr><td>${escapeHtml(c.name)}</td><td>${c.energy}</td><td>${c.physics}</td><td>${c.emotions}</td></tr>`;
+  // Карта здоровья: заголовок чакры -> вводный текст -> (Физика/Энергия/Эмоции: число, текст), с цветным маркером чакры.
+  const CHAKRA_COLORS = ["#8e6bc7", "#5b8ef2", "#4fc3c0", "#8fbf4e", "#e0c23e", "#e08a3e", "#d1483e", "#9aa0a6"];
+  const healthHtml = res.health.map(function (block, i) {
+    const introHtml = block.intro.map(function (t) {
+      return `<p style="margin:0 0 14px;">${escapeHtml(t)}</p>`;
+    }).join("");
+    const entriesHtml = block.entries.map(function (e) {
+      return `<p style="color:#f6d66c;font-family:Georgia,serif;font-size:18px;margin:0 0 6px;">${escapeHtml(e.axis)}: ${escapeHtml(String(e.number))}</p>
+              <p style="margin:0 0 18px;">${escapeHtml(e.text)}</p>`;
+    }).join("");
+    const color = CHAKRA_COLORS[i] || "#9aa0a6";
+    const id = nextId();
+    return `
+      <div class="accordion-item">
+        <button type="button" class="accordion-header" onclick="toggleAccordionBody('${id}')">
+          <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:8px;"></span>${escapeHtml(block.title)}</span><span>▾</span>
+        </button>
+        <div class="accordion-body hidden" id="${id}">${introHtml}${entriesHtml}</div>
+      </div>`;
   }).join("");
+
+  // Предназначения: только цифры в кружках, без текста.
+  const p = res.purpose;
+  const circle = (num, label) => `
+    <div style="text-align:center;">
+      <div style="width:56px;height:56px;border-radius:50%;border:2px solid #d7aa31;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-size:22px;color:#f6d66c;margin:0 auto 6px;">${escapeHtml(String(num))}</div>
+      <div style="font-size:12px;color:#b8ad98;">${escapeHtml(label)}</div>
+    </div>`;
+  const purposeHtml = `
+    <div class="accordion-item">
+      <button type="button" class="accordion-header" onclick="toggleAccordionBody('acc-purpose')">
+        <span>Предназначения</span><span>▾</span>
+      </button>
+      <div class="accordion-body hidden" id="acc-purpose">
+        <div style="margin-bottom:22px;">
+          <div style="color:#f6d66c;font-family:Georgia,serif;font-size:17px;margin-bottom:10px;">Личное предназначение</div>
+          <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;">
+            ${circle(p.heaven, "Небо")}
+            <span style="color:#d7aa31;font-size:20px;">+</span>
+            ${circle(p.earth, "Земля")}
+            <span style="color:#d7aa31;font-size:20px;">→</span>
+            ${circle(p.personal, "Результат")}
+          </div>
+        </div>
+        <div style="margin-bottom:22px;">
+          <div style="color:#f6d66c;font-family:Georgia,serif;font-size:17px;margin-bottom:10px;">Социальное предназначение</div>
+          ${circle(p.social, "")}
+        </div>
+        <div style="margin-bottom:22px;">
+          <div style="color:#f6d66c;font-family:Georgia,serif;font-size:17px;margin-bottom:10px;">Духовное предназначение</div>
+          ${circle(p.spiritual, "")}
+        </div>
+        <div>
+          <div style="color:#f6d66c;font-family:Georgia,serif;font-size:17px;margin-bottom:10px;">Планетарное предназначение</div>
+          ${circle(p.planetary, "")}
+        </div>
+      </div>
+    </div>`;
+
 
   const programsHtml = res.programs.length
-    ? res.programs.map(function (p, i) {
-        return `
-          <div class="accordion-item">
-            <button type="button" class="accordion-header" onclick="toggleAccordionBody('prog-${i}')">
-              <span>${escapeHtml(p.title)}</span>
-              <span>▾</span>
-            </button>
-            <div class="accordion-body hidden" id="prog-${i}">${escapeHtml(p.fullText)}</div>
-          </div>`;
+    ? res.programs.map(function (p) {
+        return accordionItem(p.title, `<p style="margin:0;">${escapeHtml(p.fullText)}</p>`);
       }).join("")
     : `<p style="color:#b8ad98;">Активных программ не найдено.</p>`;
 
@@ -780,37 +848,61 @@ function renderAdultMatrixResult(name, birthDate, container) {
       <p style="color:#b8ad98;font-size:13px;margin-bottom:16px;">
         Пробная версия расчёта — тексты будут доработаны позже. Проверяем правильность чисел.
       </p>
-
-      <div class="accordion-item">
-        <button type="button" class="accordion-header" onclick="toggleAccordionBody('acc-key')">
-          <span>Ключевые числа</span><span>▾</span>
-        </button>
-        <div class="accordion-body" id="acc-key">
-          <div class="key-numbers-grid">${keyNumbersHtml}</div>
-        </div>
-      </div>
-
-      <div class="accordion-item">
-        <button type="button" class="accordion-header" onclick="toggleAccordionBody('acc-health')">
-          <span>Карта здоровья</span><span>▾</span>
-        </button>
-        <div class="accordion-body hidden" id="acc-health">
-          <table class="data-table">
-            <thead><tr><th>Чакра</th><th>Энергия</th><th>Физика</th><th>Эмоции</th></tr></thead>
-            <tbody>${chakraRowsHtml}</tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="accordion-item">
-        <button type="button" class="accordion-header" onclick="toggleAccordionBody('acc-programs')">
-          <span>Программы (${res.programs.length})</span><span>▾</span>
-        </button>
-        <div class="accordion-body hidden" id="acc-programs">
-          ${programsHtml}
-        </div>
+      ${rasshifrovkaHtml}
+      ${purposeHtml}
+      ${healthHtml}
+      ${programsHtml}
+      <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;">
+        <button type="button" class="material-manager-button" style="width:auto;" onclick="downloadAdultMatrixText(${JSON.stringify(name)}, ${JSON.stringify(birthDate)})">Скачать текст</button>
+        <button type="button" class="material-manager-button" style="width:auto;background:rgba(0,0,0,.15);" onclick="location.reload()">Новый расчёт</button>
       </div>
     </div>`;
+
+  window._lastAdultMatrixResult = res;
+}
+
+function downloadAdultMatrixText(name, birthDate) {
+  const res = window._lastAdultMatrixResult;
+  if (!res) return;
+
+  let text = `Матрица судьбы — ${name} (${birthDate})\n\n`;
+
+  res.rasshifrovka.forEach(function (block) {
+    text += "== " + block.title + " ==\n";
+    block.entries.forEach(function (e) {
+      text += e.number + "\n" + e.text + "\n\n";
+    });
+  });
+
+  const p = res.purpose;
+  text += "== Предназначения ==\n";
+  text += "Личное предназначение: Небо " + p.heaven + " + Земля " + p.earth + " -> " + p.personal + "\n";
+  text += "Социальное предназначение: " + p.social + "\n";
+  text += "Духовное предназначение: " + p.spiritual + "\n";
+  text += "Планетарное предназначение: " + p.planetary + "\n\n";
+
+  res.health.forEach(function (block) {
+    text += "== " + block.title + " ==\n";
+    block.intro.forEach(function (t) { text += t + "\n\n"; });
+    block.entries.forEach(function (e) {
+      text += e.axis + ": " + e.number + "\n" + e.text + "\n\n";
+    });
+  });
+
+  if (res.programs.length) {
+    text += "== Программы ==\n";
+    res.programs.forEach(function (p) {
+      text += p.fullText + "\n\n";
+    });
+  }
+
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "Матрица судьбы - " + name + ".txt";
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function toggleAccordionBody(id) {
