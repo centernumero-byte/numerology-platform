@@ -1,0 +1,1925 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Numerology Platform</title>
+<style>
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(circle at 70% 15%, rgba(142, 73, 181, 0.22), transparent 28%),
+    radial-gradient(circle at 20% 80%, rgba(104, 54, 151, 0.18), transparent 30%),
+    linear-gradient(135deg, #17102f 0%, #211443 45%, #17102f 100%);
+  color: #f8e7a8;
+  font-family: Arial, sans-serif;
+  visibility: hidden;
+}
+
+/* ===================== ПЛАТФОРМА ===================== */
+
+.platform {
+  min-height: 100vh;
+  display: flex;
+  padding: 8px;
+}
+
+/* Левое меню */
+
+.sidebar {
+  width: 245px;
+  min-height: calc(100vh - 16px);
+  padding: 28px 18px 24px;
+  border: 1px solid rgba(220, 169, 42, 0.65);
+  border-radius: 18px 0 0 18px;
+  background:
+    radial-gradient(circle at 50% 10%, rgba(135, 64, 175, 0.30), transparent 28%),
+    linear-gradient(180deg, #21143d 0%, #17112f 100%);
+  display: flex;
+  flex-direction: column;
+}
+
+.logo { text-align: center; margin-bottom: 38px; }
+
+.logo-symbol {
+  width: 100px; height: 100px; margin: 0 auto 14px;
+  border-radius: 50%; border: 2px solid #e7bd43;
+  display: flex; align-items: center; justify-content: center;
+  color: #f5d46b; font-size: 48px;
+  box-shadow: 0 0 20px rgba(225, 184, 64, 0.35), inset 0 0 20px rgba(225, 184, 64, 0.12);
+}
+
+.logo-title { font-family: Georgia, serif; font-size: 25px; color: #f5d46b; letter-spacing: 1px; }
+.logo-subtitle { margin-top: 8px; font-size: 20px; color: #e7bd43; }
+
+.nav { display: flex; flex-direction: column; gap: 12px; }
+
+.nav-item {
+  width: 100%; min-height: 52px; padding: 15px 16px;
+  border-radius: 12px; border: 1px solid transparent;
+  background: transparent; color: #f5f0df;
+  font-size: 18px; line-height: 1.2; text-align: left; cursor: pointer;
+  transition: background 0.25s, border-color 0.25s, color 0.25s;
+  display: flex; align-items: center;
+}
+.nav-item:hover { background: rgba(126, 66, 164, 0.25); border-color: rgba(218, 173, 49, 0.55); }
+.nav-item.active {
+  background: linear-gradient(90deg, rgba(113, 49, 153, 0.55), rgba(93, 39, 137, 0.35));
+  border-color: #d7aa31; color: #f8d96d;
+  box-shadow: 0 0 15px rgba(212, 164, 43, 0.12);
+}
+.nav-icon {
+  display: inline-flex; width: 32px; min-width: 32px; margin-right: 2px;
+  align-items: center; justify-content: center; color: #f2c84d; font-size: 22px;
+}
+.logout { margin-top: auto; color: #f5d46b; }
+
+/* Основная область */
+
+.main {
+  flex: 1; min-height: calc(100vh - 16px);
+  padding: 42px 30px 36px;
+  border: 1px solid rgba(220, 169, 42, 0.65); border-left: none;
+  border-radius: 0 18px 18px 0;
+  background:
+    radial-gradient(circle at 55% 5%, rgba(146, 73, 182, 0.23), transparent 28%),
+    radial-gradient(circle at 90% 85%, rgba(111, 57, 157, 0.16), transparent 30%),
+    #21163f;
+}
+
+.top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; }
+.welcome h1 { margin: 0; font-family: Georgia, serif; font-size: 43px; font-weight: 500; color: #f8dc78; }
+.account { display: flex; align-items: center; gap: 12px; color: #f4e9cc; font-size: 16px; }
+.account-icon {
+  width: 45px; height: 45px; border: 1px solid #e3b936; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; color: #f4c94f; font-size: 23px;
+}
+
+/* Карточки направлений */
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(5, 180px);
+  gap: 20px;
+  justify-content: start;
+  align-items: start;
+  width: 100%;
+  margin-top: 18px;
+}
+
+.cards .card, .method-card {
+  width: 180px; height: 250px; min-height: 250px; box-sizing: border-box;
+  padding: 18px 14px; border: 1px solid rgba(225, 180, 52, 0.9); border-radius: 18px;
+  background:
+    radial-gradient(circle at 50% 10%, rgba(130, 65, 169, 0.30), transparent 40%),
+    linear-gradient(145deg, #302052 0%, #21163d 100%);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; cursor: pointer; overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18), inset 0 0 30px rgba(126, 65, 167, 0.08);
+  transition: transform 0.25s, box-shadow 0.25s;
+}
+.cards .card:hover, .method-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.25), 0 0 22px rgba(222, 174, 47, 0.12);
+}
+.method-card:not([onclick]) { cursor: default; }
+
+.cards .card-icon {
+  height: 65px; margin-bottom: 12px; display: flex; align-items: center; justify-content: center;
+  font-size: 52px; line-height: 1; color: #f2c94c;
+  text-shadow: 0 0 20px rgba(239, 192, 62, 0.3);
+}
+.cards .card-content h3 { margin: 0 0 9px; font-family: Georgia, serif; font-size: 20px; line-height: 1.12; font-weight: 500; color: #f6d66c; }
+.cards .card-content p { margin: 0; font-size: 14px; line-height: 1.3; color: #eee5d0; }
+
+.card.has-material { border-color: #8fe3a1; }
+
+.pythagoras-icon {
+  display: grid !important; grid-template-columns: repeat(3, 1fr); gap: 3px 8px;
+  width: 88px; height: 65px !important; font-size: 17px !important; line-height: 1 !important;
+}
+.pythagoras-icon span { display: flex; align-items: center; justify-content: center; }
+
+.library-icon { font-size: 54px !important; line-height: 1; height: 65px !important; display: flex; align-items: center; justify-content: center; }
+
+.section-title { width: 100%; margin: 0 0 20px; }
+.section-title h2 { margin: 0; font-family: Georgia, serif; font-size: 31px; font-weight: 500; color: #f6d66c; }
+
+.back-link {
+  display: inline-flex; align-items: center; gap: 8px;
+  color: #f6d66c; background: none; border: none; cursor: pointer;
+  font-size: 16px; margin-bottom: 14px; padding: 0;
+}
+
+/* Дашборд-блоки (доступы / статистика / мои расчёты) */
+
+.dashboard-wrap { width: 100%; }
+.dashboard-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 22px; }
+.dashboard-head h2 { margin: 0 0 8px; font-family: Georgia, serif; font-size: 31px; color: #f6d66c; }
+.dashboard-head p { margin: 0; color: #eee5d0; font-size: 16px; }
+.dashboard-badge {
+  border: 1px solid rgba(225,180,52,.75); border-radius: 999px; padding: 8px 14px;
+  color: #f6d66c; background: rgba(255,255,255,.05); white-space: nowrap;
+}
+
+.stats-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
+.stat-card, .table-card {
+  border: 1px solid rgba(225,180,52,.65); border-radius: 16px;
+  background: linear-gradient(145deg, rgba(48,32,82,.92), rgba(33,22,61,.92));
+  box-shadow: inset 0 0 25px rgba(126,65,167,.08);
+}
+.stat-card { padding: 18px; }
+.stat-card span { display: block; color: #eee5d0; font-size: 14px; margin-bottom: 8px; }
+.stat-card strong { display: block; color: #f6d66c; font-family: Georgia, serif; font-size: 30px; }
+.table-card { padding: 18px; overflow-x: auto; }
+.table-title { color: #f6d66c; font-family: Georgia, serif; font-size: 22px; margin-bottom: 14px; }
+.data-table { width: 100%; border-collapse: collapse; color: #eee5d0; }
+.data-table th, .data-table td { padding: 12px 10px; border-bottom: 1px solid rgba(225,180,52,.18); text-align: left; }
+.data-table th { color: #f6d66c; font-weight: 600; }
+.empty-table { padding: 28px 10px; color: #d9d0bd; text-align: center; }
+
+.access-locked { width: 100%; text-align: center; padding: 55px 30px; }
+.access-locked-icon { font-size: 55px; margin-bottom: 15px; }
+.access-locked h2 { font-family: Georgia, serif; font-size: 27px; color: #f6d66c; margin-bottom: 12px; }
+.access-locked p { font-size: 17px; color: #eee5d0; line-height: 1.6; max-width: 650px; margin: 0 auto; }
+
+/* ===================== СПИСОК МАТЕРИАЛОВ (полноценная страница) ===================== */
+
+.materials-page { width: 100%; }
+
+.materials-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 18px; flex-wrap: wrap; gap: 14px;
+}
+.materials-head h2 { margin: 0; font-family: Georgia, serif; font-size: 27px; color: #f6d66c; }
+
+.materials-add-btn {
+  padding: 12px 20px; border-radius: 10px; border: 1px solid #d7aa31;
+  background: linear-gradient(90deg, #713199, #5d2789);
+  color: #f8d96d; cursor: pointer; font-size: 15px;
+}
+
+.materials-tabs { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+.materials-tab {
+  padding: 9px 16px; border-radius: 10px; border: 1px solid rgba(225,180,52,.4);
+  background: rgba(255,255,255,.03); color: #eee5d0; cursor: pointer; font-size: 14px;
+}
+.materials-tab.active { background: rgba(113,49,153,.55); border-color: #d7aa31; color: #f8d96d; }
+
+.material-row {
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px; border-radius: 14px; margin-bottom: 12px;
+  border: 1px solid rgba(225,180,52,.35);
+  background: linear-gradient(145deg, rgba(48,32,82,.75), rgba(33,22,61,.75));
+}
+.material-row-icon {
+  width: 46px; height: 46px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 20px;
+  background: rgba(255,255,255,.06); color: #f2c94c;
+}
+.material-row-body { flex: 1; min-width: 0; }
+.material-row-title { color: #f8e7a8; font-size: 16px; margin-bottom: 4px; }
+.material-row-meta { color: #b8ad98; font-size: 13px; }
+.material-row-open {
+  padding: 10px 18px; border-radius: 10px; border: 1px solid #d7aa31;
+  background: linear-gradient(90deg, #713199, #5d2789); color: #f8d96d;
+  cursor: pointer; font-size: 14px; white-space: nowrap; text-decoration: none;
+}
+.materials-note { color: #b8ad98; font-size: 13px; margin-top: 10px; }
+
+/* ===================== ОКНО ДОБАВЛЕНИЯ МАТЕРИАЛА ===================== */
+
+.material-manager-overlay {
+  position: fixed; inset: 0; z-index: 99999; display: flex;
+  align-items: center; justify-content: center; padding: 20px;
+  background: rgba(0, 0, 0, 0.72);
+}
+.material-manager {
+  width: 560px; max-width: 95vw; max-height: 90vh; overflow-y: auto; padding: 30px;
+  border-radius: 20px; background: linear-gradient(145deg, #302052, #21163d);
+  border: 1px solid #d7aa31; color: #f8e7a8; box-shadow: 0 20px 70px rgba(0, 0, 0, 0.5);
+}
+.material-manager h2 { margin: 0 35px 24px 0; color: #f6d66c; font-family: Georgia, serif; }
+.material-manager-close { float: right; background: none; border: none; color: #f6d66c; font-size: 30px; line-height: 1; cursor: pointer; }
+.material-manager-label { display: block; margin: 16px 0 8px; color: #eee5d0; }
+.material-manager-input {
+  width: 100%; box-sizing: border-box; padding: 13px; margin-bottom: 12px;
+  border-radius: 10px; border: 1px solid rgba(225, 180, 52, 0.5);
+  background: rgba(0,0,0,.2); color: #fff; outline: none; font-size: 16px;
+}
+.material-manager-input::placeholder { color: #aaa1b4; }
+.material-manager-button {
+  width: 100%; margin-top: 4px; padding: 13px 16px; border-radius: 10px; border: 1px solid #d7aa31;
+  background: linear-gradient(90deg, #713199, #5d2789); color: #f8d96d; cursor: pointer; font-size: 16px;
+}
+.material-manager-button:disabled { opacity: .55; cursor: wait; }
+.material-manager-or { margin: 18px 0 4px; text-align: center; color: #c8bca4; }
+.material-manager-status { margin-top: 18px; line-height: 1.45; }
+.material-manager-status.ok { color: #a9e4b4; }
+.material-manager-status.error { color: #ffb0b0; }
+.material-manager-hint { margin-top: 8px; color: #bdb3c5; font-size: 13px; line-height: 1.4; }
+
+/* ===================== АВТОРИЗАЦИЯ ===================== */
+
+.auth-shell {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 30px;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(142, 73, 181, 0.22), transparent 30%),
+    linear-gradient(135deg, #17102f, #211443, #17102f);
+}
+.auth-card {
+  width: 420px; max-width: 100%; padding: 38px;
+  border: 1px solid rgba(225, 180, 52, 0.7); border-radius: 20px;
+  background: linear-gradient(145deg, #302052, #21163d);
+  box-shadow: 0 20px 70px rgba(0, 0, 0, 0.4); text-align: center;
+}
+.auth-card-register { width: 600px; }
+.auth-symbol { font-size: 48px; color: #f5d46b; margin-bottom: 8px; }
+.auth-title { font-family: Georgia, serif; font-size: 28px; color: #f5d46b; }
+.auth-subtitle { color: #e7bd43; margin-top: 5px; margin-bottom: 25px; }
+.auth-card h2 { color: #f6d66c; font-family: Georgia, serif; font-weight: 500; }
+.auth-card input {
+  width: 100%; padding: 14px; margin: 7px 0; border: 1px solid rgba(225, 180, 52, 0.4);
+  border-radius: 10px; background: rgba(0, 0, 0, 0.18); color: #fff; font-size: 16px; outline: none;
+}
+.auth-card button {
+  width: 100%; padding: 14px; margin-top: 12px; border: 1px solid #d7aa31; border-radius: 10px;
+  background: linear-gradient(90deg, #713199, #5d2789); color: #f8d96d; font-size: 16px; cursor: pointer;
+}
+.auth-link { background: transparent !important; border: none !important; color: #d9cba8 !important; }
+.auth-divider { margin: 15px 0; color: #a99d83; }
+.auth-register { background: transparent !important; }
+.auth-description { color: #ddd4c1; line-height: 1.5; }
+.auth-message { margin-top: 14px; min-height: 22px; line-height: 1.4; }
+.auth-message.error { color: #ff9b9b; }
+.auth-message.success { color: #a8e6b0; }
+.auth-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; }
+
+/* ===================== АДАПТАЦИЯ ===================== */
+
+@media (max-width: 1200px) {
+  .sidebar { width: 210px; }
+  .cards { grid-template-columns: repeat(3, 180px); }
+}
+@media (max-width: 900px) {
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 800px) {
+  .platform { display: block; }
+  .sidebar { width: 100%; min-height: auto; border-radius: 18px 18px 0 0; }
+  .main { border-left: 1px solid rgba(220, 169, 42, 0.65); border-top: none; border-radius: 0 0 18px 18px; }
+  .cards { grid-template-columns: repeat(2, 180px); }
+  .top { display: block; }
+  .account { margin-top: 20px; }
+  .auth-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 520px) {
+  .main { padding: 28px 15px 25px; }
+  .welcome h1 { font-size: 31px; }
+  .cards { grid-template-columns: 1fr; justify-items: center; }
+  .cards .card, .method-card { width: 100%; max-width: 320px; }
+  .stats-grid { grid-template-columns: 1fr; }
+  .material-row { flex-wrap: wrap; }
+}
+
+/* ===================== АККОРДЕОН РЕЗУЛЬТАТА РАСЧЁТА ===================== */
+
+.accordion-item {
+  border: 1px solid rgba(225,180,52,.4);
+  border-radius: 12px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.accordion-header {
+  width: 100%;
+  text-align: left;
+  padding: 14px 16px;
+  background: rgba(255,255,255,.04);
+  border: none;
+  color: #f6d66c;
+  font-family: Georgia, serif;
+  font-size: 17px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.accordion-header:hover { background: rgba(255,255,255,.08); }
+.accordion-body {
+  padding: 16px;
+  border-top: 1px solid rgba(225,180,52,.25);
+  color: #eee5d0;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+.accordion-body.hidden { display: none; }
+.key-numbers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+}
+.key-number-box {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(225,180,52,.25);
+}
+.key-number-box strong { display: block; font-size: 22px; color: #f6d66c; }
+.key-number-box span { font-size: 12px; color: #b8ad98; }
+
+</style>
+</head>
+<body>
+
+<div class="platform">
+
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-symbol">✧</div>
+      <div class="logo-title">NUMEROLOGY</div>
+      <div class="logo-subtitle">Platform</div>
+    </div>
+
+    <div class="nav">
+      <button class="nav-item active" data-section="calculators" onclick="showSection('calculators')">
+        <span class="nav-icon">▦</span> Калькуляторы
+      </button>
+      <button class="nav-item" data-section="manuals" onclick="showSection('manuals')">
+        <span class="nav-icon">📖</span> Методические пособия
+      </button>
+      <button class="nav-item" data-section="videos" onclick="showSection('videos')">
+        <span class="nav-icon">▶</span> Видео
+      </button>
+      <button class="nav-item" data-section="tests" onclick="showSection('tests')">
+        <span class="nav-icon">✎</span> Тесты
+      </button>
+      <button class="nav-item" data-section="library" onclick="showSection('library')">
+        <span class="nav-icon">📚</span> Библиотека учителя
+      </button>
+      <button class="nav-item" data-section="my-calculations" onclick="showSection('my-calculations')">
+        <span class="nav-icon">▤</span> Мои расчёты
+      </button>
+      <button class="nav-item" data-section="access" onclick="showSection('access')">
+        <span class="nav-icon">🔑</span> Доступы
+      </button>
+      <button class="nav-item" id="navStatistics" data-section="statistics" onclick="showSection('statistics')">
+        <span class="nav-icon">▥</span> Отчёты и статистика
+      </button>
+    </div>
+
+    <button class="nav-item logout" onclick="logoutUser()">
+      <span class="nav-icon">🚪</span> Выйти
+    </button>
+  </aside>
+
+  <main class="main">
+    <div class="top" id="welcomeTop">
+      <div class="welcome">
+        <h1>Добро пожаловать, <span id="clientName">Центр Нумера</span>! ✨</h1>
+      </div>
+      <div class="account">
+        <div class="account-icon">♙</div>
+        <span id="clientEmail">centernumero@gmail.com</span>
+        <span>⌄</span>
+      </div>
+    </div>
+
+    <div id="contentCards" class="cards"></div>
+  </main>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="adult-matrix-engine.js"></script>
+<script>
+
+/* ============================================================
+   SUPABASE
+   ============================================================ */
+
+const SUPABASE_URL = "https://skvprhqsxnlacshucncq.supabase.co";
+const SUPABASE_KEY = "sb_publishable_N0pKMmzNOonoInimmkding_GJnMwsRd";
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ============================================================
+   ГЛОБАЛЬНЫЕ ПРАВА ПОЛЬЗОВАТЕЛЯ
+   ============================================================ */
+
+window.currentUserRole = "";
+window.currentUserIsManager = false;
+window.currentUserHasAccess = false;
+window.currentUser = null;
+
+const ADMIN_EMAILS = ["centernumero@gmail.com"];
+const MANAGER_ROLES = ["admin", "administrator", "teacher", "numerologist", "нумеролог", "администратор"];
+
+function isManagerRole(role) {
+  return MANAGER_ROLES.includes(String(role || "").trim().toLowerCase());
+}
+function isAdminEmail(email) {
+  return ADMIN_EMAILS.includes(String(email || "").trim().toLowerCase());
+}
+function hasActivePlatformAccess(access) {
+  if (!access) return false;
+  if (String(access.status || "").toLowerCase() !== "active") return false;
+  if (access.payment_status && String(access.payment_status).toLowerCase() !== "paid") return false;
+  if (!access.is_unlimited && access.ends_at && new Date(access.ends_at) < new Date()) return false;
+  return true;
+}
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+function showNoAccessMessage() {
+  alert("У вас нет доступа к этому разделу. Обратитесь к администратору или учителю.");
+}
+
+/* ============================================================
+   НАПРАВЛЕНИЯ (единый источник для калькуляторов/пособий/видео/тестов)
+   ============================================================ */
+
+const DIRECTIONS = [
+  { key: "adult",         icon: "✦",   title: "Взрослая<br>матрица" },
+  { key: "child",         icon: "👶",  title: "Детская<br>матрица" },
+  { key: "compatibility", icon: "💕",  title: "Матрица<br>совместимости" },
+  { key: "vedic",         icon: "ॐ",   title: "Ведическая<br>нумерология" },
+  { key: "pythagoras",    icon: "pythagoras", title: "Квадрат<br>Пифагора" }
+];
+const DIRECTION_NAMES = Object.fromEntries(DIRECTIONS.map(d => [d.key, d.title.replace("<br>", " ")]));
+const SECTION_LABELS = { manuals: "Методическое пособие", videos: "Видео", tests: "Тест" };
+const CONTENT_TYPES = [
+  { key: "calculators", label: "Калькуляторы" },
+  { key: "manuals", label: "Методички" },
+  { key: "videos", label: "Видео" },
+  { key: "tests", label: "Тесты" }
+];
+
+window.currentUserGrant = {};
+
+function itemGrantActive(item) {
+  if (!item || !item.granted) return false;
+  if (item.unlimited) return true;
+  if (!item.ends_at) return true;
+  return new Date(item.ends_at) >= new Date();
+}
+
+function hasGrant(section, direction) {
+  if (window.currentUserIsManager) return true;
+  const scope = window.currentUserGrant || {};
+  if (section === "library") return itemGrantActive(scope.library);
+  if (section === "my-calculations") return itemGrantActive(scope.my_calculations);
+  if (!direction) return false;
+  return itemGrantActive(scope[direction] && scope[direction][section]);
+}
+
+function hideWelcome() {
+  const el = document.getElementById("welcomeTop");
+  if (el) el.style.display = "none";
+}
+function showWelcome() {
+  const el = document.getElementById("welcomeTop");
+  if (el) el.style.display = "";
+}
+
+function pythagorasIconHtml() {
+  return `
+    <div class="card-icon pythagoras-icon">
+      <span>1</span><span>4</span><span>7</span>
+      <span>2</span><span>5</span><span>8</span>
+      <span>3</span><span>6</span><span>9</span>
+    </div>`;
+}
+
+function setActiveSection(section) {
+  document.querySelectorAll(".nav-item[data-section]").forEach(function (btn) {
+    btn.classList.toggle("active", btn.dataset.section === section);
+  });
+}
+
+/* Единый рендер пяти карточек направлений.
+   action: 'calculator' | 'material'  (material охватывает manuals/videos/tests) */
+function renderDirectionCards(section, action, materialFlags) {
+  materialFlags = materialFlags || {};
+  return DIRECTIONS.map(function (card) {
+    const icon = card.icon === "pythagoras" ? pythagorasIconHtml() : `<div class="card-icon">${card.icon}</div>`;
+    let click = "";
+    let subtitle = "";
+    let extraClass = "";
+
+    if (action === "calculator") {
+      click = `onclick="openCalculator('${card.key}')"`;
+      subtitle = "Калькулятор";
+    } else {
+      click = `onclick='openDirectionMaterials(${JSON.stringify(section)},${JSON.stringify(card.key)},${JSON.stringify(DIRECTION_NAMES[card.key])})'`;
+      subtitle = SECTION_LABELS[section] || "Материал";
+    }
+
+    return `
+      <div class="card method-card${extraClass}" ${click} role="button" tabindex="0">
+        ${icon}
+        <div class="card-content">
+          <h3>${card.title}</h3>
+          <p>${subtitle}</p>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+/* ============================================================
+   МАРШРУТИЗАЦИЯ РАЗДЕЛОВ
+   ============================================================ */
+
+function renderLockedSection(section) {
+  const contentCards = document.getElementById("contentCards");
+  if (!contentCards) return;
+  const titles = {
+    calculators: "Калькуляторы", manuals: "Методические пособия", videos: "Видео",
+    tests: "Тесты", library: "Библиотека учителя", "my-calculations": "Мои расчёты"
+  };
+  contentCards.className = "";
+  contentCards.innerHTML = `
+    <div class="dashboard-wrap">
+      <div class="dashboard-head">
+        <div>
+          <h2>${titles[section] || "Раздел платформы"}</h2>
+          <p>Раздел доступен после выдачи доступа.</p>
+        </div>
+        <div class="dashboard-badge">Доступ закрыт</div>
+      </div>
+      <div class="access-locked">
+        <div class="access-locked-icon">🔒</div>
+        <h2>У вас нет доступа к этому разделу</h2>
+        <p>
+          Вы успешно зарегистрированы в Numerology Platform.<br>
+          Чтобы открыть раздел, администратор или учитель должен выдать вам доступ.
+        </p>
+        <button class="material-manager-button" style="width:auto;margin-top:24px;" onclick="showSection('access')">
+          Посмотреть статус доступа
+        </button>
+      </div>
+    </div>`;
+}
+
+async function showSection(section) {
+  const contentCards = document.getElementById("contentCards");
+  if (!contentCards) return;
+
+  showWelcome();
+  setActiveSection(section);
+
+  // Центр Нумера всегда администратор, независимо от того, что успело подгрузиться.
+  let isAdmin = window.currentUserIsManager === true;
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (isAdminEmail(session?.user?.email)) {
+      isAdmin = true;
+      window.currentUserIsManager = true;
+      window.currentUserHasAccess = true;
+      window.currentUserRole = "admin";
+    }
+  } catch (e) {
+    console.error("Ошибка проверки администратора:", e);
+  }
+
+  const protectedSections = ["calculators", "manuals", "videos", "tests", "library", "my-calculations"];
+  if (!isAdmin && protectedSections.includes(section)) {
+    if (!window.currentUserHasAccess) { renderLockedSection(section); return; }
+    if ((section === "library" || section === "my-calculations") && !hasGrant(section)) {
+      renderLockedSection(section);
+      return;
+    }
+  }
+
+  if (section === "calculators") { renderCalculators(); return; }
+  if (section === "manuals") { await loadPlatformMaterials("manuals"); return; }
+  if (section === "videos") { await loadPlatformMaterials("videos"); return; }
+  if (section === "tests") { await loadPlatformMaterials("tests"); return; }
+  if (section === "library") { loadLibrary(); return; }
+  if (section === "my-calculations") { renderMyCalculations(); return; }
+  if (section === "access") { await renderAccess(); return; }
+  if (section === "statistics") {
+    if (!isAdmin && !window.currentUserIsManager) { renderLockedSection(section); return; }
+    await renderStatistics();
+    return;
+  }
+}
+
+/* ============================================================
+   КАЛЬКУЛЯТОРЫ
+   ============================================================ */
+
+function renderCalculators() {
+  const contentCards = document.getElementById("contentCards");
+  if (!contentCards) return;
+  contentCards.className = "cards";
+  contentCards.innerHTML = renderDirectionCards("calculators", "calculator");
+}
+
+async function openCalculator(type) {
+  if (!window.currentUserIsManager && !hasGrant("calculators", type)) {
+    showNoAccessMessage();
+    return;
+  }
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) { showLogin(); return; }
+
+  const title = DIRECTION_NAMES[type] || "Расчёт";
+
+  document.body.innerHTML = `
+    <div style="min-height:100vh;padding:40px;background:linear-gradient(135deg,#17102f,#211443,#17102f);color:#f8e7a8;font-family:Arial,sans-serif;">
+      <div style="max-width:650px;margin:0 auto;padding:35px;border:1px solid #d7aa31;border-radius:20px;background:linear-gradient(145deg,#302052,#21163d);">
+        <h1 style="margin-top:0;color:#f6d66c;font-family:Georgia,serif;font-weight:500;">${title}</h1>
+
+        <label>Имя</label>
+        <input id="name" type="text" style="display:block;width:100%;padding:13px;margin:8px 0 20px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
+
+        <label>Дата рождения</label>
+        <input id="birthDate" type="text" placeholder="ДД.ММ.ГГГГ" maxlength="10" inputmode="numeric" oninput="formatBirthDate(this)"
+          style="display:block;width:100%;padding:13px;margin:8px 0 5px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
+        <div id="dateError" style="color:#ff9b9b;min-height:22px;margin-bottom:15px;"></div>
+
+        <button onclick="calculate('${type}')" style="width:100%;padding:14px;border:1px solid #d7aa31;border-radius:10px;background:linear-gradient(90deg,#713199,#5d2789);color:#f8d96d;font-size:16px;cursor:pointer;">Рассчитать</button>
+        <button onclick="location.reload()" style="width:100%;padding:14px;margin-top:10px;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.15);color:#f5d46b;font-size:16px;cursor:pointer;">Назад</button>
+
+        <div id="result" style="margin-top:30px"></div>
+      </div>
+    </div>`;
+}
+
+function formatBirthDate(input) {
+  let value = input.value.replace(/\D/g, "");
+  if (value.length > 8) value = value.substring(0, 8);
+  if (value.length > 4) value = value.substring(0, 2) + "." + value.substring(2, 4) + "." + value.substring(4);
+  else if (value.length > 2) value = value.substring(0, 2) + "." + value.substring(2);
+  input.value = value;
+}
+
+function isValidBirthDate(value) {
+  const match = String(value || "").match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+  if (!match) return false;
+  const day = Number(match[1]), month = Number(match[2]), year = Number(match[3]);
+  if (year < 1900 || year > 2100) return false;
+  const date = new Date(year, month - 1, day);
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+}
+
+function calculate(type) {
+  const name = document.getElementById("name")?.value.trim();
+  const birthDate = document.getElementById("birthDate")?.value.trim();
+  const dateError = document.getElementById("dateError");
+  const result = document.getElementById("result");
+  if (dateError) dateError.textContent = "";
+  if (result) result.innerHTML = "";
+
+  if (!name) { if (dateError) dateError.textContent = "Введите имя."; return; }
+  if (!isValidBirthDate(birthDate)) {
+    if (dateError) dateError.textContent = "Введите корректную дату рождения в формате ДД.ММ.ГГГГ.";
+    return;
+  }
+  if (!result) return;
+
+  if (type === "adult" && window.AdultMatrixEngine) {
+    renderAdultMatrixResult(name, birthDate, result);
+    return;
+  }
+
+  result.innerHTML = `
+    <div style="padding:20px;border:1px solid rgba(225,180,52,.5);border-radius:14px;background:rgba(0,0,0,.12);">
+      <h3 style="margin-top:0;color:#f6d66c;font-family:Georgia,serif;">${DIRECTION_NAMES[type] || "Расчёт"}</h3>
+      <p>Имя: <strong>${escapeHtml(name)}</strong></p>
+      <p>Дата рождения: <strong>${escapeHtml(birthDate)}</strong></p>
+      <p style="margin-bottom:0;color:#d9d0bd;">Этот раздел ещё не подключён к реальному расчёту.</p>
+    </div>`;
+}
+
+function renderAdultMatrixResult(name, birthDate, container) {
+  const [day, month, year] = birthDate.split(".").map(Number);
+
+  let res;
+  try {
+    res = window.AdultMatrixEngine.getResult(day, month, year, name);
+  } catch (error) {
+    console.error("Ошибка расчёта матрицы:", error);
+    container.innerHTML = `<div style="color:#ff9d9d;padding:16px;">Не удалось выполнить расчёт: ${escapeHtml(error.message || String(error))}</div>`;
+    return;
+  }
+
+  const keyNumbersHtml = Object.entries(res.keyNumbers).map(function ([label, value]) {
+    return `<div class="key-number-box"><strong>${escapeHtml(String(value))}</strong><span>${escapeHtml(label)}</span></div>`;
+  }).join("");
+
+  const chakraRowsHtml = res.chakras.map(function (c) {
+    return `<tr><td>${escapeHtml(c.name)}</td><td>${c.energy}</td><td>${c.physics}</td><td>${c.emotions}</td></tr>`;
+  }).join("");
+
+  const programsHtml = res.programs.length
+    ? res.programs.map(function (p, i) {
+        return `
+          <div class="accordion-item">
+            <button type="button" class="accordion-header" onclick="toggleAccordionBody('prog-${i}')">
+              <span>${escapeHtml(p.title)}</span>
+              <span>▾</span>
+            </button>
+            <div class="accordion-body hidden" id="prog-${i}">${escapeHtml(p.fullText)}</div>
+          </div>`;
+      }).join("")
+    : `<p style="color:#b8ad98;">Активных программ не найдено.</p>`;
+
+  container.innerHTML = `
+    <div style="max-width:760px;">
+      <p style="color:#b8ad98;font-size:13px;margin-bottom:16px;">
+        Пробная версия расчёта — тексты будут доработаны позже. Проверяем правильность чисел.
+      </p>
+
+      <div class="accordion-item">
+        <button type="button" class="accordion-header" onclick="toggleAccordionBody('acc-key')">
+          <span>Ключевые числа</span><span>▾</span>
+        </button>
+        <div class="accordion-body" id="acc-key">
+          <div class="key-numbers-grid">${keyNumbersHtml}</div>
+        </div>
+      </div>
+
+      <div class="accordion-item">
+        <button type="button" class="accordion-header" onclick="toggleAccordionBody('acc-health')">
+          <span>Карта здоровья</span><span>▾</span>
+        </button>
+        <div class="accordion-body hidden" id="acc-health">
+          <table class="data-table">
+            <thead><tr><th>Чакра</th><th>Энергия</th><th>Физика</th><th>Эмоции</th></tr></thead>
+            <tbody>${chakraRowsHtml}</tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="accordion-item">
+        <button type="button" class="accordion-header" onclick="toggleAccordionBody('acc-programs')">
+          <span>Программы (${res.programs.length})</span><span>▾</span>
+        </button>
+        <div class="accordion-body hidden" id="acc-programs">
+          ${programsHtml}
+        </div>
+      </div>
+    </div>`;
+}
+
+function toggleAccordionBody(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle("hidden");
+}
+
+/* ============================================================
+   МЕТОДИЧЕСКИЕ ПОСОБИЯ / ВИДЕО / ТЕСТЫ
+   Единая система: таблица platform_materials + bucket methodicals.
+   Для каждого направления — одна запись (ссылка или файл).
+   ============================================================ */
+
+const PLATFORM_MATERIALS_TABLE = "platform_materials";
+const PLATFORM_STORAGE_BUCKET = "methodicals";
+
+let materialManagerState = { section: "", direction: "", title: "" };
+let currentMaterialsView = null;
+let currentDirectionMaterials = [];
+
+async function loadPlatformMaterials(section) {
+  const contentCards = document.getElementById("contentCards");
+  if (!contentCards) return;
+  currentMaterialsView = null;
+  contentCards.className = "cards";
+  contentCards.innerHTML = renderDirectionCards(section, "material");
+}
+
+/* Полноценная страница конкретного направления: список материалов + добавление. */
+async function openDirectionMaterials(section, direction, title) {
+  currentMaterialsView = { section, direction, title };
+  hideWelcome();
+
+  const contentCards = document.getElementById("contentCards");
+  if (!contentCards) return;
+  contentCards.className = "";
+
+  if (!window.currentUserIsManager && !hasGrant(section, direction)) {
+    contentCards.innerHTML = `
+      <div class="materials-page">
+        <button class="back-link" onclick='showSection(${JSON.stringify(section)})'>← Назад</button>
+        <div class="access-locked">
+          <div class="access-locked-icon">🔒</div>
+          <h2>Нет доступа к этому разделу</h2>
+          <p>Обратитесь к администратору или учителю, чтобы открыть «${escapeHtml(title)}».</p>
+        </div>
+      </div>`;
+    return;
+  }
+
+  contentCards.innerHTML = `
+    <div class="materials-page">
+      <button class="back-link" onclick='showSection(${JSON.stringify(section)})'>← Назад</button>
+      <div class="materials-head">
+        <h2>${escapeHtml(title)} — ${escapeHtml(SECTION_LABELS[section] || "Материалы")}</h2>
+        ${window.currentUserIsManager
+          ? `<button class="materials-add-btn" onclick='showMaterialManager(${JSON.stringify(section)},${JSON.stringify(direction)},${JSON.stringify(title)})'>Добавить материал +</button>`
+          : ""}
+      </div>
+      <div id="materialsListBox">Загрузка...</div>
+    </div>`;
+
+  await loadDirectionMaterialsList();
+}
+
+async function loadDirectionMaterialsList() {
+  const box = document.getElementById("materialsListBox");
+  if (!box || !currentMaterialsView) return;
+  const { section, direction } = currentMaterialsView;
+
+  try {
+    const { data, error } = await supabaseClient
+      .from(PLATFORM_MATERIALS_TABLE)
+      .select("id, material_type, url, file_path, created_at")
+      .eq("section", section)
+      .eq("direction", direction)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+
+    currentDirectionMaterials = data || [];
+
+    if (!currentDirectionMaterials.length) {
+      box.innerHTML = `<div class="table-card"><div class="empty-table">Материал пока не добавлен.</div></div>`;
+      return;
+    }
+
+    box.innerHTML = currentDirectionMaterials.map(function (item) {
+      const isLink = item.material_type === "link";
+      const icon = isLink ? "🔗" : (section === "videos" ? "▶" : "📄");
+      const label = isLink ? "Ссылка" : (section === "videos" ? "Видеофайл" : "Файл");
+      const meta = isLink ? escapeHtml(item.url || "") : escapeHtml((item.file_path || "").split("/").pop());
+      const date = item.created_at ? new Date(item.created_at).toLocaleDateString("ru-RU") : "";
+      return `
+        <div class="material-row">
+          <div class="material-row-icon">${icon}</div>
+          <div class="material-row-body">
+            <div class="material-row-title">${label}</div>
+            <div class="material-row-meta">${meta}${date ? " · " + date : ""}</div>
+          </div>
+          <button class="material-row-open" onclick='openMaterialById(${JSON.stringify(item.id)})'>Открыть</button>
+        </div>`;
+    }).join("");
+  } catch (error) {
+    console.error("Ошибка загрузки списка материалов:", error);
+    box.innerHTML = `<div class="table-card"><div class="empty-table">Не удалось загрузить материалы.</div></div>`;
+  }
+}
+
+async function openMaterialById(id) {
+  const item = currentDirectionMaterials.find(m => String(m.id) === String(id));
+  if (!item) return;
+  try {
+    if (item.url) { window.open(item.url, "_blank", "noopener,noreferrer"); return; }
+    if (item.file_path) {
+      const { data, error } = await supabaseClient.storage
+        .from(PLATFORM_STORAGE_BUCKET)
+        .createSignedUrl(item.file_path, 60 * 60);
+      if (error) throw error;
+      if (!data?.signedUrl) throw new Error("Не удалось получить ссылку на файл.");
+      window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+    }
+  } catch (error) {
+    console.error("Ошибка открытия материала:", error);
+    alert("Не удалось открыть материал.\n\n" + (error.message || error));
+  }
+}
+
+function showMaterialManager(section, direction, title) {
+  const old = document.getElementById("materialManager");
+  if (old) old.remove();
+
+  materialManagerState = { section, direction, title };
+  const isVideo = section === "videos";
+  const accept = isVideo ? "video/*,.mp4,.webm,.mov,.m4v" : ".pdf,.doc,.docx";
+
+  const box = document.createElement("div");
+  box.id = "materialManager";
+  box.innerHTML = `
+    <div class="material-manager-overlay">
+      <div class="material-manager">
+        <button class="material-manager-close" onclick="document.getElementById('materialManager').remove()">×</button>
+        <h2>${escapeHtml(title)}</h2>
+
+        <label class="material-manager-label">Вставить ссылку</label>
+        <input id="materialUrlInput" class="material-manager-input" type="url" placeholder="https://...">
+        <button id="saveMaterialUrlButton" class="material-manager-button" onclick="savePlatformMaterialUrl()">🔗 Сохранить ссылку</button>
+
+        <div class="material-manager-or">или</div>
+
+        <label class="material-manager-label">Загрузить файл</label>
+        <input id="materialFileInput" class="material-manager-input" type="file" accept="${accept}">
+        <button id="uploadMaterialFileButton" class="material-manager-button" onclick="uploadPlatformMaterialFile()">📁 Загрузить файл</button>
+
+        <div class="material-manager-hint">
+          ${isVideo
+            ? "Для видео можно указать ссылку (например, YouTube) или загрузить видеофайл."
+            : "Можно указать ссылку на документ или загрузить PDF/DOC/DOCX."}
+        </div>
+
+        <div id="materialManagerStatus" class="material-manager-status"></div>
+      </div>
+    </div>`;
+  document.body.appendChild(box);
+}
+
+function setMaterialManagerStatus(text, type) {
+  const box = document.getElementById("materialManagerStatus");
+  if (!box) return;
+  box.className = "material-manager-status " + (type || "");
+  box.textContent = text || "";
+}
+function setMaterialManagerBusy(busy) {
+  const saveButton = document.getElementById("saveMaterialUrlButton");
+  const uploadButton = document.getElementById("uploadMaterialFileButton");
+  if (saveButton) saveButton.disabled = busy;
+  if (uploadButton) uploadButton.disabled = busy;
+}
+
+async function savePlatformMaterialUrl() {
+  if (!window.currentUserIsManager) return;
+  const { section, direction } = materialManagerState;
+  const input = document.getElementById("materialUrlInput");
+  const url = input?.value.trim() || "";
+
+  if (!url) { setMaterialManagerStatus("Вставьте ссылку.", "error"); return; }
+  try { new URL(url); } catch (_) {
+    setMaterialManagerStatus("Введите корректную ссылку, начинающуюся с https:// или http://", "error");
+    return;
+  }
+
+  setMaterialManagerBusy(true);
+  setMaterialManagerStatus("Сохраняю ссылку...", "");
+
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) throw new Error("Сессия пользователя не найдена.");
+
+    const { error } = await supabaseClient.from(PLATFORM_MATERIALS_TABLE).insert({
+      section, direction, material_type: "link", url, file_path: null, created_by: session.user.id
+    });
+    if (error) throw error;
+
+    setMaterialManagerStatus("Ссылка сохранена.", "ok");
+    await loadDirectionMaterialsList();
+    setTimeout(() => document.getElementById("materialManager")?.remove(), 700);
+  } catch (error) {
+    console.error("Ошибка сохранения ссылки:", error);
+    setMaterialManagerStatus("Не удалось сохранить ссылку: " + (error.message || error), "error");
+  } finally {
+    setMaterialManagerBusy(false);
+  }
+}
+
+async function uploadPlatformMaterialFile() {
+  if (!window.currentUserIsManager) return;
+  const { section, direction } = materialManagerState;
+  const input = document.getElementById("materialFileInput");
+  const file = input?.files?.[0];
+
+  if (!file) { setMaterialManagerStatus("Сначала выберите файл.", "error"); return; }
+
+  const maxSize = section === "videos" ? 500 * 1024 * 1024 : 100 * 1024 * 1024;
+  if (file.size > maxSize) {
+    setMaterialManagerStatus(
+      section === "videos" ? "Видео слишком большое (максимум 500 МБ)." : "Файл слишком большой (максимум 100 МБ).",
+      "error"
+    );
+    return;
+  }
+
+  setMaterialManagerBusy(true);
+  setMaterialManagerStatus("Загружаю файл...", "");
+
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) throw new Error("Сессия пользователя не найдена.");
+
+    const safeName = file.name.normalize("NFKD").replace(/[^a-zA-Z0-9._-]+/g, "_").replace(/^_+|_+$/g, "") || "file";
+    const unique = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Date.now() + "_" + Math.random().toString(36).slice(2);
+    const path = `${section}/${direction}/${unique}_${safeName}`;
+
+    const { error: uploadError } = await supabaseClient.storage
+      .from(PLATFORM_STORAGE_BUCKET)
+      .upload(path, file, { cacheControl: "3600", upsert: false });
+    if (uploadError) throw uploadError;
+
+    setMaterialManagerStatus("Файл загружен. Сохраняю запись...", "");
+
+    const { error: insertError } = await supabaseClient.from(PLATFORM_MATERIALS_TABLE).insert({
+      section, direction, material_type: "file", url: null, file_path: path, created_by: session.user.id
+    });
+
+    if (insertError) {
+      await supabaseClient.storage.from(PLATFORM_STORAGE_BUCKET).remove([path]);
+      throw insertError;
+    }
+
+    setMaterialManagerStatus("Файл успешно сохранён.", "ok");
+    await loadDirectionMaterialsList();
+    setTimeout(() => document.getElementById("materialManager")?.remove(), 700);
+  } catch (error) {
+    console.error("Ошибка загрузки файла:", error);
+    setMaterialManagerStatus("Не удалось загрузить файл: " + (error.message || error), "error");
+  } finally {
+    setMaterialManagerBusy(false);
+  }
+}
+
+/* ============================================================
+   БИБЛИОТЕКА НУМЕРОЛОГА
+   ============================================================ */
+
+const NUMEROLOGY_LIBRARY_URL = "https://drive.google.com/drive/folders/1pGjVPKtGeHm5NKrcg0JLvy5M_XDTAaOv?usp=sharing";
+
+function loadLibrary() {
+  const contentCards = document.getElementById("contentCards");
+  if (!contentCards) return;
+  contentCards.className = "";
+  contentCards.innerHTML = `
+    <div class="section-title"><h2>Библиотека учителя</h2></div>
+    <div class="cards">
+      <div class="card library-main-card" onclick="openLibraryHome()" role="button" tabindex="0">
+        <div class="card-icon library-icon">📚</div>
+        <div class="card-content">
+          <h3>Библиотека<br>учителя</h3>
+          <p>Все книги по нумерологии<br>и эзотерике</p>
+        </div>
+      </div>
+    </div>`;
+}
+function openLibraryHome() {
+  window.open(NUMEROLOGY_LIBRARY_URL, "_blank", "noopener,noreferrer");
+}
+
+/* ============================================================
+   МОИ РАСЧЁТЫ
+   ============================================================ */
+
+function renderMyCalculations() {
+  const contentCards = document.getElementById("contentCards");
+  if (!contentCards) return;
+  contentCards.className = "";
+  contentCards.innerHTML = `
+    <div class="dashboard-wrap">
+      <div class="dashboard-head">
+        <div>
+          <h2>Мои расчёты</h2>
+          <p>История ваших расчётов будет отображаться здесь.</p>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><span>Всего расчётов</span><strong>0</strong></div>
+        <div class="stat-card"><span>За этот месяц</span><strong>0</strong></div>
+        <div class="stat-card"><span>Последний расчёт</span><strong>—</strong></div>
+      </div>
+      <div class="table-card">
+        <div class="table-title">История расчётов</div>
+        <div class="empty-table">Пока нет сохранённых расчётов.</div>
+      </div>
+    </div>`;
+}
+
+/* ============================================================
+   ДОСТУПЫ
+   ============================================================ */
+
+async function renderAccess() {
+  const contentCards = document.getElementById("contentCards");
+  if (!contentCards) return;
+  contentCards.className = "";
+
+  if (!window.currentUserIsManager) {
+    contentCards.innerHTML = `
+      <div class="dashboard-wrap">
+        <div class="dashboard-head">
+          <div><h2>Доступы</h2><p>Что вам открыто и до какого срока.</p></div>
+        </div>
+        <div class="table-card" id="accessTable">Загрузка...</div>
+      </div>`;
+
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session) return;
+
+      const { data, error } = await supabaseClient
+        .from("access_periods")
+        .select("status, payment_status, starts_at, ends_at, is_unlimited, granted_scope")
+        .eq("profile_id", session.user.id)
+        .order("starts_at", { ascending: false })
+        .limit(10);
+      if (error) throw error;
+
+      const activePeriods = (data || []).filter(hasActivePlatformAccess);
+      const scope = activePeriods[0]?.granted_scope || {};
+
+      const itemStatus = (item) => {
+        if (!item || !item.granted) return `<span style="color:#c9baa0;">закрыто</span>`;
+        if (item.unlimited) return `<span style="color:#8fe3a1;">бессрочно</span>`;
+        if (!item.ends_at) return `<span style="color:#8fe3a1;">открыто</span>`;
+        const active = new Date(item.ends_at) >= new Date();
+        const date = new Date(item.ends_at).toLocaleDateString("ru-RU");
+        return active ? `<span style="color:#8fe3a1;">до ${date}</span>` : `<span style="color:#ff9d9d;">истёк ${date}</span>`;
+      };
+
+      const dirRows = DIRECTIONS.map(function (d) {
+        const row = scope[d.key] || {};
+        return `<tr>
+          <td>${escapeHtml(DIRECTION_NAMES[d.key])}</td>
+          ${CONTENT_TYPES.map(c => `<td>${itemStatus(row[c.key])}</td>`).join("")}
+        </tr>`;
+      }).join("");
+
+      const table = `
+        <table class="data-table">
+          <thead><tr><th>Направление</th>${CONTENT_TYPES.map(c => `<th>${c.label}</th>`).join("")}</tr></thead>
+          <tbody>${dirRows}</tbody>
+        </table>
+        <table class="data-table" style="margin-top:14px;">
+          <tbody>
+            <tr><td>Библиотека учителя</td><td>${itemStatus(scope.library)}</td></tr>
+            <tr><td>Мои расчёты</td><td>${itemStatus(scope.my_calculations)}</td></tr>
+          </tbody>
+        </table>`;
+
+      document.getElementById("accessTable").innerHTML = activePeriods.length
+        ? table
+        : `<div class="empty-table">Доступ пока не выдан.<br><br>Обратитесь к администратору или учителю.</div>`;
+    } catch (error) {
+      console.error("Ошибка загрузки доступа:", error);
+      document.getElementById("accessTable").innerHTML = `<div class="empty-table">Не удалось загрузить статус доступа.</div>`;
+    }
+    return;
+  }
+
+  const isRealAdmin = window.currentUserRole === "admin";
+
+  contentCards.innerHTML = `
+    <div class="dashboard-wrap">
+      <div class="dashboard-head">
+        <div>
+          <h2>${isRealAdmin ? "Доступы пользователей" : "Мои ученицы"}</h2>
+          <p>${isRealAdmin ? "Управление доступом всех зарегистрированных пользователей." : "Доступ виден и управляется только для ваших учениц."}</p>
+        </div>
+        <div class="dashboard-badge">${isRealAdmin ? "Администратор" : "Учитель"}</div>
+      </div>
+
+      <div class="table-card" style="margin-bottom:18px;">
+        <div class="table-title">Выдать доступ</div>
+        <div style="margin-bottom:18px;max-width:500px;">
+          <label>
+            <span style="display:block;margin-bottom:7px;">Пользователь (email)</span>
+            <select id="accessUserSelect" class="material-manager-input" style="margin-bottom:0;"></select>
+          </label>
+        </div>
+
+        <label style="display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer;">
+          <input type="checkbox" id="scopeSelectAll" onchange="toggleScopeAll(this.checked)"> Выбрать всё
+        </label>
+
+        <div style="overflow-x:auto;margin-bottom:16px;">
+          <table class="data-table">
+            <thead>
+              <tr><th>Направление</th>${CONTENT_TYPES.map(c => `<th>${c.label}</th>`).join("")}<th>Срок</th></tr>
+            </thead>
+            <tbody>
+              ${DIRECTIONS.map(d => `
+                <tr>
+                  <td>${escapeHtml(DIRECTION_NAMES[d.key])}</td>
+                  ${CONTENT_TYPES.map(c => `<td><input type="checkbox" class="scope-cell" data-direction="${d.key}" data-type="${c.key}"></td>`).join("")}
+                  <td>${termSelectHtml("scope-term-row", `data-direction="${d.key}"`)}</td>
+                </tr>`).join("")}
+            </tbody>
+          </table>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px;">
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;min-width:220px;">
+              <input type="checkbox" id="scopeLibrary" class="scope-flag"> Библиотека учителя
+            </label>
+            ${termSelectHtml("", 'id="scopeLibraryTerm"')}
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;min-width:220px;">
+              <input type="checkbox" id="scopeMyCalc" class="scope-flag"> Мои расчёты
+            </label>
+            ${termSelectHtml("", 'id="scopeMyCalcTerm"')}
+          </div>
+        </div>
+
+        <button class="material-manager-button" style="width:auto;" onclick="grantPlatformAccess()">Выдать доступ</button>
+        <div id="accessAdminMessage" style="margin-top:12px;"></div>
+      </div>
+
+      ${isRealAdmin ? `
+      <div class="table-card" style="margin-bottom:18px;">
+        <div class="table-title">Назначить роль</div>
+        <div style="display:grid;grid-template-columns:2fr 1fr auto;gap:12px;align-items:end;">
+          <label>
+            <span style="display:block;margin-bottom:7px;">Пользователь</span>
+            <select id="roleUserSelect" class="material-manager-input" style="margin-bottom:0;"></select>
+          </label>
+          <label>
+            <span style="display:block;margin-bottom:7px;">Роль</span>
+            <select id="roleValueSelect" class="material-manager-input" style="margin-bottom:0;">
+              <option value="student">Ученица</option>
+              <option value="numerologist">Учитель</option>
+            </select>
+          </label>
+          <button class="material-manager-button" style="width:auto;height:47px;margin-top:0;" onclick="setUserRole()">Назначить</button>
+        </div>
+        <div id="roleAdminMessage" style="margin-top:12px;"></div>
+      </div>
+
+      <div class="table-card" style="margin-bottom:18px;">
+        <div class="table-title">Прикрепить ученицу к учителю</div>
+        <div style="display:grid;grid-template-columns:2fr 2fr auto;gap:12px;align-items:end;">
+          <label>
+            <span style="display:block;margin-bottom:7px;">Ученица</span>
+            <select id="attachStudentSelect" class="material-manager-input" style="margin-bottom:0;"></select>
+          </label>
+          <label>
+            <span style="display:block;margin-bottom:7px;">Учитель</span>
+            <select id="attachTeacherSelect" class="material-manager-input" style="margin-bottom:0;"></select>
+          </label>
+          <button class="material-manager-button" style="width:auto;height:47px;margin-top:0;" onclick="attachStudentToTeacher()">Прикрепить</button>
+        </div>
+        <div id="attachAdminMessage" style="margin-top:12px;"></div>
+      </div>` : ""}
+
+      <div class="table-card">
+        <div class="table-title">${isRealAdmin ? "Зарегистрированные пользователи" : "Мои ученицы"}</div>
+        <div id="adminUsersTable">Загрузка...</div>
+      </div>
+    </div>`;
+
+  await loadAdminUsers();
+}
+
+let adminUsersFilterTeacher = null; // { id, name } — admin drilled into one numerologist's students
+
+async function loadAdminUsers() {
+  const box = document.getElementById("adminUsersTable");
+  const accessSelect = document.getElementById("accessUserSelect");
+  const roleSelect = document.getElementById("roleUserSelect");
+  const attachStudentSelect = document.getElementById("attachStudentSelect");
+  const attachTeacherSelect = document.getElementById("attachTeacherSelect");
+  if (!box) return;
+  box.innerHTML = '<div class="empty-table">Загрузка...</div>';
+
+  const isRealAdmin = window.currentUserRole === "admin";
+  const { data: { session } } = await supabaseClient.auth.getSession();
+
+  let query = supabaseClient
+    .from("profiles")
+    .select("id, first_name, last_name, middle_name, email, phone, role, status, teacher_id, created_at")
+    .order("last_name", { ascending: true });
+
+  if (!isRealAdmin) query = query.eq("teacher_id", session.user.id);
+  else if (adminUsersFilterTeacher) query = query.eq("teacher_id", adminUsersFilterTeacher.id);
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("Ошибка загрузки пользователей:", error);
+    box.innerHTML = '<div class="empty-table">Не удалось загрузить пользователей.</div>';
+    return;
+  }
+
+  const users = data || [];
+  const nameOf = (u) => [u.last_name, u.first_name, u.middle_name].filter(Boolean).join(" ") || u.email || "Пользователь";
+
+  // Селекты доступа/ролей всегда строятся из ПОЛНОГО списка, не из отфильтрованного вида.
+  if (isRealAdmin && adminUsersFilterTeacher) {
+    const { data: allData } = await supabaseClient
+      .from("profiles")
+      .select("id, first_name, last_name, middle_name, email, phone, role, status, teacher_id, created_at")
+      .order("last_name", { ascending: true });
+    fillAccessSelects(allData || [], nameOf);
+  } else {
+    fillAccessSelects(users, nameOf);
+  }
+
+  function fillAccessSelects(list, nameFn) {
+    const fillSelect = (el, opts, emptyLabel) => {
+      if (!el) return;
+      el.innerHTML = opts.length
+        ? opts.map(u => `<option value="${escapeHtml(u.id)}">${escapeHtml(nameFn(u))}${u.email ? " — " + escapeHtml(u.email) : ""}</option>`).join("")
+        : `<option value="">${emptyLabel}</option>`;
+    };
+    fillSelect(accessSelect, list, "Нет пользователей");
+    if (isRealAdmin) {
+      fillSelect(roleSelect, list, "Нет пользователей");
+      fillSelect(attachStudentSelect, list.filter(u => (u.role || "student") !== "numerologist" && (u.role || "student") !== "admin"), "Нет учениц");
+      fillSelect(attachTeacherSelect, list.filter(u => u.role === "numerologist"), "Нет учителей");
+    }
+  }
+
+  const backLink = (isRealAdmin && adminUsersFilterTeacher)
+    ? `<button class="back-link" onclick='closeNumerologistDrilldown()'>← Все пользователи</button>`
+    : "";
+
+  if (!users.length) {
+    box.innerHTML = backLink + `<div class="empty-table">${
+      adminUsersFilterTeacher
+        ? "У этого учителя пока нет учениц."
+        : (isRealAdmin ? "Зарегистрированных пользователей пока нет." : "У вас пока нет учениц. Попросите администратора прикрепить их к вам.")
+    }</div>`;
+    return;
+  }
+
+  const teacherName = (teacherId) => {
+    if (!teacherId) return "Не назначен";
+    const t = users.find(u => u.id === teacherId);
+    return t ? nameOf(t) : "—";
+  };
+
+  const teachersSorted = users
+    .filter(u => u.role === "numerologist")
+    .slice()
+    .sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+  const teacherNumber = {};
+  teachersSorted.forEach((t, i) => { teacherNumber[t.id] = i + 1; });
+
+  box.innerHTML = backLink + `
+    <table class="data-table">
+      <thead><tr><th>Пользователь</th><th>Email</th><th>Телефон</th><th>Роль</th>${isRealAdmin ? "<th>Учитель</th>" : ""}<th>Статус</th></tr></thead>
+      <tbody>
+        ${users.map(function (user) {
+          const isClickableNumerologist = isRealAdmin && user.role === "numerologist" && !adminUsersFilterTeacher;
+          const rowAttrs = isClickableNumerologist
+            ? `style="cursor:pointer;" onclick='viewNumerologistStudents(${JSON.stringify(user.id)},${JSON.stringify(nameOf(user))})'`
+            : "";
+          const displayName = isClickableNumerologist
+            ? `Учитель ${teacherNumber[user.id]} — ${escapeHtml(nameOf(user))} →`
+            : escapeHtml(nameOf(user));
+          return `<tr ${rowAttrs}>
+            <td>${displayName}</td>
+            <td>${escapeHtml(user.email || "—")}</td>
+            <td>${escapeHtml(user.phone || "—")}</td>
+            <td>${escapeHtml(user.role || "student")}</td>
+            ${isRealAdmin ? `<td>${escapeHtml(teacherName(user.teacher_id))}</td>` : ""}
+            <td>${escapeHtml(user.status || "—")}</td>
+          </tr>`;
+        }).join("")}
+      </tbody>
+    </table>`;
+}
+
+function viewNumerologistStudents(id, name) {
+  adminUsersFilterTeacher = { id, name };
+  loadAdminUsers();
+}
+
+function closeNumerologistDrilldown() {
+  adminUsersFilterTeacher = null;
+  loadAdminUsers();
+}
+
+async function setUserRole() {
+  const userId = document.getElementById("roleUserSelect")?.value || "";
+  const role = document.getElementById("roleValueSelect")?.value || "student";
+  const message = document.getElementById("roleAdminMessage");
+  const setMsg = (text, ok) => { if (message) { message.textContent = text; message.style.color = ok ? "#8fe3a1" : "#ff9d9d"; } };
+
+  if (!userId) { setMsg("Сначала выберите пользователя.", false); return; }
+  setMsg("Назначаю роль...", true);
+
+  const { error } = await supabaseClient.from("profiles").update({ role }).eq("id", userId);
+  if (error) {
+    console.error("Ошибка назначения роли:", error);
+    setMsg("Не удалось назначить роль: " + (error.message || "ошибка Supabase"), false);
+    return;
+  }
+  setMsg("Роль назначена.", true);
+  await loadAdminUsers();
+}
+
+async function attachStudentToTeacher() {
+  const studentId = document.getElementById("attachStudentSelect")?.value || "";
+  const teacherId = document.getElementById("attachTeacherSelect")?.value || "";
+  const message = document.getElementById("attachAdminMessage");
+  const setMsg = (text, ok) => { if (message) { message.textContent = text; message.style.color = ok ? "#8fe3a1" : "#ff9d9d"; } };
+
+  if (!studentId || !teacherId) { setMsg("Выберите ученицу и учителя.", false); return; }
+  setMsg("Прикрепляю...", true);
+
+  const { error } = await supabaseClient.from("profiles").update({ teacher_id: teacherId }).eq("id", studentId);
+  if (error) {
+    console.error("Ошибка прикрепления:", error);
+    setMsg("Не удалось прикрепить: " + (error.message || "ошибка Supabase"), false);
+    return;
+  }
+  setMsg("Ученица прикреплена к учителю.", true);
+  await loadAdminUsers();
+}
+
+const TERM_OPTIONS = [
+  { value: "unlimited", label: "Бессрочно" },
+  { value: "30", label: "1 месяц" },
+  { value: "90", label: "3 месяца" },
+  { value: "180", label: "6 месяцев" },
+  { value: "365", label: "12 месяцев" }
+];
+
+function termSelectHtml(extraClass, attrs) {
+  return `<select class="material-manager-input ${extraClass || ""}" ${attrs || ""} style="margin-bottom:0;padding:8px 10px;width:auto;">
+    ${TERM_OPTIONS.map(t => `<option value="${t.value}">${t.label}</option>`).join("")}
+  </select>`;
+}
+
+function computeEndsAt(termValue) {
+  if (termValue === "unlimited") return { unlimited: true, ends_at: null };
+  const days = Number(termValue);
+  const d = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+  return { unlimited: false, ends_at: d.toISOString() };
+}
+
+function toggleScopeAll(checked) {
+  document.querySelectorAll(".scope-cell, .scope-flag").forEach(function (el) { el.checked = checked; });
+}
+
+function collectScope() {
+  const scope = {};
+  DIRECTIONS.forEach(function (d) { scope[d.key] = {}; });
+
+  document.querySelectorAll(".scope-cell").forEach(function (el) {
+    const dir = el.dataset.direction, type = el.dataset.type;
+    if (!el.checked) { scope[dir][type] = { granted: false }; return; }
+    const termSelect = document.querySelector(`.scope-term-row[data-direction="${dir}"]`);
+    const term = termSelect ? termSelect.value : "unlimited";
+    scope[dir][type] = Object.assign({ granted: true }, computeEndsAt(term));
+  });
+
+  const libChecked = document.getElementById("scopeLibrary")?.checked;
+  const libTerm = document.getElementById("scopeLibraryTerm")?.value || "unlimited";
+  scope.library = libChecked ? Object.assign({ granted: true }, computeEndsAt(libTerm)) : { granted: false };
+
+  const calcChecked = document.getElementById("scopeMyCalc")?.checked;
+  const calcTerm = document.getElementById("scopeMyCalcTerm")?.value || "unlimited";
+  scope.my_calculations = calcChecked ? Object.assign({ granted: true }, computeEndsAt(calcTerm)) : { granted: false };
+
+  return scope;
+}
+
+function scopeHasAnything(scope) {
+  return Object.keys(scope).some(function (key) {
+    if (key === "library" || key === "my_calculations") return !!scope[key]?.granted;
+    return Object.values(scope[key] || {}).some(function (item) { return item && item.granted; });
+  });
+}
+
+async function grantPlatformAccess() {
+  const userId = document.getElementById("accessUserSelect")?.value || "";
+  const message = document.getElementById("accessAdminMessage");
+
+  const setMsg = function (text, ok) {
+    if (!message) return;
+    message.textContent = text;
+    message.style.color = ok ? "#8fe3a1" : "#ff9d9d";
+  };
+
+  if (!userId) { setMsg("Сначала выберите пользователя.", false); return; }
+
+  const scope = collectScope();
+  if (!scopeHasAnything(scope)) { setMsg("Отметьте хотя бы один пункт доступа.", false); return; }
+
+  setMsg("Выдаю доступ...", true);
+
+  const startsAt = new Date();
+
+  const { error: closeError } = await supabaseClient
+    .from("access_periods")
+    .update({ status: "expired" })
+    .eq("profile_id", userId)
+    .eq("status", "active");
+  if (closeError) console.warn("Не удалось закрыть старый доступ:", closeError);
+
+  // Срок хранится по каждому пункту внутри granted_scope,
+  // поэтому сама запись access_periods — просто контейнер без общего срока.
+  const { error } = await supabaseClient.from("access_periods").insert({
+    profile_id: userId,
+    status: "active",
+    payment_status: "paid",
+    starts_at: startsAt.toISOString(),
+    ends_at: null,
+    is_unlimited: true,
+    granted_scope: scope
+  });
+
+  if (error) {
+    console.error("Ошибка выдачи доступа:", error);
+    setMsg("Не удалось выдать доступ: " + (error.message || "ошибка Supabase"), false);
+    return;
+  }
+
+  setMsg("Доступ успешно выдан.", true);
+  await loadAdminUsers();
+}
+
+
+/* ============================================================
+   ОТЧЁТЫ И СТАТИСТИКА
+   ============================================================ */
+
+async function renderStatistics() {
+  const contentCards = document.getElementById("contentCards");
+  if (!contentCards) return;
+  contentCards.className = "";
+  contentCards.innerHTML = `
+    <div class="dashboard-wrap">
+      <div class="dashboard-head">
+        <div><h2>Отчёты и статистика</h2><p>Основные показатели платформы.</p></div>
+      </div>
+      <div class="stats-grid" id="platformStats">
+        <div class="stat-card"><span>Материалы</span><strong>…</strong></div>
+        <div class="stat-card"><span>Пособия</span><strong>…</strong></div>
+        <div class="stat-card"><span>Видео</span><strong>…</strong></div>
+        <div class="stat-card"><span>Тесты</span><strong>…</strong></div>
+      </div>
+      <div class="table-card">
+        <div class="table-title">Разделы платформы</div>
+        <table class="data-table">
+          <thead><tr><th>Раздел</th><th>Количество материалов</th><th>Состояние</th></tr></thead>
+          <tbody id="sectionStats"><tr><td colspan="3">Загрузка...</td></tr></tbody>
+        </table>
+      </div>
+    </div>`;
+
+  try {
+    const { data, error } = await supabaseClient.from(PLATFORM_MATERIALS_TABLE).select("section");
+    if (error) throw error;
+
+    const counts = { manuals: 0, videos: 0, tests: 0 };
+    (data || []).forEach(function (item) {
+      if (Object.prototype.hasOwnProperty.call(counts, item.section)) counts[item.section]++;
+    });
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+
+    document.getElementById("platformStats").innerHTML = `
+      <div class="stat-card"><span>Материалы</span><strong>${total}</strong></div>
+      <div class="stat-card"><span>Пособия</span><strong>${counts.manuals}</strong></div>
+      <div class="stat-card"><span>Видео</span><strong>${counts.videos}</strong></div>
+      <div class="stat-card"><span>Тесты</span><strong>${counts.tests}</strong></div>`;
+
+    document.getElementById("sectionStats").innerHTML = `
+      <tr><td>Методические пособия</td><td>${counts.manuals}</td><td>${counts.manuals ? "Есть материалы" : "Пока пусто"}</td></tr>
+      <tr><td>Видео</td><td>${counts.videos}</td><td>${counts.videos ? "Есть материалы" : "Пока пусто"}</td></tr>
+      <tr><td>Тесты</td><td>${counts.tests}</td><td>${counts.tests ? "Есть материалы" : "Пока пусто"}</td></tr>`;
+  } catch (error) {
+    console.error("Ошибка статистики:", error);
+    document.getElementById("sectionStats").innerHTML = `<tr><td colspan="3">Статистика недоступна.</td></tr>`;
+  }
+}
+
+/* ============================================================
+   АВТОРИЗАЦИЯ
+   ============================================================ */
+
+function showLogin(message = "") {
+  document.body.style.visibility = "visible";
+  document.body.innerHTML = `
+    <div class="auth-shell">
+      <div class="auth-card">
+        <div class="auth-symbol">✧</div>
+        <div class="auth-title">NUMEROLOGY</div>
+        <div class="auth-subtitle">Platform</div>
+        <h2>Вход в платформу</h2>
+        <input id="loginEmail" type="email" placeholder="Email">
+        <input id="loginPassword" type="password" placeholder="Пароль">
+        <button type="button" onclick="loginUser()">Войти</button>
+        <button class="auth-link" type="button" onclick="showForgotPassword()">Забыли пароль?</button>
+        <div class="auth-divider">или</div>
+        <button class="auth-register" type="button" onclick="showRegister()">Зарегистрироваться</button>
+        <div id="loginError" class="auth-message error">${escapeHtml(message)}</div>
+      </div>
+    </div>`;
+}
+
+function showRegister(message = "") {
+  document.body.style.visibility = "visible";
+  document.body.innerHTML = `
+    <div class="auth-shell">
+      <div class="auth-card auth-card-register">
+        <div class="auth-symbol">✧</div>
+        <div class="auth-title">NUMEROLOGY</div>
+        <div class="auth-subtitle">Platform</div>
+        <h2>Регистрация</h2>
+        <p class="auth-description">Создайте аккаунт. После регистрации доступ к разделам открывает администратор или учитель.</p>
+        <p class="auth-description" style="color:#f6d66c;font-size:14px;">
+          ⚠️ Указывайте email, которым вы пользуетесь регулярно — именно на него вам откроют доступ, запомните его.
+        </p>
+        <div class="auth-grid">
+          <input id="registerLastName" type="text" placeholder="Фамилия *">
+          <input id="registerFirstName" type="text" placeholder="Имя *">
+          <input id="registerMiddleName" type="text" placeholder="Отчество">
+          <input id="registerPhone" type="tel" placeholder="Телефон">
+          <input id="registerEmail" type="email" placeholder="Email *">
+          <input id="registerPassword" type="password" placeholder="Пароль *">
+          <input id="registerPassword2" type="password" placeholder="Повторите пароль *">
+        </div>
+        <button type="button" onclick="registerUser()">Создать аккаунт</button>
+        <div id="registerMessage" class="auth-message ${message ? "error" : ""}">${escapeHtml(message)}</div>
+        <button class="auth-link" type="button" onclick="showLogin()">← Вернуться ко входу</button>
+      </div>
+    </div>`;
+}
+
+async function loginUser() {
+  const email = document.getElementById("loginEmail")?.value.trim().toLowerCase();
+  const password = document.getElementById("loginPassword")?.value || "";
+  const errorBox = document.getElementById("loginError");
+  if (errorBox) errorBox.textContent = "";
+
+  if (!email || !password) { if (errorBox) errorBox.textContent = "Введите email и пароль."; return; }
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error || !data?.user) {
+    if (errorBox) errorBox.textContent = "Неверный email или пароль.";
+    return;
+  }
+  updateLastActivity();
+  location.reload();
+}
+
+async function registerUser() {
+  const lastName = document.getElementById("registerLastName")?.value.trim() || "";
+  const firstName = document.getElementById("registerFirstName")?.value.trim() || "";
+  const middleName = document.getElementById("registerMiddleName")?.value.trim() || "";
+  const phone = document.getElementById("registerPhone")?.value.trim() || "";
+  const email = document.getElementById("registerEmail")?.value.trim().toLowerCase() || "";
+  const password = document.getElementById("registerPassword")?.value || "";
+  const password2 = document.getElementById("registerPassword2")?.value || "";
+  const message = document.getElementById("registerMessage");
+
+  const setMessage = (text, ok = false) => {
+    if (!message) return;
+    message.textContent = text;
+    message.className = "auth-message " + (ok ? "success" : "error");
+  };
+
+  if (!lastName || !firstName || !email || !password || !password2) {
+    setMessage("Заполните обязательные поля: фамилия, имя, email и пароль.");
+    return;
+  }
+  if (password.length < 6) { setMessage("Пароль должен содержать минимум 6 символов."); return; }
+  if (password !== password2) { setMessage("Пароли не совпадают."); return; }
+
+  setMessage("Создаю аккаунт...", true);
+
+  const { data, error } = await supabaseClient.auth.signUp({
+    email, password,
+    options: {
+      data: { first_name: firstName, last_name: lastName, middle_name: middleName, phone, role: "student", status: "pending" },
+      emailRedirectTo: window.location.origin + window.location.pathname
+    }
+  });
+
+  if (error) { setMessage(error.message || "Не удалось зарегистрировать пользователя."); return; }
+
+  if (data?.user) {
+    const { error: profileError } = await supabaseClient.from("profiles").upsert({
+      id: data.user.id, first_name: firstName, last_name: lastName, middle_name: middleName,
+      email, phone, role: "student", status: "pending"
+    }, { onConflict: "id" });
+    if (profileError) console.warn("Профиль не обновлён из браузера:", profileError);
+  }
+
+  if (data?.session) {
+    setMessage("Регистрация завершена. Сейчас откроется платформа.", true);
+    setTimeout(() => location.reload(), 900);
+  } else {
+    setMessage("Регистрация создана. Подтвердите email и войдите. Доступ к разделам откроет администратор или учитель.", true);
+  }
+}
+
+let resetSent = false;
+
+function showForgotPassword() {
+  document.body.style.visibility = "visible";
+  document.body.innerHTML = `
+    <div class="auth-shell">
+      <div class="auth-card">
+        <div class="auth-symbol">✧</div>
+        <div class="auth-title">NUMEROLOGY</div>
+        <div class="auth-subtitle">Platform</div>
+        <h2>Восстановление пароля</h2>
+        <input id="resetEmail" type="email" placeholder="Введите ваш Email">
+        <button type="button" onclick="sendPasswordReset()">Отправить ссылку</button>
+        <div id="resetMessage" class="auth-message"></div>
+        <button class="auth-link" type="button" onclick="showLogin()">← Вернуться ко входу</button>
+      </div>
+    </div>`;
+  resetSent = false;
+}
+
+async function sendPasswordReset() {
+  const email = document.getElementById("resetEmail")?.value.trim().toLowerCase();
+  const message = document.getElementById("resetMessage");
+
+  if (!email) {
+    if (message) { message.textContent = "Введите ваш Email."; message.className = "auth-message error"; }
+    return;
+  }
+  if (resetSent) {
+    if (message) { message.textContent = "Ссылка уже была отправлена. Проверьте почту."; message.className = "auth-message success"; }
+    return;
+  }
+
+  try {
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + window.location.pathname
+    });
+    if (error) throw error;
+    resetSent = true;
+    if (message) { message.textContent = "Ссылка для восстановления пароля отправлена на вашу почту."; message.className = "auth-message success"; }
+  } catch (error) {
+    console.error("Ошибка восстановления:", error);
+    if (message) { message.textContent = error.message || "Не удалось отправить письмо."; message.className = "auth-message error"; }
+  }
+}
+
+/* ============================================================
+   АВТОМАТИЧЕСКИЙ ВЫХОД ПОСЛЕ 1 ЧАСА БЕЗДЕЙСТВИЯ
+   ============================================================ */
+
+const INACTIVITY_LIMIT = 60 * 60 * 1000;
+const LAST_ACTIVITY_KEY = "numerology_last_activity";
+let inactivityTimer = null;
+
+function updateLastActivity() {
+  localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+  clearTimeout(inactivityTimer);
+  inactivityTimer = setTimeout(autoLogoutAfterInactivity, INACTIVITY_LIMIT);
+}
+
+async function autoLogoutAfterInactivity() {
+  const lastActivity = Number(localStorage.getItem(LAST_ACTIVITY_KEY) || 0);
+  if (!lastActivity) { updateLastActivity(); return; }
+  const inactiveTime = Date.now() - lastActivity;
+
+  if (inactiveTime >= INACTIVITY_LIMIT) {
+    localStorage.removeItem(LAST_ACTIVITY_KEY);
+    try { await supabaseClient.auth.signOut(); } catch (error) { console.error("Ошибка автоматического выхода:", error); }
+    showLogin();
+    return;
+  }
+  clearTimeout(inactivityTimer);
+  inactivityTimer = setTimeout(autoLogoutAfterInactivity, INACTIVITY_LIMIT - inactiveTime);
+}
+
+function startInactivityTimer() {
+  const lastActivity = Number(localStorage.getItem(LAST_ACTIVITY_KEY) || 0);
+  if (lastActivity && Date.now() - lastActivity >= INACTIVITY_LIMIT) { autoLogoutAfterInactivity(); return; }
+  updateLastActivity();
+}
+
+["click", "keydown", "mousemove", "scroll", "touchstart"].forEach(function (eventName) {
+  document.addEventListener(eventName, updateLastActivity, { passive: true });
+});
+document.addEventListener("visibilitychange", function () {
+  if (!document.hidden) autoLogoutAfterInactivity();
+});
+
+async function logoutUser() {
+  try { await supabaseClient.auth.signOut(); } catch (error) { console.error("Ошибка выхода:", error); }
+  localStorage.removeItem(LAST_ACTIVITY_KEY);
+  clearTimeout(inactivityTimer);
+  window.currentUser = null;
+  window.currentUserRole = "";
+  window.currentUserIsManager = false;
+  window.currentUserHasAccess = false;
+  showLogin();
+}
+
+/* ============================================================
+   ПРОВЕРКА АВТОРИЗАЦИИ ПРИ ЗАГРУЗКЕ
+   ============================================================ */
+
+async function checkAuth() {
+  try {
+    const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+    if (sessionError) { console.error("Ошибка получения сессии:", sessionError); showLogin("Не удалось проверить авторизацию."); return; }
+    if (!session) { showLogin(); return; }
+
+    const user = session.user;
+    window.currentUser = user;
+    const userEmail = String(user.email || "").trim().toLowerCase();
+
+    let profile = null;
+    const { data: profileData, error: profileError } = await supabaseClient
+      .from("profiles")
+      .select("role, first_name, last_name, middle_name, email, phone, status")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profileError) console.error("Ошибка загрузки профиля:", profileError);
+    else profile = profileData;
+
+    const role = String(profile?.role || user.user_metadata?.role || "student").trim().toLowerCase();
+    const isManager = isManagerRole(role) || isAdminEmail(userEmail);
+
+    let hasAccess = false;
+    let currentGrant = {};
+    if (isManager) {
+      hasAccess = true;
+    } else {
+      const { data: access, error: accessError } = await supabaseClient
+        .from("access_periods")
+        .select("id, status, starts_at, ends_at, is_unlimited, payment_status, granted_scope")
+        .eq("profile_id", user.id)
+        .order("starts_at", { ascending: false });
+      if (accessError) {
+        console.error("Ошибка проверки доступа:", accessError);
+      } else {
+        const activePeriods = (access || []).filter(hasActivePlatformAccess);
+        hasAccess = activePeriods.length > 0;
+        currentGrant = activePeriods[0]?.granted_scope || {};
+      }
+    }
+
+    window.currentUserRole = isAdminEmail(userEmail) ? "admin" : role;
+    window.currentUserIsManager = isManager;
+    window.currentUserHasAccess = hasAccess;
+    window.currentUserGrant = currentGrant;
+
+    const displayName = isManager
+      ? "Центр Нумера"
+      : (profile?.first_name || profile?.last_name || user.user_metadata?.first_name || userEmail.split("@")[0] || "Пользователь");
+
+    const nameNode = document.getElementById("clientName");
+    const emailNode = document.getElementById("clientEmail");
+    if (nameNode) nameNode.textContent = displayName;
+    if (emailNode) emailNode.textContent = profile?.email || user.email || "";
+
+    const navStats = document.getElementById("navStatistics");
+    if (navStats) navStats.style.display = window.currentUserIsManager ? "" : "none";
+
+    document.body.style.visibility = "visible";
+    startInactivityTimer();
+    setActiveSection("calculators");
+    renderCalculators();
+
+  } catch (error) {
+    console.error("Ошибка checkAuth:", error);
+    showLogin("Не удалось подключиться к платформе. Проверьте соединение и попробуйте ещё раз.");
+  }
+}
+
+document.addEventListener("DOMContentLoaded", checkAuth);
+</script>
+</body>
+</html>
