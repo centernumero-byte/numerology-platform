@@ -771,8 +771,10 @@ function renderAdultMatrixResult(name, birthDate, container) {
   // Взрослая расшифровка: заголовок -> (число, текст) один или несколько раз подряд.
   const rasshifrovkaHtml = res.rasshifrovka.map(function (block) {
     const body = block.entries.map(function (e) {
-      return `<p style="color:#f6d66c;font-family:Georgia,serif;font-size:20px;margin:0 0 6px;">${escapeHtml(String(e.number))}</p>
-              <p style="margin:0 0 18px;">${escapeHtml(e.text)}</p>`;
+      const numberLine = (typeof e.number === "number")
+        ? `<p style="color:#f6d66c;font-family:Georgia,serif;font-size:20px;margin:0 0 6px;">${escapeHtml(String(e.number))}</p>`
+        : "";
+      return `${numberLine}<p style="margin:0 0 18px;">${escapeHtml(e.text)}</p>`;
     }).join("");
     return accordionItem(block.title, body);
   }).join("");
@@ -798,45 +800,6 @@ function renderAdultMatrixResult(name, birthDate, container) {
       </div>`;
   }).join("");
 
-  // Предназначения: только цифры в кружках, без текста.
-  const p = res.purpose;
-  const circle = (num, label) => `
-    <div style="text-align:center;">
-      <div style="width:56px;height:56px;border-radius:50%;border:2px solid #d7aa31;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-size:22px;color:#f6d66c;margin:0 auto 6px;">${escapeHtml(String(num))}</div>
-      <div style="font-size:12px;color:#b8ad98;">${escapeHtml(label)}</div>
-    </div>`;
-  const purposeHtml = `
-    <div class="accordion-item">
-      <button type="button" class="accordion-header" onclick="toggleAccordionBody('acc-purpose')">
-        <span>Предназначения</span><span>▾</span>
-      </button>
-      <div class="accordion-body hidden" id="acc-purpose">
-        <div style="margin-bottom:22px;">
-          <div style="color:#f6d66c;font-family:Georgia,serif;font-size:17px;margin-bottom:10px;">Личное предназначение</div>
-          <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;">
-            ${circle(p.heaven, "Небо")}
-            <span style="color:#d7aa31;font-size:20px;">+</span>
-            ${circle(p.earth, "Земля")}
-            <span style="color:#d7aa31;font-size:20px;">→</span>
-            ${circle(p.personal, "Результат")}
-          </div>
-        </div>
-        <div style="margin-bottom:22px;">
-          <div style="color:#f6d66c;font-family:Georgia,serif;font-size:17px;margin-bottom:10px;">Социальное предназначение</div>
-          ${circle(p.social, "")}
-        </div>
-        <div style="margin-bottom:22px;">
-          <div style="color:#f6d66c;font-family:Georgia,serif;font-size:17px;margin-bottom:10px;">Духовное предназначение</div>
-          ${circle(p.spiritual, "")}
-        </div>
-        <div>
-          <div style="color:#f6d66c;font-family:Georgia,serif;font-size:17px;margin-bottom:10px;">Планетарное предназначение</div>
-          ${circle(p.planetary, "")}
-        </div>
-      </div>
-    </div>`;
-
-
   const programsHtml = res.programs.length
     ? res.programs.map(function (p) {
         return accordionItem(p.title, `<p style="margin:0;">${escapeHtml(p.fullText)}</p>`);
@@ -849,7 +812,6 @@ function renderAdultMatrixResult(name, birthDate, container) {
         Пробная версия расчёта — тексты будут доработаны позже. Проверяем правильность чисел.
       </p>
       ${rasshifrovkaHtml}
-      ${purposeHtml}
       ${healthHtml}
       ${programsHtml}
       <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;">
@@ -873,13 +835,6 @@ function downloadAdultMatrixText(name, birthDate) {
       text += e.number + "\n" + e.text + "\n\n";
     });
   });
-
-  const p = res.purpose;
-  text += "== Предназначения ==\n";
-  text += "Личное предназначение: Небо " + p.heaven + " + Земля " + p.earth + " -> " + p.personal + "\n";
-  text += "Социальное предназначение: " + p.social + "\n";
-  text += "Духовное предназначение: " + p.spiritual + "\n";
-  text += "Планетарное предназначение: " + p.planetary + "\n\n";
 
   res.health.forEach(function (block) {
     text += "== " + block.title + " ==\n";
@@ -1175,26 +1130,122 @@ async function uploadPlatformMaterialFile() {
    БИБЛИОТЕКА НУМЕРОЛОГА
    ============================================================ */
 
-const NUMEROLOGY_LIBRARY_URL = "https://drive.google.com/drive/folders/1pGjVPKtGeHm5NKrcg0JLvy5M_XDTAaOv?usp=sharing";
+const LIBRARY_LINKS_TABLE = "library_links";
+let currentLibraryLinks = [];
 
-function loadLibrary() {
+function isRealAdminUser() {
+  return window.currentUserRole === "admin";
+}
+
+async function loadLibrary() {
   const contentCards = document.getElementById("contentCards");
   if (!contentCards) return;
   contentCards.className = "";
   contentCards.innerHTML = `
-    <div class="section-title"><h2>Библиотека учителя</h2></div>
-    <div class="cards">
-      <div class="card library-main-card" onclick="openLibraryHome()" role="button" tabindex="0">
-        <div class="card-icon library-icon">📚</div>
-        <div class="card-content">
-          <h3>Библиотека<br>учителя</h3>
-          <p>Все книги по нумерологии<br>и эзотерике</p>
-        </div>
+    <div class="materials-page">
+      <div class="materials-head"><h2>Библиотека учителя</h2></div>
+      <div id="libraryListBox">Загрузка...</div>
+    </div>`;
+  await loadLibraryLinksList();
+}
+
+async function loadLibraryLinksList() {
+  const box = document.getElementById("libraryListBox");
+  if (!box) return;
+  try {
+    const { data, error } = await supabaseClient
+      .from(LIBRARY_LINKS_TABLE)
+      .select("id, title, url, created_at")
+      .order("created_at", { ascending: true });
+    if (error) throw error;
+
+    currentLibraryLinks = data || [];
+    const isAdmin = isRealAdminUser();
+
+    box.innerHTML = currentLibraryLinks.map(function (item) {
+      const hasUrl = !!item.url;
+      return `
+        <div class="material-row">
+          <div class="material-row-icon">📚</div>
+          <div class="material-row-body">
+            <div class="material-row-title">${escapeHtml(item.title || "Библиотека")}</div>
+            <div class="material-row-meta">${hasUrl ? escapeHtml(item.url) : "Ссылка пока не добавлена"}</div>
+          </div>
+          ${hasUrl ? `<button class="material-row-open" onclick='openLibraryLink(${JSON.stringify(item.id)})'>Открыть</button>` : ""}
+          ${isAdmin ? `<button class="material-row-open" style="margin-left:8px;" onclick='showLibraryLinkManager(${JSON.stringify(item.id)},${JSON.stringify(item.title)},${JSON.stringify(item.url || "")})'>${hasUrl ? "Изменить ссылку" : "Вставить ссылку"}</button>` : ""}
+        </div>`;
+    }).join("");
+  } catch (error) {
+    console.error("Ошибка загрузки библиотеки:", error);
+    box.innerHTML = `<div class="table-card"><div class="empty-table">Не удалось загрузить библиотеку.</div></div>`;
+  }
+}
+
+function openLibraryLink(id) {
+  const item = currentLibraryLinks.find(m => String(m.id) === String(id));
+  if (!item || !item.url) return;
+  window.open(item.url, "_blank", "noopener,noreferrer");
+}
+
+function showLibraryLinkManager(id, title, existingUrl) {
+  if (!isRealAdminUser()) return;
+  const old = document.getElementById("libraryLinkManager");
+  if (old) old.remove();
+
+  const box = document.createElement("div");
+  box.id = "libraryLinkManager";
+  box.innerHTML = `
+    <div class="material-manager-overlay">
+      <div class="material-manager">
+        <button class="material-manager-close" onclick="document.getElementById('libraryLinkManager').remove()">×</button>
+        <h2>${escapeHtml(title)}</h2>
+
+        <label class="material-manager-label">Ссылка</label>
+        <input id="libraryLinkUrlInput" class="material-manager-input" type="url" placeholder="https://..." value="${escapeHtml(existingUrl || "")}">
+
+        <button id="saveLibraryLinkButton" class="material-manager-button" onclick="saveLibraryLink(${JSON.stringify(id)})">🔗 Сохранить ссылку</button>
+
+        <div id="libraryLinkManagerStatus" class="material-manager-status"></div>
       </div>
     </div>`;
+  document.body.appendChild(box);
 }
-function openLibraryHome() {
-  window.open(NUMEROLOGY_LIBRARY_URL, "_blank", "noopener,noreferrer");
+
+function setLibraryLinkManagerStatus(text, type) {
+  const box = document.getElementById("libraryLinkManagerStatus");
+  if (!box) return;
+  box.className = "material-manager-status " + (type || "");
+  box.textContent = text || "";
+}
+
+async function saveLibraryLink(id) {
+  if (!isRealAdminUser()) return;
+  const urlInput = document.getElementById("libraryLinkUrlInput");
+  const url = urlInput?.value.trim() || "";
+
+  if (!url) { setLibraryLinkManagerStatus("Вставьте ссылку.", "error"); return; }
+  try { new URL(url); } catch (_) {
+    setLibraryLinkManagerStatus("Введите корректную ссылку, начинающуюся с https:// или http://", "error");
+    return;
+  }
+
+  const saveButton = document.getElementById("saveLibraryLinkButton");
+  if (saveButton) saveButton.disabled = true;
+  setLibraryLinkManagerStatus("Сохраняю ссылку...", "");
+
+  try {
+    const { error } = await supabaseClient.from(LIBRARY_LINKS_TABLE).update({ url }).eq("id", id);
+    if (error) throw error;
+
+    setLibraryLinkManagerStatus("Ссылка сохранена.", "ok");
+    await loadLibraryLinksList();
+    setTimeout(() => document.getElementById("libraryLinkManager")?.remove(), 700);
+  } catch (error) {
+    console.error("Ошибка сохранения ссылки:", error);
+    setLibraryLinkManagerStatus("Не удалось сохранить ссылку: " + (error.message || error), "error");
+  } finally {
+    if (saveButton) saveButton.disabled = false;
+  }
 }
 
 /* ============================================================
