@@ -1137,12 +1137,30 @@ function isRealAdminUser() {
   return window.currentUserRole === "admin";
 }
 
-async function loadLibrary() {
+function loadLibrary() {
+  const contentCards = document.getElementById("contentCards");
+  if (!contentCards) return;
+  contentCards.className = "";
+  contentCards.innerHTML = `
+    <div class="section-title"><h2>Библиотека нумеролога</h2></div>
+    <div class="cards">
+      <div class="card library-main-card" onclick="openLibraryLinksView()" role="button" tabindex="0">
+        <div class="card-icon library-icon">📚</div>
+        <div class="card-content">
+          <h3>Библиотека<br>нумеролога</h3>
+          <p>Книги по нумерологии<br>и эзотерике</p>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function openLibraryLinksView() {
   const contentCards = document.getElementById("contentCards");
   if (!contentCards) return;
   contentCards.className = "";
   contentCards.innerHTML = `
     <div class="materials-page">
+      <button class="back-link" onclick="loadLibrary()">← Назад</button>
       <div class="materials-head"><h2>Библиотека нумеролога</h2></div>
       <div id="libraryListBox">Загрузка...</div>
     </div>`;
@@ -1219,7 +1237,11 @@ function setLibraryLinkManagerStatus(text, type) {
 }
 
 async function saveLibraryLink(id) {
-  if (!isRealAdminUser()) return;
+  console.log("saveLibraryLink called", id, "isAdmin:", isRealAdminUser(), "role:", window.currentUserRole);
+  if (!isRealAdminUser()) {
+    setLibraryLinkManagerStatus("Только администратор может редактировать библиотеку.", "error");
+    return;
+  }
   const urlInput = document.getElementById("libraryLinkUrlInput");
   const url = urlInput?.value.trim() || "";
 
@@ -1234,8 +1256,9 @@ async function saveLibraryLink(id) {
   setLibraryLinkManagerStatus("Сохраняю ссылку...", "");
 
   try {
-    const { error } = await supabaseClient.from(LIBRARY_LINKS_TABLE).update({ url }).eq("id", id);
+    const { data, error } = await supabaseClient.from(LIBRARY_LINKS_TABLE).update({ url }).eq("id", id).select();
     if (error) throw error;
+    if (!data || !data.length) throw new Error("Запись не найдена или нет прав на изменение.");
 
     setLibraryLinkManagerStatus("Ссылка сохранена.", "ok");
     await loadLibraryLinksList();
