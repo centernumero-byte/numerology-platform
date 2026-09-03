@@ -1220,7 +1220,7 @@ function showLibraryLinkManager(id, title, existingUrl) {
         <label class="material-manager-label">Ссылка</label>
         <input id="libraryLinkUrlInput" class="material-manager-input" type="url" placeholder="https://..." value="${escapeHtml(existingUrl || "")}">
 
-        <button id="saveLibraryLinkButton" class="material-manager-button" onclick="saveLibraryLink(${JSON.stringify(id)})">🔗 Сохранить ссылку</button>
+        <button id="saveLibraryLinkButton" class="material-manager-button" onclick='saveLibraryLink(${JSON.stringify(id)})'>🔗 Сохранить ссылку</button>
 
         <div id="libraryLinkManagerStatus" class="material-manager-status"></div>
       </div>
