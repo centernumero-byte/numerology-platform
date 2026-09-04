@@ -440,6 +440,10 @@ body {
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="adult-matrix-engine.js"></script>
+<script src="child-matrix-engine.js"></script>
+<script src="compat-engine.js"></script>
+<script src="pyth-engine.js"></script>
+<script src="vedic-engine.js"></script>
 <script>
 
 /* ============================================================
@@ -675,6 +679,69 @@ async function openCalculator(type) {
 
   const title = DIRECTION_NAMES[type] || "Расчёт";
 
+  if (type === "pythagoras") {
+    document.body.innerHTML = `
+      <div style="min-height:100vh;padding:40px;background:linear-gradient(135deg,#17102f,#211443,#17102f);color:#f8e7a8;font-family:Arial,sans-serif;">
+        <div style="max-width:650px;margin:0 auto;padding:35px;border:1px solid #d7aa31;border-radius:20px;background:linear-gradient(145deg,#302052,#21163d);">
+          <h1 style="margin-top:0;color:#f6d66c;font-family:Georgia,serif;font-weight:500;">${title}</h1>
+
+          <label>Фамилия</label>
+          <input id="pythLastName" type="text" style="display:block;width:100%;padding:13px;margin:8px 0 16px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
+
+          <label>Имя</label>
+          <input id="pythFirstName" type="text" style="display:block;width:100%;padding:13px;margin:8px 0 16px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
+
+          <label>Отчество</label>
+          <input id="pythPatronymic" type="text" style="display:block;width:100%;padding:13px;margin:8px 0 16px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
+
+          <label>Алфавит ФИО</label>
+          <select id="pythAlphabet" style="display:block;width:100%;padding:13px;margin:8px 0 6px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
+            <option value="russian" selected>Русский алфавит</option>
+            <option value="kazakh">Казахский алфавит</option>
+            <option value="english">Английский алфавит</option>
+          </select>
+          <div style="color:#c9bfa8;font-size:13px;margin-bottom:20px;line-height:1.4;">
+            Если в вашем ФИО есть казахские буквы (Ә, Ғ, Қ, Ң, Ө, Ұ, Ү, Һ, І) — выберите «Казахский алфавит». Если ФИО написано латиницей — выберите «Английский алфавит». Во всех остальных случаях подходит «Русский алфавит».
+          </div>
+
+          <label>Дата рождения</label>
+          <input id="birthDate" type="text" placeholder="ДД.ММ.ГГГГ" maxlength="10" inputmode="numeric" oninput="formatBirthDate(this)"
+            style="display:block;width:100%;padding:13px;margin:8px 0 5px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
+          <div id="dateError" style="color:#ff9b9b;min-height:22px;margin-bottom:15px;"></div>
+
+          <button onclick="calculatePythagoras()" style="width:100%;padding:14px;border:1px solid #d7aa31;border-radius:10px;background:linear-gradient(90deg,#713199,#5d2789);color:#f8d96d;font-size:16px;cursor:pointer;">Рассчитать</button>
+          <button onclick="location.reload()" style="width:100%;padding:14px;margin-top:10px;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.15);color:#f5d46b;font-size:16px;cursor:pointer;">Назад</button>
+
+          <div id="result" style="margin-top:30px"></div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  if (type === "compatibility") {
+    document.body.innerHTML = `
+      <div style="min-height:100vh;padding:40px;background:linear-gradient(135deg,#17102f,#211443,#17102f);color:#f8e7a8;font-family:Arial,sans-serif;">
+        <div style="max-width:650px;margin:0 auto;padding:35px;border:1px solid #d7aa31;border-radius:20px;background:linear-gradient(145deg,#302052,#21163d);">
+          <h1 style="margin-top:0;color:#f6d66c;font-family:Georgia,serif;font-weight:500;">${title}</h1>
+
+          <label>Дата рождения партнёра № 1</label>
+          <input id="birthDate1" type="text" placeholder="ДД.ММ.ГГГГ" maxlength="10" inputmode="numeric" oninput="formatBirthDate(this)"
+            style="display:block;width:100%;padding:13px;margin:8px 0 20px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
+
+          <label>Дата рождения партнёра № 2</label>
+          <input id="birthDate2" type="text" placeholder="ДД.ММ.ГГГГ" maxlength="10" inputmode="numeric" oninput="formatBirthDate(this)"
+            style="display:block;width:100%;padding:13px;margin:8px 0 5px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
+          <div id="dateError" style="color:#ff9b9b;min-height:22px;margin-bottom:15px;"></div>
+
+          <button onclick="calculateCompatibility()" style="width:100%;padding:14px;border:1px solid #d7aa31;border-radius:10px;background:linear-gradient(90deg,#713199,#5d2789);color:#f8d96d;font-size:16px;cursor:pointer;">Рассчитать</button>
+          <button onclick="location.reload()" style="width:100%;padding:14px;margin-top:10px;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.15);color:#f5d46b;font-size:16px;cursor:pointer;">Назад</button>
+
+          <div id="result" style="margin-top:30px"></div>
+        </div>
+      </div>`;
+    return;
+  }
+
   document.body.innerHTML = `
     <div style="min-height:100vh;padding:40px;background:linear-gradient(135deg,#17102f,#211443,#17102f);color:#f8e7a8;font-family:Arial,sans-serif;">
       <div style="max-width:650px;margin:0 auto;padding:35px;border:1px solid #d7aa31;border-radius:20px;background:linear-gradient(145deg,#302052,#21163d);">
@@ -732,6 +799,14 @@ function calculate(type) {
     renderAdultMatrixResult(name, birthDate, result);
     return;
   }
+  if (type === "child" && window.ChildMatrixEngine) {
+    renderChildMatrixResult(name, birthDate, result);
+    return;
+  }
+  if (type === "vedic" && window.VedicEngine) {
+    renderVedicResult(name, birthDate, result);
+    return;
+  }
 
   result.innerHTML = `
     <div style="padding:20px;border:1px solid rgba(225,180,52,.5);border-radius:14px;background:rgba(0,0,0,.12);">
@@ -772,7 +847,7 @@ function renderAdultMatrixResult(name, birthDate, container) {
   const rasshifrovkaHtml = res.rasshifrovka.map(function (block) {
     const body = block.entries.map(function (e) {
       const numberLine = (typeof e.number === "number")
-        ? `<p style="color:#f6d66c;font-family:Georgia,serif;font-size:20px;margin:0 0 6px;">${escapeHtml(String(e.number))}</p>`
+        ? `<p style="color:#f6d66c;font-family:Georgia,serif;font-size:20px;margin:0 0 4px;">${escapeHtml(String(e.number))}</p>`
         : "";
       return `${numberLine}<p style="margin:0 0 18px;">${escapeHtml(e.text)}</p>`;
     }).join("");
@@ -786,7 +861,7 @@ function renderAdultMatrixResult(name, birthDate, container) {
       return `<p style="margin:0 0 14px;">${escapeHtml(t)}</p>`;
     }).join("");
     const entriesHtml = block.entries.map(function (e) {
-      return `<p style="color:#f6d66c;font-family:Georgia,serif;font-size:18px;margin:0 0 6px;">${escapeHtml(e.axis)}: ${escapeHtml(String(e.number))}</p>
+      return `<p style="color:#f6d66c;font-family:Georgia,serif;font-size:18px;margin:0 0 4px;">${escapeHtml(e.axis)}: ${escapeHtml(String(e.number))}</p>
               <p style="margin:0 0 18px;">${escapeHtml(e.text)}</p>`;
     }).join("");
     const color = CHAKRA_COLORS[i] || "#9aa0a6";
@@ -808,9 +883,6 @@ function renderAdultMatrixResult(name, birthDate, container) {
 
   container.innerHTML = `
     <div style="max-width:760px;">
-      <p style="color:#b8ad98;font-size:13px;margin-bottom:16px;">
-        Пробная версия расчёта — тексты будут доработаны позже. Проверяем правильность чисел.
-      </p>
       ${rasshifrovkaHtml}
       ${healthHtml}
       ${programsHtml}
@@ -863,6 +935,286 @@ function downloadAdultMatrixText(name, birthDate) {
 function toggleAccordionBody(id) {
   const el = document.getElementById(id);
   if (el) el.classList.toggle("hidden");
+}
+
+function calculatePythagoras() {
+  const lastName = document.getElementById("pythLastName")?.value.trim();
+  const firstName = document.getElementById("pythFirstName")?.value.trim();
+  const patronymic = document.getElementById("pythPatronymic")?.value.trim();
+  const alphabet = document.getElementById("pythAlphabet")?.value || "russian";
+  const birthDate = document.getElementById("birthDate")?.value.trim();
+  const dateError = document.getElementById("dateError");
+  const result = document.getElementById("result");
+  if (dateError) dateError.textContent = "";
+  if (result) result.innerHTML = "";
+
+  if (!lastName || !firstName) {
+    if (dateError) dateError.textContent = "Введите фамилию и имя.";
+    return;
+  }
+  if (!isValidBirthDate(birthDate)) {
+    if (dateError) dateError.textContent = "Введите корректную дату рождения в формате ДД.ММ.ГГГГ.";
+    return;
+  }
+  if (!result || !window.PythagorasEngine) return;
+
+  const [d, m, y] = birthDate.split(".").map(Number);
+
+  let res;
+  try {
+    res = window.PythagorasEngine.getFullResult(d, m, y, lastName, firstName, patronymic, alphabet);
+  } catch (error) {
+    console.error("Ошибка расчёта по Пифагору:", error);
+    result.innerHTML = `<div style="color:#ff9d9d;padding:16px;">Не удалось выполнить расчёт: ${escapeHtml(error.message || String(error))}</div>`;
+    return;
+  }
+
+  renderEditableResult(res.blocks, result, lastName + " " + firstName, birthDate);
+  window._lastPythagorasResult = res;
+}
+
+/* Общий рендер результата с возможностью редактирования перед скачиванием.
+   Используется для калькулятора по Пифагору (и может переиспользоваться для остальных). */
+function renderEditableResult(blocks, container, personLabel, dateLabel) {
+  let idCounter = 0;
+  const nextId = () => "acc-edit-" + (idCounter++);
+
+  const bodyBlocksHtml = blocks.map(function (block, bIdx) {
+    const entriesHtml = block.entries.map(function (e, eIdx) {
+      const numberLine = (typeof e.number === "number")
+        ? `<p style="color:#f6d66c;font-family:Georgia,serif;font-size:20px;margin:0 0 4px;">${escapeHtml(String(e.number))}</p>`
+        : "";
+      return `${numberLine}<div class="editable-text" contenteditable="false" data-block="${bIdx}" data-entry="${eIdx}" style="margin:0 0 14px;padding:6px;border-radius:6px;outline:none;">${escapeHtml(e.text)}</div>`;
+    }).join("");
+    const id = nextId();
+    return `
+      <div class="accordion-item">
+        <button type="button" class="accordion-header" onclick="toggleAccordionBody('${id}')">
+          <span>${escapeHtml(block.title)}</span><span>▾</span>
+        </button>
+        <div class="accordion-body hidden" id="${id}">${entriesHtml}</div>
+      </div>`;
+  }).join("");
+
+  container.innerHTML = `
+    <div style="max-width:760px;">
+      ${bodyBlocksHtml}
+      <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;">
+        <button type="button" id="editToggleBtn" class="material-manager-button" style="width:auto;" onclick="toggleResultEditing(this)">✏️ Изменить</button>
+        <button type="button" class="material-manager-button" style="width:auto;" onclick="downloadEditableResult(${JSON.stringify(personLabel)}, ${JSON.stringify(dateLabel)})">Скачать текст</button>
+        <button type="button" class="material-manager-button" style="width:auto;background:rgba(0,0,0,.15);" onclick="location.reload()">Новый расчёт</button>
+      </div>
+    </div>`;
+
+  window._lastEditableBlocks = blocks;
+}
+
+function toggleResultEditing(btn) {
+  const editables = document.querySelectorAll(".editable-text");
+  const nowEditing = btn.dataset.editing !== "true";
+  editables.forEach(function (el) {
+    el.contentEditable = nowEditing ? "true" : "false";
+    el.style.background = nowEditing ? "rgba(255,255,255,.08)" : "transparent";
+    el.style.border = nowEditing ? "1px dashed rgba(225,180,52,.5)" : "none";
+  });
+  btn.dataset.editing = nowEditing ? "true" : "false";
+  btn.textContent = nowEditing ? "✅ Готово" : "✏️ Изменить";
+}
+
+function downloadEditableResult(personLabel, dateLabel) {
+  const blocks = window._lastEditableBlocks;
+  if (!blocks) return;
+
+  // Подтягиваем возможные правки прямо из отредактированных полей на странице.
+  document.querySelectorAll(".editable-text").forEach(function (el) {
+    const b = Number(el.dataset.block), e = Number(el.dataset.entry);
+    if (blocks[b] && blocks[b].entries[e]) {
+      blocks[b].entries[e].text = el.innerText;
+    }
+  });
+
+  let text = `${personLabel} (${dateLabel})\n\n`;
+  blocks.forEach(function (block) {
+    text += "== " + block.title + " ==\n";
+    block.entries.forEach(function (e) {
+      text += (typeof e.number === "number" ? e.number + "\n" : "") + e.text + "\n\n";
+    });
+  });
+
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = personLabel + " - " + dateLabel + ".txt";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function calculateCompatibility() {
+  const birthDate1 = document.getElementById("birthDate1")?.value.trim();
+  const birthDate2 = document.getElementById("birthDate2")?.value.trim();
+  const dateError = document.getElementById("dateError");
+  const result = document.getElementById("result");
+  if (dateError) dateError.textContent = "";
+  if (result) result.innerHTML = "";
+
+  if (!isValidBirthDate(birthDate1) || !isValidBirthDate(birthDate2)) {
+    if (dateError) dateError.textContent = "Введите обе даты рождения в формате ДД.ММ.ГГГГ.";
+    return;
+  }
+  if (!result || !window.CompatibilityEngine) return;
+
+  const [d1, m1, y1] = birthDate1.split(".").map(Number);
+  const [d2, m2, y2] = birthDate2.split(".").map(Number);
+
+  let res;
+  try {
+    res = window.CompatibilityEngine.getFullResult(d1, m1, y1, d2, m2, y2);
+  } catch (error) {
+    console.error("Ошибка расчёта совместимости:", error);
+    result.innerHTML = `<div style="color:#ff9d9d;padding:16px;">Не удалось выполнить расчёт: ${escapeHtml(error.message || String(error))}</div>`;
+    return;
+  }
+
+  let idCounter = 0;
+  const nextId = () => "acc-compat-" + (idCounter++);
+
+  function accordionItem(title, bodyHtml) {
+    const id = nextId();
+    return `
+      <div class="accordion-item">
+        <button type="button" class="accordion-header" onclick="toggleAccordionBody('${id}')">
+          <span>${escapeHtml(title)}</span><span>▾</span>
+        </button>
+        <div class="accordion-body hidden" id="${id}">${bodyHtml}</div>
+      </div>`;
+  }
+
+  const blocksHtml = res.blocks.map(function (block) {
+    const body = block.entries.map(function (e) {
+      const numberLine = (typeof e.number === "number")
+        ? `<p style="color:#f6d66c;font-family:Georgia,serif;font-size:20px;margin:0 0 4px;">${escapeHtml(String(e.number))}</p>`
+        : "";
+      return `${numberLine}<p style="margin:0 0 18px;">${escapeHtml(e.text)}</p>`;
+    }).join("");
+    return accordionItem(block.title, body);
+  }).join("");
+
+  result.innerHTML = `
+    <div style="max-width:760px;">
+      ${blocksHtml}
+      <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;">
+        <button type="button" class="material-manager-button" style="width:auto;" onclick="downloadCompatibilityText(${JSON.stringify(birthDate1)}, ${JSON.stringify(birthDate2)})">Скачать текст</button>
+        <button type="button" class="material-manager-button" style="width:auto;background:rgba(0,0,0,.15);" onclick="location.reload()">Новый расчёт</button>
+      </div>
+    </div>`;
+
+  window._lastCompatibilityResult = res;
+}
+
+function downloadCompatibilityText(birthDate1, birthDate2) {
+  const res = window._lastCompatibilityResult;
+  if (!res) return;
+
+  let text = `Совместимость — ${birthDate1} и ${birthDate2}\n\n`;
+  res.blocks.forEach(function (block) {
+    text += "== " + block.title + " ==\n";
+    block.entries.forEach(function (e) {
+      text += e.number + "\n" + e.text + "\n\n";
+    });
+  });
+
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "Совместимость - " + birthDate1 + " и " + birthDate2 + ".txt";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function renderVedicResult(name, birthDate, container) {
+  const [day, month, year] = birthDate.split(".").map(Number);
+
+  let res;
+  try {
+    res = window.VedicEngine.getFullResult(day, month, year, name);
+  } catch (error) {
+    console.error("Ошибка расчёта ведической нумерологии:", error);
+    container.innerHTML = `<div style="color:#ff9d9d;padding:16px;">Не удалось выполнить расчёт: ${escapeHtml(error.message || String(error))}</div>`;
+    return;
+  }
+
+  renderEditableResult(res.blocks, container, name, birthDate);
+}
+
+function renderChildMatrixResult(name, birthDate, container) {
+  const [day, month, year] = birthDate.split(".").map(Number);
+
+  let res;
+  try {
+    res = window.ChildMatrixEngine.getFullResult(day, month, year, name);
+  } catch (error) {
+    console.error("Ошибка расчёта детской матрицы:", error);
+    container.innerHTML = `<div style="color:#ff9d9d;padding:16px;">Не удалось выполнить расчёт: ${escapeHtml(error.message || String(error))}</div>`;
+    return;
+  }
+
+  let idCounter = 0;
+  const nextId = () => "acc-child-" + (idCounter++);
+
+  function accordionItem(title, bodyHtml) {
+    const id = nextId();
+    return `
+      <div class="accordion-item">
+        <button type="button" class="accordion-header" onclick="toggleAccordionBody('${id}')">
+          <span>${escapeHtml(title)}</span><span>▾</span>
+        </button>
+        <div class="accordion-body hidden" id="${id}">${bodyHtml}</div>
+      </div>`;
+  }
+
+  const rasshifrovkaHtml = res.rasshifrovka.map(function (block) {
+    const body = block.entries.map(function (e) {
+      const numberLine = (typeof e.number === "number")
+        ? `<p style="color:#f6d66c;font-family:Georgia,serif;font-size:20px;margin:0 0 4px;">${escapeHtml(String(e.number))}</p>`
+        : "";
+      return `${numberLine}<p style="margin:0 0 18px;">${escapeHtml(e.text)}</p>`;
+    }).join("");
+    return accordionItem(block.title, body);
+  }).join("");
+
+  container.innerHTML = `
+    <div style="max-width:760px;">
+      ${rasshifrovkaHtml}
+      <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;">
+        <button type="button" class="material-manager-button" style="width:auto;" onclick="downloadChildMatrixText(${JSON.stringify(name)}, ${JSON.stringify(birthDate)})">Скачать текст</button>
+        <button type="button" class="material-manager-button" style="width:auto;background:rgba(0,0,0,.15);" onclick="location.reload()">Новый расчёт</button>
+      </div>
+    </div>`;
+
+  window._lastChildMatrixResult = res;
+}
+
+function downloadChildMatrixText(name, birthDate) {
+  const res = window._lastChildMatrixResult;
+  if (!res) return;
+
+  let text = `Детская матрица — ${name} (${birthDate})\n\n`;
+  res.rasshifrovka.forEach(function (block) {
+    text += "== " + block.title + " ==\n";
+    block.entries.forEach(function (e) {
+      text += e.number + "\n" + e.text + "\n\n";
+    });
+  });
+
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "Детская матрица - " + name + ".txt";
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 /* ============================================================
