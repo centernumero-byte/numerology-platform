@@ -129,6 +129,16 @@ function fn_ISODD(x) {
 function fn_OR(...args) {
   return args.some(function (a) { return !!a; });
 }
+function fn_AND(...args) {
+  return args.every(function (a) { return !!a; });
+}
+function fn_ABS(x) {
+  return Math.abs(Number(x));
+}
+function fn_MOD(n, d) {
+  const r = Number(n) % Number(d);
+  return r < 0 ? r + Number(d) : r;
+}
 
 // ---- Range/lookup helpers ----
 function flattenRange(range) {
@@ -4331,7 +4341,7 @@ SHEET_DATA["Взрослая расшифровка"].formulas["C9"] = function(
 SHEET_DATA["Взрослая расшифровка"].formulas["D9"] = function(SHEET, cell, rangeVals) { return fn_VLOOKUP(cell(SHEET, "C9"), rangeVals("Данные взрослой матрицы", "D27", "E48"), 2, 0); };
 SHEET_DATA["Взрослая расшифровка"].formulas["C10"] = function(SHEET, cell, rangeVals) { return cell("Диаграмма", "O24"); };
 SHEET_DATA["Взрослая расшифровка"].formulas["D10"] = function(SHEET, cell, rangeVals) { return fn_VLOOKUP(cell(SHEET, "C10"), rangeVals("Данные взрослой матрицы", "D27", "E48"), 2, 0); };
-SHEET_DATA["Взрослая расшифровка"].literals["B11"] = "Зона комфорта. Точка личной силы (Зона комфорта)-центральная точка в матрице\nЭнергия, способная гармонизировать все 8 сфер жизни человека: личность, семейные отношения, таланты, духовное развитие, финансы, здоровье, отношения, достижения. Точка личной силы - это то, что дает вам силу и энергию для всех жизненных сфер: работа, семья, здоровье и т. д. Она начинает активно действовать после того, как Вы проходите точку входа. Тогда Вы получаете много энергии на осуществление всех ваших планов. Войти в точку личной силы нужно до возраста зрелости (40 лет). Жизненные события будут создавать необходимые ситуации, главное - принимать их правильно. В этой точке встречаются не все Арканы. Эта энергия находится в зоне Манипуры, а эта чакра - центральная, от ее наполненности зависит все сферы жизни человека, она питает их энергией. Также нужно отметить, что точка сила не может быть обретена, пока не гармонизирована энергия дня рождения, не пройдены ее уроки. На рисунке эти энергии идут в последовательности, поэтому точка силы зависит от точки рождения.";
+SHEET_DATA["Взрослая расшифровка"].literals["B11"] = "Зона комфорта — центральная точка силы в матрице, дающая энергию для всех сфер жизни";
 SHEET_DATA["Взрослая расшифровка"].formulas["C11"] = function(SHEET, cell, rangeVals) { return cell("Диаграмма", "AA23"); };
 SHEET_DATA["Взрослая расшифровка"].formulas["D11"] = function(SHEET, cell, rangeVals) { return fn_VLOOKUP(cell(SHEET, "C11"), rangeVals("Данные взрослой матрицы", "A53", "B72"), 2, 0); };
 SHEET_DATA["Взрослая расшифровка"].literals["B12"] = "Личные таланты";
@@ -4614,7 +4624,7 @@ const CHAKRA_TITLES = [
   { numRow: 17, textRow: 18, titleRow: 16 },
   { numRow: 20, textRow: 21, titleRow: 19 },
   { numRow: 23, textRow: 24, titleRow: 22 },
-  { numRow: 26, textRow: 25, titleRow: 25 }
+  { numRow: 25, textRow: 26, titleRow: 25 }
 ];
 const AXIS_LABELS = { C: "Физика", D: "Энергия", E: "Эмоции" };
 

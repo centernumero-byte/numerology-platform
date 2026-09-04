@@ -843,13 +843,19 @@ function renderAdultMatrixResult(name, birthDate, container) {
       </div>`;
   }
 
+  let editKeyCounter = 0;
+  function editableDiv(text) {
+    const key = "adult-" + (editKeyCounter++);
+    return `<div class="editable-text" contenteditable="false" data-key="${key}" style="margin:0 0 18px;padding:6px;border-radius:6px;outline:none;">${escapeHtml(text)}</div>`;
+  }
+
   // Взрослая расшифровка: заголовок -> (число, текст) один или несколько раз подряд.
   const rasshifrovkaHtml = res.rasshifrovka.map(function (block) {
     const body = block.entries.map(function (e) {
       const numberLine = (typeof e.number === "number")
         ? `<p style="color:#f6d66c;font-family:Georgia,serif;font-size:20px;margin:0 0 4px;">${escapeHtml(String(e.number))}</p>`
         : "";
-      return `${numberLine}<p style="margin:0 0 18px;">${escapeHtml(e.text)}</p>`;
+      return `${numberLine}${editableDiv(e.text)}`;
     }).join("");
     return accordionItem(block.title, body);
   }).join("");
@@ -862,7 +868,7 @@ function renderAdultMatrixResult(name, birthDate, container) {
     }).join("");
     const entriesHtml = block.entries.map(function (e) {
       return `<p style="color:#f6d66c;font-family:Georgia,serif;font-size:18px;margin:0 0 4px;">${escapeHtml(e.axis)}: ${escapeHtml(String(e.number))}</p>
-              <p style="margin:0 0 18px;">${escapeHtml(e.text)}</p>`;
+              ${editableDiv(e.text)}`;
     }).join("");
     const color = CHAKRA_COLORS[i] || "#9aa0a6";
     const id = nextId();
@@ -876,10 +882,17 @@ function renderAdultMatrixResult(name, birthDate, container) {
   }).join("");
 
   const programsHtml = res.programs.length
-    ? res.programs.map(function (p) {
-        return accordionItem(p.title, `<p style="margin:0;">${escapeHtml(p.fullText)}</p>`);
-      }).join("")
-    : `<p style="color:#b8ad98;">Активных программ не найдено.</p>`;
+    ? accordionItem("Программы", res.programs.map(function (p) {
+        const innerId = nextId();
+        return `
+          <div class="accordion-item" style="border-color:rgba(225,180,52,.25);">
+            <button type="button" class="accordion-header" style="font-size:15px;padding:12px 14px;" onclick="toggleAccordionBody('${innerId}')">
+              <span>${escapeHtml(p.title)}</span><span>▾</span>
+            </button>
+            <div class="accordion-body hidden" id="${innerId}">${editableDiv(p.fullText)}</div>
+          </div>`;
+      }).join(""))
+    : "";
 
   container.innerHTML = `
     <div style="max-width:760px;">
@@ -887,6 +900,7 @@ function renderAdultMatrixResult(name, birthDate, container) {
       ${healthHtml}
       ${programsHtml}
       <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;">
+        <button type="button" id="editToggleBtn" class="material-manager-button" style="width:auto;" onclick="toggleResultEditing(this)">✏️ Изменить</button>
         <button type="button" class="material-manager-button" style="width:auto;" onclick="downloadAdultMatrixText(${JSON.stringify(name)}, ${JSON.stringify(birthDate)})">Скачать текст</button>
         <button type="button" class="material-manager-button" style="width:auto;background:rgba(0,0,0,.15);" onclick="location.reload()">Новый расчёт</button>
       </div>
@@ -899,12 +913,16 @@ function downloadAdultMatrixText(name, birthDate) {
   const res = window._lastAdultMatrixResult;
   if (!res) return;
 
+  // Подтягиваем возможные правки из полей на странице по порядку их появления.
+  const editedTexts = [];
+  document.querySelectorAll(".editable-text").forEach(function (el) { editedTexts.push(el.innerText); });
+  let cursor = 0;
   let text = `Матрица судьбы — ${name} (${birthDate})\n\n`;
 
   res.rasshifrovka.forEach(function (block) {
     text += "== " + block.title + " ==\n";
     block.entries.forEach(function (e) {
-      text += e.number + "\n" + e.text + "\n\n";
+      text += e.number + "\n" + (editedTexts[cursor++] ?? e.text) + "\n\n";
     });
   });
 
@@ -912,24 +930,18 @@ function downloadAdultMatrixText(name, birthDate) {
     text += "== " + block.title + " ==\n";
     block.intro.forEach(function (t) { text += t + "\n\n"; });
     block.entries.forEach(function (e) {
-      text += e.axis + ": " + e.number + "\n" + e.text + "\n\n";
+      text += e.axis + ": " + e.number + "\n" + (editedTexts[cursor++] ?? e.text) + "\n\n";
     });
   });
 
   if (res.programs.length) {
     text += "== Программы ==\n";
     res.programs.forEach(function (p) {
-      text += p.fullText + "\n\n";
+      text += (editedTexts[cursor++] ?? p.fullText) + "\n\n";
     });
   }
 
-  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "Матрица судьбы - " + name + ".txt";
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadTextFile("Матрица судьбы - " + name + ".txt", text);
 }
 
 function toggleAccordionBody(id) {
@@ -1021,6 +1033,34 @@ function toggleResultEditing(btn) {
   btn.textContent = nowEditing ? "✅ Готово" : "✏️ Изменить";
 }
 
+async function downloadTextFile(filename, text) {
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+
+  // На iPhone/iPad обычный <a download> часто просто открывает файл вместо скачивания.
+  // Пытаемся сначала через нативное меню «Поделиться» — там есть «Сохранить в Файлы».
+  if (navigator.canShare && navigator.share) {
+    try {
+      const file = new File([blob], filename, { type: "text/plain" });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: filename });
+        return;
+      }
+    } catch (err) {
+      // Пользователь мог отменить — тогда просто пробуем обычный способ ниже.
+      if (err && err.name === "AbortError") return;
+    }
+  }
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
 function downloadEditableResult(personLabel, dateLabel) {
   const blocks = window._lastEditableBlocks;
   if (!blocks) return;
@@ -1033,7 +1073,7 @@ function downloadEditableResult(personLabel, dateLabel) {
     }
   });
 
-  let text = `${personLabel} (${dateLabel})\n\n`;
+  let text = dateLabel ? `${personLabel} (${dateLabel})\n\n` : `${personLabel}\n\n`;
   blocks.forEach(function (block) {
     text += "== " + block.title + " ==\n";
     block.entries.forEach(function (e) {
@@ -1041,13 +1081,7 @@ function downloadEditableResult(personLabel, dateLabel) {
     });
   });
 
-  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = personLabel + " - " + dateLabel + ".txt";
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadTextFile(personLabel + (dateLabel ? " - " + dateLabel : "") + ".txt", text);
 }
 
 function calculateCompatibility() {
@@ -1076,61 +1110,7 @@ function calculateCompatibility() {
     return;
   }
 
-  let idCounter = 0;
-  const nextId = () => "acc-compat-" + (idCounter++);
-
-  function accordionItem(title, bodyHtml) {
-    const id = nextId();
-    return `
-      <div class="accordion-item">
-        <button type="button" class="accordion-header" onclick="toggleAccordionBody('${id}')">
-          <span>${escapeHtml(title)}</span><span>▾</span>
-        </button>
-        <div class="accordion-body hidden" id="${id}">${bodyHtml}</div>
-      </div>`;
-  }
-
-  const blocksHtml = res.blocks.map(function (block) {
-    const body = block.entries.map(function (e) {
-      const numberLine = (typeof e.number === "number")
-        ? `<p style="color:#f6d66c;font-family:Georgia,serif;font-size:20px;margin:0 0 4px;">${escapeHtml(String(e.number))}</p>`
-        : "";
-      return `${numberLine}<p style="margin:0 0 18px;">${escapeHtml(e.text)}</p>`;
-    }).join("");
-    return accordionItem(block.title, body);
-  }).join("");
-
-  result.innerHTML = `
-    <div style="max-width:760px;">
-      ${blocksHtml}
-      <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;">
-        <button type="button" class="material-manager-button" style="width:auto;" onclick="downloadCompatibilityText(${JSON.stringify(birthDate1)}, ${JSON.stringify(birthDate2)})">Скачать текст</button>
-        <button type="button" class="material-manager-button" style="width:auto;background:rgba(0,0,0,.15);" onclick="location.reload()">Новый расчёт</button>
-      </div>
-    </div>`;
-
-  window._lastCompatibilityResult = res;
-}
-
-function downloadCompatibilityText(birthDate1, birthDate2) {
-  const res = window._lastCompatibilityResult;
-  if (!res) return;
-
-  let text = `Совместимость — ${birthDate1} и ${birthDate2}\n\n`;
-  res.blocks.forEach(function (block) {
-    text += "== " + block.title + " ==\n";
-    block.entries.forEach(function (e) {
-      text += e.number + "\n" + e.text + "\n\n";
-    });
-  });
-
-  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "Совместимость - " + birthDate1 + " и " + birthDate2 + ".txt";
-  a.click();
-  URL.revokeObjectURL(url);
+  renderEditableResult(res.blocks, result, "Совместимость - " + birthDate1 + " и " + birthDate2, "");
 }
 
 function renderVedicResult(name, birthDate, container) {
@@ -1160,61 +1140,7 @@ function renderChildMatrixResult(name, birthDate, container) {
     return;
   }
 
-  let idCounter = 0;
-  const nextId = () => "acc-child-" + (idCounter++);
-
-  function accordionItem(title, bodyHtml) {
-    const id = nextId();
-    return `
-      <div class="accordion-item">
-        <button type="button" class="accordion-header" onclick="toggleAccordionBody('${id}')">
-          <span>${escapeHtml(title)}</span><span>▾</span>
-        </button>
-        <div class="accordion-body hidden" id="${id}">${bodyHtml}</div>
-      </div>`;
-  }
-
-  const rasshifrovkaHtml = res.rasshifrovka.map(function (block) {
-    const body = block.entries.map(function (e) {
-      const numberLine = (typeof e.number === "number")
-        ? `<p style="color:#f6d66c;font-family:Georgia,serif;font-size:20px;margin:0 0 4px;">${escapeHtml(String(e.number))}</p>`
-        : "";
-      return `${numberLine}<p style="margin:0 0 18px;">${escapeHtml(e.text)}</p>`;
-    }).join("");
-    return accordionItem(block.title, body);
-  }).join("");
-
-  container.innerHTML = `
-    <div style="max-width:760px;">
-      ${rasshifrovkaHtml}
-      <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;">
-        <button type="button" class="material-manager-button" style="width:auto;" onclick="downloadChildMatrixText(${JSON.stringify(name)}, ${JSON.stringify(birthDate)})">Скачать текст</button>
-        <button type="button" class="material-manager-button" style="width:auto;background:rgba(0,0,0,.15);" onclick="location.reload()">Новый расчёт</button>
-      </div>
-    </div>`;
-
-  window._lastChildMatrixResult = res;
-}
-
-function downloadChildMatrixText(name, birthDate) {
-  const res = window._lastChildMatrixResult;
-  if (!res) return;
-
-  let text = `Детская матрица — ${name} (${birthDate})\n\n`;
-  res.rasshifrovka.forEach(function (block) {
-    text += "== " + block.title + " ==\n";
-    block.entries.forEach(function (e) {
-      text += e.number + "\n" + e.text + "\n\n";
-    });
-  });
-
-  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "Детская матрица - " + name + ".txt";
-  a.click();
-  URL.revokeObjectURL(url);
+  renderEditableResult(res.rasshifrovka, container, "Детская матрица - " + name, birthDate);
 }
 
 /* ============================================================
@@ -1283,7 +1209,7 @@ async function loadDirectionMaterialsList() {
   try {
     const { data, error } = await supabaseClient
       .from(PLATFORM_MATERIALS_TABLE)
-      .select("id, material_type, url, file_path, created_at")
+      .select("id, material_type, url, file_path, title, created_at")
       .eq("section", section)
       .eq("direction", direction)
       .order("created_at", { ascending: false });
@@ -1299,22 +1225,44 @@ async function loadDirectionMaterialsList() {
     box.innerHTML = currentDirectionMaterials.map(function (item) {
       const isLink = item.material_type === "link";
       const icon = isLink ? "🔗" : (section === "videos" ? "▶" : "📄");
-      const label = isLink ? "Ссылка" : (section === "videos" ? "Видеофайл" : "Файл");
-      const meta = isLink ? escapeHtml(item.url || "") : escapeHtml((item.file_path || "").split("/").pop());
+      const label = isLink ? "Ссылка" : (item.title || (section === "videos" ? "Видеофайл" : "Файл"));
+      const meta = isLink ? escapeHtml(item.url || "") : "";
       const date = item.created_at ? new Date(item.created_at).toLocaleDateString("ru-RU") : "";
       return `
         <div class="material-row">
           <div class="material-row-icon">${icon}</div>
           <div class="material-row-body">
-            <div class="material-row-title">${label}</div>
-            <div class="material-row-meta">${meta}${date ? " · " + date : ""}</div>
+            <div class="material-row-title">${escapeHtml(label)}</div>
+            <div class="material-row-meta">${meta}${date ? (meta ? " · " : "") + date : ""}</div>
           </div>
           <button class="material-row-open" onclick='openMaterialById(${JSON.stringify(item.id)})'>Открыть</button>
+          ${window.currentUserIsManager ? `<button class="material-row-open" style="margin-left:8px;background:rgba(200,60,60,.35);" onclick='deleteMaterialById(${JSON.stringify(item.id)})' title="Удалить">🗑</button>` : ""}
         </div>`;
     }).join("");
   } catch (error) {
     console.error("Ошибка загрузки списка материалов:", error);
     box.innerHTML = `<div class="table-card"><div class="empty-table">Не удалось загрузить материалы.</div></div>`;
+  }
+}
+
+async function deleteMaterialById(id) {
+  if (!window.currentUserIsManager) return;
+  const item = currentDirectionMaterials.find(m => String(m.id) === String(id));
+  if (!item) return;
+  if (!confirm("Удалить этот материал безвозвратно?")) return;
+
+  try {
+    const { error } = await supabaseClient.from(PLATFORM_MATERIALS_TABLE).delete().eq("id", id);
+    if (error) throw error;
+
+    if (item.file_path) {
+      await supabaseClient.storage.from(PLATFORM_STORAGE_BUCKET).remove([item.file_path]);
+    }
+
+    await loadDirectionMaterialsList();
+  } catch (error) {
+    console.error("Ошибка удаления материала:", error);
+    alert("Не удалось удалить материал.\n\n" + (error.message || error));
   }
 }
 
@@ -1459,7 +1407,7 @@ async function uploadPlatformMaterialFile() {
     setMaterialManagerStatus("Файл загружен. Сохраняю запись...", "");
 
     const { error: insertError } = await supabaseClient.from(PLATFORM_MATERIALS_TABLE).insert({
-      section, direction, material_type: "file", url: null, file_path: path, created_by: session.user.id
+      section, direction, material_type: "file", url: null, file_path: path, title: file.name, created_by: session.user.id
     });
 
     if (insertError) {
