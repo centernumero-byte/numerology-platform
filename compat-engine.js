@@ -129,6 +129,16 @@ function fn_ISODD(x) {
 function fn_OR(...args) {
   return args.some(function (a) { return !!a; });
 }
+function fn_AND(...args) {
+  return args.every(function (a) { return !!a; });
+}
+function fn_ABS(x) {
+  return Math.abs(Number(x));
+}
+function fn_MOD(n, d) {
+  const r = Number(n) % Number(d);
+  return r < 0 ? r + Number(d) : r;
+}
 
 // ---- Range/lookup helpers ----
 function flattenRange(range) {
@@ -230,7 +240,6 @@ SHEET_DATA_COMPAT["Ввод данных"].literals["AS2"] = 7;
 SHEET_DATA_COMPAT["Ввод данных"].literals["AT2"] = "г.р.";
 SHEET_DATA_COMPAT["Ввод данных"].formulas["AV2"] = function(SHEET, cell, rangeVals) { return fn_INT((((Number(fn_TODAY()) - Number(cell(SHEET, "ER80")))) / 365.25)); };
 SHEET_DATA_COMPAT["Ввод данных"].literals["AW2"] = "лет";
-SHEET_DATA_COMPAT["Ввод данных"].literals["BV2"] = "Калькулятор Бибигуль Нарманбетовой";
 SHEET_DATA_COMPAT["Ввод данных"].formulas["ER7"] = function(SHEET, cell, rangeVals) { return fn_CONCATENATE(cell(SHEET, "AL2"), cell(SHEET, "AM2"), ".", cell(SHEET, "AN2"), cell(SHEET, "AO2"), ".", cell(SHEET, "AP2"), cell(SHEET, "AQ2"), cell(SHEET, "AR2"), cell(SHEET, "AS2")); };
 SHEET_DATA_COMPAT["Ввод данных"].literals["ER8"] = "Годы";
 SHEET_DATA_COMPAT["Ввод данных"].literals["EU8"] = "1-я энергия";
@@ -806,7 +815,6 @@ SHEET_DATA_COMPAT["Ввод данных"].literals["AS90"] = 6;
 SHEET_DATA_COMPAT["Ввод данных"].literals["AT90"] = "г.р.";
 SHEET_DATA_COMPAT["Ввод данных"].formulas["AV90"] = function(SHEET, cell, rangeVals) { return fn_INT((((Number(fn_TODAY()) - Number(cell(SHEET, "ER168")))) / 365.25)); };
 SHEET_DATA_COMPAT["Ввод данных"].literals["AW90"] = "лет";
-SHEET_DATA_COMPAT["Ввод данных"].literals["BV90"] = "Калькулятор Бибигуль Нарманбетовой";
 SHEET_DATA_COMPAT["Ввод данных"].formulas["ER94"] = function(SHEET, cell, rangeVals) { return fn_CONCATENATE(cell(SHEET, "AL90"), cell(SHEET, "AM90"), ".", cell(SHEET, "AN90"), cell(SHEET, "AO90"), ".", cell(SHEET, "AP90"), cell(SHEET, "AQ90"), cell(SHEET, "AR90"), cell(SHEET, "AS90")); };
 SHEET_DATA_COMPAT["Ввод данных"].literals["ER96"] = "Годы";
 SHEET_DATA_COMPAT["Ввод данных"].literals["EU96"] = "1-я энергия";
@@ -1368,7 +1376,6 @@ SHEET_DATA_COMPAT["Ввод данных"].literals["ER173"] = "Сексуаль
 SHEET_DATA_COMPAT["Ввод данных"].formulas["ET173"] = function(SHEET, cell, rangeVals) { return fn_VALUE(fn_IF((cell(SHEET, "ES173") <= 22), cell(SHEET, "ES173"), fn_SUM(fn_VALUE(fn_MID(cell(SHEET, "ES173"), (Number(fn_LEN(cell(SHEET, "ES173"))) - Number(1)), 1)), fn_VALUE(fn_MID(cell(SHEET, "ES173"), fn_LEN(cell(SHEET, "ES173")), 1))))); };
 SHEET_DATA_COMPAT["Ввод данных"].formulas["ER174"] = function(SHEET, cell, rangeVals) { return fn_CONCATENATE(cell(SHEET, "C101"), "-", cell(SHEET, "C102"), "-", cell(SHEET, "C103")); };
 SHEET_DATA_COMPAT["Ввод данных"].formulas["ET174"] = function(SHEET, cell, rangeVals) { return fn_VALUE(fn_IF((cell(SHEET, "ES174") <= 22), cell(SHEET, "ES174"), fn_SUM(fn_VALUE(fn_MID(cell(SHEET, "ES174"), (Number(fn_LEN(cell(SHEET, "ES174"))) - Number(1)), 1)), fn_VALUE(fn_MID(cell(SHEET, "ES174"), fn_LEN(cell(SHEET, "ES174")), 1))))); };
-SHEET_DATA_COMPAT["Ввод данных"].literals["BV177"] = "Калькулятор Бибигуль Нарманбетовой";
 SHEET_DATA_COMPAT["Ввод данных"].literals["ER183"] = "Годы";
 SHEET_DATA_COMPAT["Ввод данных"].literals["ER184"] = "0/80";
 SHEET_DATA_COMPAT["Ввод данных"].formulas["ES184"] = function(SHEET, cell, rangeVals) { return (Number(cell(SHEET, "ET97")) + Number(cell(SHEET, "ET9"))); };
@@ -1528,7 +1535,6 @@ SHEET_DATA_COMPAT["Ввод данных"].literals["ER260"] = "Сексуаль
 SHEET_DATA_COMPAT["Ввод данных"].formulas["ET260"] = function(SHEET, cell, rangeVals) { return fn_VALUE(fn_IF((cell(SHEET, "ES260") <= 22), cell(SHEET, "ES260"), fn_SUM(fn_VALUE(fn_MID(cell(SHEET, "ES260"), (Number(fn_LEN(cell(SHEET, "ES260"))) - Number(1)), 1)), fn_VALUE(fn_MID(cell(SHEET, "ES260"), fn_LEN(cell(SHEET, "ES260")), 1))))); };
 SHEET_DATA_COMPAT["Ввод данных"].formulas["ER261"] = function(SHEET, cell, rangeVals) { return fn_CONCATENATE(cell(SHEET, "C188"), "-", cell(SHEET, "C189"), "-", cell(SHEET, "C190")); };
 SHEET_DATA_COMPAT["Ввод данных"].formulas["ET261"] = function(SHEET, cell, rangeVals) { return fn_VALUE(fn_IF((cell(SHEET, "ES261") <= 22), cell(SHEET, "ES261"), fn_SUM(fn_VALUE(fn_MID(cell(SHEET, "ES261"), (Number(fn_LEN(cell(SHEET, "ES261"))) - Number(1)), 1)), fn_VALUE(fn_MID(cell(SHEET, "ES261"), fn_LEN(cell(SHEET, "ES261")), 1))))); };
-SHEET_DATA_COMPAT["Диаграмма совместимости"].literals["B2"] = "Калькулятор Бибигуль Нарманбетовой";
 SHEET_DATA_COMPAT["Диаграмма совместимости"].literals["N2"] = "партнер";
 SHEET_DATA_COMPAT["Диаграмма совместимости"].literals["T2"] = "№ 1";
 SHEET_DATA_COMPAT["Диаграмма совместимости"].formulas["W2"] = function(SHEET, cell, rangeVals) { return rangeVals("Ввод данных", "W2", "AK2"); };
@@ -1543,7 +1549,6 @@ SHEET_DATA_COMPAT["Диаграмма совместимости"].formulas["AS2
 SHEET_DATA_COMPAT["Диаграмма совместимости"].literals["AT2"] = "г.р.";
 SHEET_DATA_COMPAT["Диаграмма совместимости"].formulas["AV2"] = function(SHEET, cell, rangeVals) { return fn_INT((((Number(fn_TODAY()) - Number(cell(SHEET, "ER80")))) / 365.25)); };
 SHEET_DATA_COMPAT["Диаграмма совместимости"].literals["AW2"] = "лет";
-SHEET_DATA_COMPAT["Диаграмма совместимости"].literals["BV2"] = "Калькулятор Бибигуль Нарманбетовой";
 SHEET_DATA_COMPAT["Диаграмма совместимости"].literals["AA4"] = "20 лет";
 SHEET_DATA_COMPAT["Диаграмма совместимости"].literals["B5"] = "Ключ НЕБА";
 SHEET_DATA_COMPAT["Диаграмма совместимости"].formulas["C5"] = function(SHEET, cell, rangeVals) { return cell(SHEET, "AA6"); };
@@ -2243,7 +2248,6 @@ SHEET_DATA_COMPAT["Диаграмма совместимости"].formulas["AS9
 SHEET_DATA_COMPAT["Диаграмма совместимости"].literals["AT90"] = "г.р.";
 SHEET_DATA_COMPAT["Диаграмма совместимости"].formulas["AV90"] = function(SHEET, cell, rangeVals) { return fn_INT((((Number(fn_TODAY()) - Number(cell(SHEET, "ER168")))) / 365.25)); };
 SHEET_DATA_COMPAT["Диаграмма совместимости"].literals["AW90"] = "лет";
-SHEET_DATA_COMPAT["Диаграмма совместимости"].literals["BV90"] = "Калькулятор Бибигуль Нарманбетовой";
 SHEET_DATA_COMPAT["Диаграмма совместимости"].literals["AA92"] = "20 лет";
 SHEET_DATA_COMPAT["Диаграмма совместимости"].literals["B93"] = "Ключ НЕБА";
 SHEET_DATA_COMPAT["Диаграмма совместимости"].formulas["C93"] = function(SHEET, cell, rangeVals) { return cell(SHEET, "AA94"); };
@@ -2933,7 +2937,6 @@ SHEET_DATA_COMPAT["Диаграмма совместимости"].formulas["AF1
 SHEET_DATA_COMPAT["Диаграмма совместимости"].formulas["ER174"] = function(SHEET, cell, rangeVals) { return fn_CONCATENATE(cell(SHEET, "C101"), "-", cell(SHEET, "C102"), "-", cell(SHEET, "C103")); };
 SHEET_DATA_COMPAT["Диаграмма совместимости"].formulas["ET174"] = function(SHEET, cell, rangeVals) { return fn_VALUE(fn_IF((cell(SHEET, "ES174") <= 22), cell(SHEET, "ES174"), fn_SUM(fn_VALUE(fn_MID(cell(SHEET, "ES174"), (Number(fn_LEN(cell(SHEET, "ES174"))) - Number(1)), 1)), fn_VALUE(fn_MID(cell(SHEET, "ES174"), fn_LEN(cell(SHEET, "ES174")), 1))))); };
 SHEET_DATA_COMPAT["Диаграмма совместимости"].literals["AD175"] = "и";
-SHEET_DATA_COMPAT["Диаграмма совместимости"].literals["BV177"] = "Калькулятор Бибигуль Нарманбетовой";
 SHEET_DATA_COMPAT["Диаграмма совместимости"].literals["AA179"] = "20 лет";
 SHEET_DATA_COMPAT["Диаграмма совместимости"].literals["B180"] = "Ключ Неба";
 SHEET_DATA_COMPAT["Диаграмма совместимости"].formulas["C180"] = function(SHEET, cell, rangeVals) { return cell(SHEET, "ET213"); };

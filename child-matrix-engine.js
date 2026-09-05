@@ -129,6 +129,16 @@ function fn_ISODD(x) {
 function fn_OR(...args) {
   return args.some(function (a) { return !!a; });
 }
+function fn_AND(...args) {
+  return args.every(function (a) { return !!a; });
+}
+function fn_ABS(x) {
+  return Math.abs(Number(x));
+}
+function fn_MOD(n, d) {
+  const r = Number(n) % Number(d);
+  return r < 0 ? r + Number(d) : r;
+}
 
 // ---- Range/lookup helpers ----
 function flattenRange(range) {
@@ -230,7 +240,6 @@ SHEET_DATA_CHILD["Ввод данных"].literals["AS2"] = 5;
 SHEET_DATA_CHILD["Ввод данных"].literals["AT2"] = "г.р.";
 SHEET_DATA_CHILD["Ввод данных"].formulas["AV2"] = function(SHEET, cell, rangeVals) { return fn_INT((((Number(fn_TODAY()) - Number(cell(SHEET, "ER80")))) / 365.25)); };
 SHEET_DATA_CHILD["Ввод данных"].literals["AW2"] = "лет";
-SHEET_DATA_CHILD["Ввод данных"].literals["BV2"] = "Калькулятор Бибигуль Нарманбетовой";
 SHEET_DATA_CHILD["Ввод данных"].literals["ER8"] = "Годы";
 SHEET_DATA_CHILD["Ввод данных"].literals["EU8"] = "1-я энергия";
 SHEET_DATA_CHILD["Ввод данных"].literals["ER9"] = "0/80";
@@ -1129,7 +1138,6 @@ SHEET_DATA_CHILD["Ввод данных"].formulas["ET254"] = function(SHEET, ce
 SHEET_DATA_CHILD["Ввод данных"].literals["EU254"] = "45 лет";
 SHEET_DATA_CHILD["Ввод данных"].formulas["ET255"] = function(SHEET, cell, rangeVals) { return fn_VALUE(fn_IF((cell(SHEET, "ES255") <= 22), cell(SHEET, "ES255"), fn_SUM(fn_VALUE(fn_MID(cell(SHEET, "ES255"), (Number(fn_LEN(cell(SHEET, "ES255"))) - Number(1)), 1)), fn_VALUE(fn_MID(cell(SHEET, "ES255"), fn_LEN(cell(SHEET, "ES255")), 1))))); };
 SHEET_DATA_CHILD["Ввод данных"].literals["EU255"] = "46-47,5 лет";
-SHEET_DATA_CHILD["Ввод данных"].literals["D256"] = "Калькулятор Бибигуль Нарманбетовой";
 SHEET_DATA_CHILD["Ввод данных"].formulas["ET256"] = function(SHEET, cell, rangeVals) { return fn_VALUE(fn_IF((cell(SHEET, "ES256") <= 22), cell(SHEET, "ES256"), fn_SUM(fn_VALUE(fn_MID(cell(SHEET, "ES256"), (Number(fn_LEN(cell(SHEET, "ES256"))) - Number(1)), 1)), fn_VALUE(fn_MID(cell(SHEET, "ES256"), fn_LEN(cell(SHEET, "ES256")), 1))))); };
 SHEET_DATA_CHILD["Ввод данных"].literals["EU256"] = "47,5-48,5 лет";
 SHEET_DATA_CHILD["Ввод данных"].formulas["ET257"] = function(SHEET, cell, rangeVals) { return fn_VALUE(fn_IF((cell(SHEET, "ES257") <= 22), cell(SHEET, "ES257"), fn_SUM(fn_VALUE(fn_MID(cell(SHEET, "ES257"), (Number(fn_LEN(cell(SHEET, "ES257"))) - Number(1)), 1)), fn_VALUE(fn_MID(cell(SHEET, "ES257"), fn_LEN(cell(SHEET, "ES257")), 1))))); };
@@ -1185,7 +1193,6 @@ SHEET_DATA_CHILD["Ввод данных"].literals["EU281"] = "78,5-79 лет";
 SHEET_DATA_CHILD["Диаграмма"].literals["B2"] = "Детская матрица";
 SHEET_DATA_CHILD["Диаграмма"].literals["C2"] = "Имя";
 SHEET_DATA_CHILD["Диаграмма"].formulas["D2"] = function(SHEET, cell, rangeVals) { return cell("Ввод данных", "D2"); };
-SHEET_DATA_CHILD["Диаграмма"].literals["F2"] = "Калькулятор Бибигуль Нарманбетовой";
 SHEET_DATA_CHILD["Диаграмма"].literals["W2"] = "Дата рождения";
 SHEET_DATA_CHILD["Диаграмма"].formulas["AL2"] = function(SHEET, cell, rangeVals) { return cell("Ввод данных", "AL2"); };
 SHEET_DATA_CHILD["Диаграмма"].formulas["AM2"] = function(SHEET, cell, rangeVals) { return cell("Ввод данных", "AM2"); };
@@ -1198,7 +1205,6 @@ SHEET_DATA_CHILD["Диаграмма"].formulas["AS2"] = function(SHEET, cell, r
 SHEET_DATA_CHILD["Диаграмма"].literals["AT2"] = "г.р.";
 SHEET_DATA_CHILD["Диаграмма"].formulas["AV2"] = function(SHEET, cell, rangeVals) { return fn_INT((((Number(fn_TODAY()) - Number(cell(SHEET, "ER80")))) / 365.25)); };
 SHEET_DATA_CHILD["Диаграмма"].literals["AW2"] = "лет";
-SHEET_DATA_CHILD["Диаграмма"].literals["BV2"] = "Калькулятор Бибигуль Нарманбетовой";
 SHEET_DATA_CHILD["Диаграмма"].literals["AA4"] = "20 лет";
 SHEET_DATA_CHILD["Диаграмма"].literals["B5"] = "Ключ НЕБА";
 SHEET_DATA_CHILD["Диаграмма"].formulas["C5"] = function(SHEET, cell, rangeVals) { return cell(SHEET, "AA6"); };
@@ -2221,7 +2227,6 @@ SHEET_DATA_CHILD["Диаграмма"].formulas["ET254"] = function(SHEET, cell,
 SHEET_DATA_CHILD["Диаграмма"].literals["EU254"] = "45 лет";
 SHEET_DATA_CHILD["Диаграмма"].formulas["ET255"] = function(SHEET, cell, rangeVals) { return fn_VALUE(fn_IF((cell(SHEET, "ES255") <= 22), cell(SHEET, "ES255"), fn_SUM(fn_VALUE(fn_MID(cell(SHEET, "ES255"), (Number(fn_LEN(cell(SHEET, "ES255"))) - Number(1)), 1)), fn_VALUE(fn_MID(cell(SHEET, "ES255"), fn_LEN(cell(SHEET, "ES255")), 1))))); };
 SHEET_DATA_CHILD["Диаграмма"].literals["EU255"] = "46-47,5 лет";
-SHEET_DATA_CHILD["Диаграмма"].literals["D256"] = "Калькулятор Бибигуль Нарманбетовой";
 SHEET_DATA_CHILD["Диаграмма"].formulas["ET256"] = function(SHEET, cell, rangeVals) { return fn_VALUE(fn_IF((cell(SHEET, "ES256") <= 22), cell(SHEET, "ES256"), fn_SUM(fn_VALUE(fn_MID(cell(SHEET, "ES256"), (Number(fn_LEN(cell(SHEET, "ES256"))) - Number(1)), 1)), fn_VALUE(fn_MID(cell(SHEET, "ES256"), fn_LEN(cell(SHEET, "ES256")), 1))))); };
 SHEET_DATA_CHILD["Диаграмма"].literals["EU256"] = "47,5-48,5 лет";
 SHEET_DATA_CHILD["Диаграмма"].formulas["ET257"] = function(SHEET, cell, rangeVals) { return fn_VALUE(fn_IF((cell(SHEET, "ES257") <= 22), cell(SHEET, "ES257"), fn_SUM(fn_VALUE(fn_MID(cell(SHEET, "ES257"), (Number(fn_LEN(cell(SHEET, "ES257"))) - Number(1)), 1)), fn_VALUE(fn_MID(cell(SHEET, "ES257"), fn_LEN(cell(SHEET, "ES257")), 1))))); };
@@ -2282,7 +2287,6 @@ SHEET_DATA_CHILD["Детская Расшифровка"].formulas["C3"] = funct
 SHEET_DATA_CHILD["Детская Расшифровка"].formulas["D3"] = function(SHEET, cell, rangeVals) { return fn_VLOOKUP(cell(SHEET, "C3"), rangeVals("Данные", "A3", "B24"), 2, 0); };
 SHEET_DATA_CHILD["Детская Расшифровка"].formulas["C4"] = function(SHEET, cell, rangeVals) { return cell("Диаграмма", "AA6"); };
 SHEET_DATA_CHILD["Детская Расшифровка"].formulas["D4"] = function(SHEET, cell, rangeVals) { return fn_VLOOKUP(cell(SHEET, "C4"), rangeVals("Данные", "A3", "B24"), 2, 0); };
-SHEET_DATA_CHILD["Детская Расшифровка"].literals["AS4"] = "Калькулятор Бибигуль Нарманбетовой";
 SHEET_DATA_CHILD["Детская Расшифровка"].formulas["C5"] = function(SHEET, cell, rangeVals) { return cell("Диаграмма", "AA23"); };
 SHEET_DATA_CHILD["Детская Расшифровка"].formulas["D5"] = function(SHEET, cell, rangeVals) { return fn_VLOOKUP(cell(SHEET, "C5"), rangeVals("Данные", "A3", "B24"), 2, 0); };
 SHEET_DATA_CHILD["Детская Расшифровка"].literals["B6"] = "Рекомендации для родителей";
@@ -2380,7 +2384,6 @@ SHEET_DATA_CHILD["Детская Расшифровка"].formulas["C45"] = func
 SHEET_DATA_CHILD["Детская Расшифровка"].formulas["D45"] = function(SHEET, cell, rangeVals) { return fn_VLOOKUP(cell(SHEET, "C45"), rangeVals("Данные", "A269", "B288"), 2, 0); };
 SHEET_DATA_CHILD["Детская Расшифровка"].formulas["C46"] = function(SHEET, cell, rangeVals) { return cell("Диаграмма", "AA43"); };
 SHEET_DATA_CHILD["Детская Расшифровка"].formulas["D46"] = function(SHEET, cell, rangeVals) { return fn_VLOOKUP(cell(SHEET, "C46"), rangeVals("Данные", "A269", "B288"), 2, 0); };
-SHEET_DATA_CHILD["Детская Расшифровка"].literals["AY129"] = "Калькулятор Бибигуль Нарманбетовой";
 SHEET_DATA_CHILD["Данные"].literals["A2"] = "Личные качества ребенка";
 SHEET_DATA_CHILD["Данные"].literals["A3"] = 1;
 SHEET_DATA_CHILD["Данные"].literals["B3"] = "Такой ребёнок очень энергичен и свободолюбив — волевая, независимая личность. Любит эксперименты и всё новое, настоящий первооткрыватель и новатор от рождения. Обладает огромным творческим потенциалом, который важно направить в занятия, где нужно работать руками. Много интересов и способностей, развитое мышление, отличная память. Стремится выделяться среди сверстников, интересен в общении, готов устраивать праздник хоть каждый день. Изобретателен, буквально фонтанирует идеями, обладает явными лидерскими, организаторскими качествами и умением убеждать.";

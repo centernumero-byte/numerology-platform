@@ -329,6 +329,9 @@ body {
   .cards .card, .method-card { width: 100%; max-width: 320px; }
   .stats-grid { grid-template-columns: 1fr; }
   .material-row { flex-wrap: wrap; }
+  .material-row-body { flex-basis: 100%; order: 1; }
+  .material-row-icon { order: 0; }
+  .material-row-open { order: 2; margin-left: 0 !important; }
 }
 
 /* ===================== АККОРДЕОН РЕЗУЛЬТАТА РАСЧЁТА ===================== */
@@ -362,6 +365,44 @@ body {
   white-space: pre-wrap;
 }
 .accordion-body.hidden { display: none; }
+.test-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  border: 1px solid rgba(225,180,52,.35);
+  border-radius: 12px;
+  background: rgba(255,255,255,.03);
+  color: #f8e7a8;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.test-option:hover { background: rgba(255,255,255,.08); }
+.test-option.selected {
+  background: rgba(215,170,49,.22);
+  border-color: #d7aa31;
+}
+.test-option-letter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(225,180,52,.5);
+  color: #f6d66c;
+  font-family: Georgia, serif;
+  font-size: 14px;
+}
+.test-option.selected .test-option-letter {
+  background: #d7aa31;
+  color: #1a1030;
+}
 .key-numbers-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
@@ -563,6 +604,9 @@ function renderDirectionCards(section, action, materialFlags) {
     if (action === "calculator") {
       click = `onclick="openCalculator('${card.key}')"`;
       subtitle = "Калькулятор";
+    } else if (action === "test") {
+      click = `onclick='openTestDirection(${JSON.stringify(card.key)},${JSON.stringify(DIRECTION_NAMES[card.key])})'`;
+      subtitle = "Тест — 30 вопросов";
     } else {
       click = `onclick='openDirectionMaterials(${JSON.stringify(section)},${JSON.stringify(card.key)},${JSON.stringify(DIRECTION_NAMES[card.key])})'`;
       subtitle = SECTION_LABELS[section] || "Материал";
@@ -647,7 +691,7 @@ async function showSection(section) {
   if (section === "calculators") { renderCalculators(); return; }
   if (section === "manuals") { await loadPlatformMaterials("manuals"); return; }
   if (section === "videos") { await loadPlatformMaterials("videos"); return; }
-  if (section === "tests") { await loadPlatformMaterials("tests"); return; }
+  if (section === "tests") { await loadTestsHub(); return; }
   if (section === "library") { loadLibrary(); return; }
   if (section === "my-calculations") { renderMyCalculations(); return; }
   if (section === "access") { await renderAccess(); return; }
@@ -817,6 +861,54 @@ function calculate(type) {
     </div>`;
 }
 
+function renderMatrixDiamondDiagram(engine, container) {
+  let A, B, V, G, center;
+  try {
+    A = engine.cell("Диаграмма", "C5");   // Ключ Неба
+    B = engine.cell("Диаграмма", "C6");   // Ключ Земли
+    V = engine.cell("Диаграмма", "C9");   // Ключ Рода Отца
+    G = engine.cell("Диаграмма", "C10");  // Ключ Рода Матери
+    center = engine.cell("Диаграмма", "C13"); // Личная сила
+  } catch (e) {
+    return;
+  }
+  if ([A, B, V, G, center].every(v => v === undefined || v === 0)) return;
+
+  const points = [
+    { label: "Небо", value: A, x: 100, y: 30 },
+    { label: "Земля", value: B, x: 175, y: 100 },
+    { label: "Род отца", value: V, x: 100, y: 170 },
+    { label: "Род матери", value: G, x: 25, y: 100 },
+  ];
+
+  const pointsSvg = points.map(p => {
+    if (p.value === undefined) return "";
+    return `
+      <circle cx="${p.x}" cy="${p.y}" r="20" fill="rgba(113,49,153,.55)" stroke="#d7aa31" stroke-width="1.5"/>
+      <text x="${p.x}" y="${p.y + 6}" text-anchor="middle" font-family="Georgia,serif" font-size="16" fill="#f6d66c">${escapeHtml(String(p.value))}</text>
+      <text x="${p.x}" y="${p.y + 34}" text-anchor="middle" font-size="10" fill="#c9bfa8">${escapeHtml(p.label)}</text>`;
+  }).join("");
+
+  const box = document.createElement("div");
+  box.style.cssText = "max-width:340px;margin:0 auto 30px;text-align:center;";
+  box.innerHTML = `
+    <div style="color:#c9bfa8;font-size:14px;margin-bottom:10px;">Ключевые точки матрицы</div>
+    <svg viewBox="0 0 260 260" style="width:100%;max-width:320px;">
+      <g transform="translate(40,25)">
+      <line x1="100" y1="30" x2="175" y2="100" stroke="rgba(225,180,52,.4)" stroke-width="1"/>
+      <line x1="175" y1="100" x2="100" y2="170" stroke="rgba(225,180,52,.4)" stroke-width="1"/>
+      <line x1="100" y1="170" x2="25" y2="100" stroke="rgba(225,180,52,.4)" stroke-width="1"/>
+      <line x1="25" y1="100" x2="100" y2="30" stroke="rgba(225,180,52,.4)" stroke-width="1"/>
+      ${center !== undefined ? `
+        <circle cx="100" cy="100" r="22" fill="rgba(215,170,49,.25)" stroke="#f6d66c" stroke-width="2"/>
+        <text x="100" y="106" text-anchor="middle" font-family="Georgia,serif" font-size="18" fill="#f6d66c">${escapeHtml(String(center))}</text>` : ""}
+      ${pointsSvg}
+      </g>
+    </svg>
+    ${center !== undefined ? `<div style="color:#c9bfa8;font-size:10px;margin-top:-6px;">Личная сила</div>` : ""}`;
+  container.insertBefore(box, container.firstChild);
+}
+
 function renderAdultMatrixResult(name, birthDate, container) {
   const [day, month, year] = birthDate.split(".").map(Number);
 
@@ -884,13 +976,7 @@ function renderAdultMatrixResult(name, birthDate, container) {
   const programsHtml = res.programs.length
     ? accordionItem("Программы", res.programs.map(function (p) {
         const innerId = nextId();
-        return `
-          <div class="accordion-item" style="border-color:rgba(225,180,52,.25);">
-            <button type="button" class="accordion-header" style="font-size:15px;padding:12px 14px;" onclick="toggleAccordionBody('${innerId}')">
-              <span>${escapeHtml(p.title)}</span><span>▾</span>
-            </button>
-            <div class="accordion-body hidden" id="${innerId}">${editableDiv(p.fullText)}</div>
-          </div>`;
+        return `<div class="accordion-item" style="border-color:rgba(225,180,52,.25);"><button type="button" class="accordion-header" style="font-size:15px;padding:12px 14px;" onclick="toggleAccordionBody('${innerId}')"><span>${escapeHtml(p.title)}</span><span>▾</span></button><div class="accordion-body hidden" id="${innerId}">${editableDiv(p.fullText)}</div></div>`;
       }).join(""))
     : "";
 
@@ -906,6 +992,7 @@ function renderAdultMatrixResult(name, birthDate, container) {
       </div>
     </div>`;
 
+  renderMatrixDiamondDiagram(window.AdultMatrixEngine, container);
   window._lastAdultMatrixResult = res;
 }
 
@@ -982,7 +1069,29 @@ function calculatePythagoras() {
   }
 
   renderEditableResult(res.blocks, result, lastName + " " + firstName, birthDate);
+  renderPythDigitSquare(res.digitSquare, result);
   window._lastPythagorasResult = res;
+}
+
+function renderPythDigitSquare(digitSquare, container) {
+  const layout = [[1, 4, 7], [2, 5, 8], [3, 6, 9]];
+  const cellsHtml = layout.map(function (row) {
+    return `<div style="display:flex;gap:8px;">` + row.map(function (digit) {
+      const count = digitSquare[digit] || 0;
+      const repeated = count > 0 ? String(digit).repeat(count) : "—";
+      return `
+        <div style="flex:1;aspect-ratio:1;border:1px solid rgba(225,180,52,.5);border-radius:10px;
+                    display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,.03);">
+          <div style="font-size:11px;color:#8a8098;">число ${digit}</div>
+          <div style="font-family:Georgia,serif;font-size:22px;color:#f6d66c;">${escapeHtml(repeated)}</div>
+        </div>`;
+    }).join("") + `</div>`;
+  }).join("");
+
+  const box = document.createElement("div");
+  box.style.cssText = "max-width:300px;margin:0 auto 30px;display:flex;flex-direction:column;gap:8px;";
+  box.innerHTML = `<div style="text-align:center;color:#c9bfa8;font-size:14px;margin-bottom:6px;">Ваш квадрат Пифагора</div>` + cellsHtml;
+  container.insertBefore(box, container.firstChild);
 }
 
 /* Общий рендер результата с возможностью редактирования перед скачиванием.
@@ -1141,10 +1250,247 @@ function renderChildMatrixResult(name, birthDate, container) {
   }
 
   renderEditableResult(res.rasshifrovka, container, "Детская матрица - " + name, birthDate);
+  renderMatrixDiamondDiagram(window.ChildMatrixEngine, container);
 }
 
 /* ============================================================
-   МЕТОДИЧЕСКИЕ ПОСОБИЯ / ВИДЕО / ТЕСТЫ
+   ТЕСТЫ — прохождение, результат, статистика попыток
+   ============================================================ */
+const TEST_QUESTIONS_TABLE = "test_questions";
+const TEST_ATTEMPTS_TABLE = "test_attempts";
+
+let testState = null; // { direction, title, questions, currentIndex, answers }
+
+async function loadTestsHub() {
+  const contentCards = document.getElementById("contentCards");
+  if (!contentCards) return;
+  contentCards.className = "cards";
+  contentCards.innerHTML = renderDirectionCards("tests", "test");
+}
+
+function testPageShell(innerHtml) {
+  document.body.innerHTML = `
+    <div style="min-height:100vh;padding:40px 20px;background:linear-gradient(135deg,#17102f,#211443,#17102f);color:#f8e7a8;font-family:Arial,sans-serif;">
+      <div style="max-width:700px;margin:0 auto;">${innerHtml}</div>
+    </div>`;
+}
+
+async function openTestDirection(direction, title) {
+  testPageShell(`
+    <button onclick="location.reload()" style="background:none;border:none;color:#d7aa31;cursor:pointer;font-size:14px;margin-bottom:16px;">← Назад</button>
+    <h1 style="color:#f6d66c;font-family:Georgia,serif;font-weight:500;">${escapeHtml(title)} — тест</h1>
+    <div id="testIntroBox">Загрузка...</div>`);
+
+  try {
+    const { count, error: countError } = await supabaseClient
+      .from(TEST_QUESTIONS_TABLE)
+      .select("id", { count: "exact", head: true })
+      .eq("direction", direction);
+    if (countError) throw countError;
+
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    let historyHtml = "";
+    if (session) {
+      const { data: attempts } = await supabaseClient
+        .from(TEST_ATTEMPTS_TABLE)
+        .select("score, total_questions, completed_at")
+        .eq("user_id", session.user.id)
+        .eq("direction", direction)
+        .order("completed_at", { ascending: false })
+        .limit(5);
+      if (attempts && attempts.length) {
+        historyHtml = `
+          <div style="margin-top:24px;">
+            <div style="color:#c9bfa8;font-size:14px;margin-bottom:8px;">Ваши прошлые попытки:</div>
+            ${attempts.map(a => `
+              <div style="display:flex;justify-content:space-between;padding:8px 12px;border-bottom:1px solid rgba(225,180,52,.15);font-size:14px;">
+                <span>${new Date(a.completed_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                <span style="color:#f6d66c;">${a.score} из ${a.total_questions}</span>
+              </div>`).join("")}
+          </div>`;
+      }
+    }
+
+    const box = document.getElementById("testIntroBox");
+    if (!count) {
+      box.innerHTML = `<div class="table-card"><div class="empty-table">Вопросы для этого теста пока не добавлены.</div></div>`;
+      return;
+    }
+
+    box.innerHTML = `
+      <p style="color:#eee5d0;">Вопросов в тесте: ${count}. В каждом вопросе один правильный вариант из четырёх. Можно возвращаться к предыдущим вопросам и менять ответ, пока тест не завершён.</p>
+      <button class="material-manager-button" style="width:auto;" onclick='startTest(${JSON.stringify(direction)},${JSON.stringify(title)})'>Начать тест</button>
+      ${historyHtml}`;
+  } catch (error) {
+    console.error("Ошибка загрузки теста:", error);
+    document.getElementById("testIntroBox").innerHTML = `<div class="table-card"><div class="empty-table">Не удалось загрузить тест.</div></div>`;
+  }
+}
+
+async function startTest(direction, title) {
+  testPageShell(`<p>Загрузка вопросов...</p>`);
+
+  try {
+    const { data, error } = await supabaseClient
+      .from(TEST_QUESTIONS_TABLE)
+      .select("id, question_order, question_text, option_a, option_b, option_c, option_d, correct_option")
+      .eq("direction", direction)
+      .order("question_order", { ascending: true });
+    if (error) throw error;
+    if (!data || !data.length) {
+      testPageShell(`<div class="table-card"><div class="empty-table">Вопросы не найдены.</div></div>`);
+      return;
+    }
+
+    testState = { direction, title, questions: data, currentIndex: 0, answers: {} };
+    renderTestQuestion();
+  } catch (error) {
+    console.error("Ошибка запуска теста:", error);
+    testPageShell(`<div class="table-card"><div class="empty-table">Не удалось загрузить вопросы.</div></div>`);
+  }
+}
+
+function renderTestQuestion() {
+  if (!testState) return;
+  const { questions, currentIndex, answers, title } = testState;
+  const q = questions[currentIndex];
+  const total = questions.length;
+  const selected = answers[q.id];
+  const isLast = currentIndex === total - 1;
+  const answeredCount = Object.keys(answers).length;
+
+  const options = [["a", q.option_a], ["b", q.option_b], ["c", q.option_c], ["d", q.option_d]];
+
+  testPageShell(`
+      <button onclick="if(confirm('Прервать тест? Прогресс не сохранится.')) location.reload()" style="background:none;border:none;color:#d7aa31;cursor:pointer;font-size:14px;margin-bottom:16px;">← Прервать тест</button>
+      <div>
+        <div style="color:#c9bfa8;font-size:14px;margin-bottom:6px;">${escapeHtml(title)} · Вопрос ${currentIndex + 1} из ${total}</div>
+        <div style="height:4px;background:rgba(255,255,255,.1);border-radius:2px;margin-bottom:20px;overflow:hidden;">
+          <div style="height:100%;width:${((currentIndex + 1) / total) * 100}%;background:#d7aa31;"></div>
+        </div>
+
+        <h2 style="color:#f6d66c;font-family:Georgia,serif;font-weight:500;font-size:20px;margin-bottom:20px;">${escapeHtml(q.question_text)}</h2>
+
+        <div id="testOptionsBox">
+          ${options.map(([letter, text]) => `
+            <button type="button" class="test-option${selected === letter ? " selected" : ""}" onclick="selectTestAnswer('${letter}')">
+              <span class="test-option-letter">${letter.toUpperCase()}</span>
+              <span>${escapeHtml(text)}</span>
+            </button>`).join("")}
+        </div>
+
+        <div style="display:flex;gap:12px;margin-top:24px;">
+          ${currentIndex > 0 ? `<button class="material-manager-button" style="width:auto;background:rgba(0,0,0,.15);" onclick="goToTestQuestion(${currentIndex - 1})">← Назад</button>` : ""}
+          ${!isLast ? `<button class="material-manager-button" style="width:auto;" onclick="goToTestQuestion(${currentIndex + 1})">Далее →</button>` : ""}
+          ${isLast ? `<button class="material-manager-button" style="width:auto;" onclick="finishTest()">Завершить тест</button>` : ""}
+        </div>
+
+        <div style="margin-top:18px;display:flex;flex-wrap:wrap;gap:6px;">
+          ${questions.map((qq, i) => `
+            <button onclick="goToTestQuestion(${i})" style="width:30px;height:30px;border-radius:6px;border:1px solid rgba(225,180,52,.4);cursor:pointer;font-size:12px;
+              background:${i === currentIndex ? "#d7aa31" : (answers[qq.id] ? "rgba(215,170,49,.35)" : "rgba(0,0,0,.15)")};
+              color:${i === currentIndex ? "#1a1030" : "#f8e7a8"};">${i + 1}</button>`).join("")}
+        </div>
+        <div style="color:#8a8098;font-size:13px;margin-top:8px;">Отвечено: ${answeredCount} из ${total}</div>
+      </div>`);
+}
+
+function selectTestAnswer(letter) {
+  if (!testState) return;
+  const q = testState.questions[testState.currentIndex];
+  testState.answers[q.id] = letter;
+  renderTestQuestion();
+}
+
+function goToTestQuestion(index) {
+  if (!testState) return;
+  testState.currentIndex = index;
+  renderTestQuestion();
+}
+
+async function finishTest() {
+  if (!testState) return;
+  const { direction, title, questions, answers } = testState;
+
+  const unanswered = questions.filter(q => !answers[q.id]).length;
+  if (unanswered > 0 && !confirm(`Вы не ответили на ${unanswered} вопрос(ов). Завершить тест всё равно?`)) {
+    return;
+  }
+
+  let score = 0;
+  questions.forEach(q => { if (answers[q.id] === q.correct_option) score++; });
+
+  testPageShell(`<p>Сохраняю результат...</p>`);
+
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session) {
+      await supabaseClient.from(TEST_ATTEMPTS_TABLE).insert({
+        user_id: session.user.id,
+        direction,
+        score,
+        total_questions: questions.length,
+        answers,
+      });
+    }
+  } catch (error) {
+    console.error("Не удалось сохранить результат теста:", error);
+  }
+
+  renderTestResult(score, questions.length, answers, questions, direction, title);
+}
+
+function renderTestResult(score, total, answers, questions, direction, title) {
+  const percent = Math.round((score / total) * 100);
+  const dateStr = new Date().toLocaleDateString("ru-RU");
+
+  testPageShell(`
+      <div style="text-align:center;">
+        <div style="font-size:48px;margin-bottom:10px;">${percent >= 70 ? "🎉" : "📝"}</div>
+        <h2 style="color:#f6d66c;font-family:Georgia,serif;font-weight:500;">Тест завершён</h2>
+        <p style="font-size:24px;color:#f8e7a8;margin:10px 0;">Правильно: <strong style="color:#f6d66c;">${score} из ${total}</strong></p>
+        <p style="color:#c9bfa8;font-size:14px;">Дата прохождения: ${dateStr}</p>
+
+        <div style="display:flex;gap:12px;margin-top:24px;justify-content:center;flex-wrap:wrap;">
+          <button class="material-manager-button" style="width:auto;" onclick='reviewTestAnswers(${JSON.stringify(direction)},${JSON.stringify(title)})'>Посмотреть ответы</button>
+          <button class="material-manager-button" style="width:auto;" onclick='startTest(${JSON.stringify(direction)},${JSON.stringify(title)})'>Пройти ещё раз</button>
+          <button class="material-manager-button" style="width:auto;background:rgba(0,0,0,.15);" onclick="location.reload()">К списку тестов</button>
+        </div>
+      </div>`);
+
+  window._lastTestReview = { questions, answers };
+}
+
+function reviewTestAnswers(direction, title) {
+  const review = window._lastTestReview;
+  if (!review) return;
+  const { questions, answers } = review;
+  const letters = { a: "A", b: "B", c: "C", d: "D" };
+
+  testPageShell(`
+      <button onclick="location.reload()" style="background:none;border:none;color:#d7aa31;cursor:pointer;font-size:14px;margin-bottom:16px;">← К списку тестов</button>
+      <h2 style="color:#f6d66c;font-family:Georgia,serif;font-weight:500;">${escapeHtml(title)} — разбор ответов</h2>
+      <div>
+        ${questions.map((q, i) => {
+          const userAns = answers[q.id];
+          const isCorrect = userAns === q.correct_option;
+          const options = { a: q.option_a, b: q.option_b, c: q.option_c, d: q.option_d };
+          return `
+            <div style="margin-bottom:20px;padding:16px;border-radius:12px;border:1px solid ${isCorrect ? "rgba(120,200,120,.4)" : "rgba(220,100,100,.4)"};background:rgba(255,255,255,.03);">
+              <div style="color:#c9bfa8;font-size:13px;margin-bottom:4px;">Вопрос ${i + 1}</div>
+              <div style="color:#f8e7a8;margin-bottom:10px;">${escapeHtml(q.question_text)}</div>
+              <div style="font-size:14px;">
+                <div style="color:${isCorrect ? "#8fd98f" : "#ff9d9d"};">Ваш ответ: ${userAns ? letters[userAns] + ") " + escapeHtml(options[userAns]) : "не отвечено"}</div>
+                ${!isCorrect ? `<div style="color:#8fd98f;margin-top:4px;">Правильный ответ: ${letters[q.correct_option]}) ${escapeHtml(options[q.correct_option])}</div>` : ""}
+              </div>
+            </div>`;
+        }).join("")}
+      </div>`);
+}
+
+
+/* ============================================================
+   МЕТОДИЧЕСКИЕ ПОСОБИЯ / ВИДЕО
    Единая система: таблица platform_materials + bucket methodicals.
    Для каждого направления — одна запись (ссылка или файл).
    ============================================================ */
@@ -1649,16 +1995,20 @@ async function renderAccess() {
       }).join("");
 
       const table = `
+        <div style="overflow-x:auto;">
         <table class="data-table">
           <thead><tr><th>Направление</th>${CONTENT_TYPES.map(c => `<th>${c.label}</th>`).join("")}</tr></thead>
           <tbody>${dirRows}</tbody>
         </table>
+        </div>
+        <div style="overflow-x:auto;">
         <table class="data-table" style="margin-top:14px;">
           <tbody>
             <tr><td>Библиотека нумеролога</td><td>${itemStatus(scope.library)}</td></tr>
             <tr><td>Мои расчёты</td><td>${itemStatus(scope.my_calculations)}</td></tr>
           </tbody>
-        </table>`;
+        </table>
+        </div>`;
 
       document.getElementById("accessTable").innerHTML = activePeriods.length
         ? table
@@ -1861,6 +2211,7 @@ async function loadAdminUsers() {
   teachersSorted.forEach((t, i) => { teacherNumber[t.id] = i + 1; });
 
   box.innerHTML = backLink + `
+    <div style="overflow-x:auto;">
     <table class="data-table">
       <thead><tr><th>Пользователь</th><th>Email</th><th>Телефон</th><th>Роль</th>${isRealAdmin ? "<th>Учитель</th>" : ""}<th>Статус</th></tr></thead>
       <tbody>
@@ -1882,7 +2233,8 @@ async function loadAdminUsers() {
           </tr>`;
         }).join("")}
       </tbody>
-    </table>`;
+    </table>
+    </div>`;
 }
 
 function viewNumerologistStudents(id, name) {
@@ -2058,10 +2410,12 @@ async function renderStatistics() {
       </div>
       <div class="table-card">
         <div class="table-title">Разделы платформы</div>
+        <div style="overflow-x:auto;">
         <table class="data-table">
           <thead><tr><th>Раздел</th><th>Количество материалов</th><th>Состояние</th></tr></thead>
           <tbody id="sectionStats"><tr><td colspan="3">Загрузка...</td></tr></tbody>
         </table>
+        </div>
       </div>
     </div>`;
 
