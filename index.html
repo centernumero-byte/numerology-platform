@@ -861,51 +861,115 @@ function calculate(type) {
     </div>`;
 }
 
+function reduceTo22(n) {
+  while (n > 22) {
+    n = String(n).split("").reduce((sum, d) => sum + Number(d), 0);
+  }
+  return n;
+}
+
+function colLetterToIndex(letters) {
+  let n = 0;
+  for (const ch of letters) n = n * 26 + (ch.charCodeAt(0) - 64);
+  return n;
+}
+
 function renderMatrixDiamondDiagram(engine, container) {
-  let A, B, V, G, center;
+  // Каждая точка: [метка, координата на листе "Диаграмма"]. Позиция на схеме считается
+  // автоматически по номеру столбца/строки относительно центра (e = AA23).
+  const CENTER_COL = colLetterToIndex("AA"), CENTER_ROW = 24;
+  const SCALE_X = 5.6, SCALE_Y = 6.0;
+
+  const cellRefs = {
+    a: "H24", a1: "L24", a2: "O24",
+    b: "AA6", b2: "AA9", b3: "AA13",
+    c: "AS24", c1: "AL24",
+    d: "AA43",
+    e: "AA23",
+    f: "N12", f2: "P14", f3: "R16",
+    g: "AM12", g2: "AK14", g3: "AI16",
+    k: "N37", k2: "P35", k3: "R33",
+    y: "AM37", y2: "AK35", y3: "AI33",
+    m1: "AI27", m2: "AF30",
+    h1: "Z36", h2: "AC33",
+  };
+
+  const values = {};
   try {
-    A = engine.cell("Диаграмма", "C5");   // Ключ Неба
-    B = engine.cell("Диаграмма", "C6");   // Ключ Земли
-    V = engine.cell("Диаграмма", "C9");   // Ключ Рода Отца
-    G = engine.cell("Диаграмма", "C10");  // Ключ Рода Матери
-    center = engine.cell("Диаграмма", "C13"); // Личная сила
-  } catch (e) {
+    for (const key in cellRefs) {
+      values[key] = engine.cell("Диаграмма", cellRefs[key]);
+    }
+  } catch (err) {
     return;
   }
-  if ([A, B, V, G, center].every(v => v === undefined || v === 0)) return;
 
-  const points = [
-    { label: "Небо", value: A, x: 100, y: 30 },
-    { label: "Земля", value: B, x: 175, y: 100 },
-    { label: "Род отца", value: V, x: 100, y: 170 },
-    { label: "Род матери", value: G, x: 25, y: 100 },
-  ];
+  function coordToPixel(ref) {
+    const m = ref.match(/^([A-Z]+)(\d+)$/);
+    const col = colLetterToIndex(m[1]);
+    const row = Number(m[2]);
+    return {
+      x: 140 + (col - CENTER_COL) * SCALE_X,
+      y: 140 + (row - CENTER_ROW) * SCALE_Y,
+    };
+  }
 
-  const pointsSvg = points.map(p => {
-    if (p.value === undefined) return "";
+  const positions = {};
+  for (const key in cellRefs) positions[key] = coordToPixel(cellRefs[key]);
+
+  const mainKeys = ["a", "b", "c", "d"];
+  const outerKeys = ["f", "g", "k", "y"];
+  const subKeys = ["a1", "a2", "b2", "b3", "c1", "f2", "f3", "g2", "g3", "k2", "k3", "y2", "y3", "m1", "m2", "h1", "h2"];
+
+  const outerSquareLines = `
+    <line x1="${positions.f.x}" y1="${positions.f.y}" x2="${positions.g.x}" y2="${positions.g.y}" stroke="rgba(225,180,52,.3)" stroke-width="1"/>
+    <line x1="${positions.g.x}" y1="${positions.g.y}" x2="${positions.y.x}" y2="${positions.y.y}" stroke="rgba(225,180,52,.3)" stroke-width="1"/>
+    <line x1="${positions.y.x}" y1="${positions.y.y}" x2="${positions.k.x}" y2="${positions.k.y}" stroke="rgba(225,180,52,.3)" stroke-width="1"/>
+    <line x1="${positions.k.x}" y1="${positions.k.y}" x2="${positions.f.x}" y2="${positions.f.y}" stroke="rgba(225,180,52,.3)" stroke-width="1"/>`;
+  const innerDiamondLines = `
+    <line x1="${positions.b.x}" y1="${positions.b.y}" x2="${positions.c.x}" y2="${positions.c.y}" stroke="rgba(225,180,52,.45)" stroke-width="1"/>
+    <line x1="${positions.c.x}" y1="${positions.c.y}" x2="${positions.d.x}" y2="${positions.d.y}" stroke="rgba(225,180,52,.45)" stroke-width="1"/>
+    <line x1="${positions.d.x}" y1="${positions.d.y}" x2="${positions.a.x}" y2="${positions.a.y}" stroke="rgba(225,180,52,.45)" stroke-width="1"/>
+    <line x1="${positions.a.x}" y1="${positions.a.y}" x2="${positions.b.x}" y2="${positions.b.y}" stroke="rgba(225,180,52,.45)" stroke-width="1"/>`;
+  const lineageLines = `
+    <line x1="${positions.f.x}" y1="${positions.f.y}" x2="${positions.y.x}" y2="${positions.y.y}" stroke="rgba(120,80,190,.5)" stroke-width="1.2" stroke-dasharray="3,2"/>
+    <line x1="${positions.g.x}" y1="${positions.g.y}" x2="${positions.k.x}" y2="${positions.k.y}" stroke="rgba(200,60,60,.5)" stroke-width="1.2" stroke-dasharray="3,2"/>`;
+  const dollarHeartLines = `
+    <line x1="${positions.c1.x}" y1="${positions.c1.y}" x2="${positions.m1.x}" y2="${positions.m1.y}" stroke="rgba(140,200,90,.5)" stroke-width="1"/>
+    <line x1="${positions.m1.x}" y1="${positions.m1.y}" x2="${positions.m2.x}" y2="${positions.m2.y}" stroke="rgba(140,200,90,.5)" stroke-width="1"/>
+    <line x1="${positions.h1.x}" y1="${positions.h1.y}" x2="${positions.h2.x}" y2="${positions.h2.y}" stroke="rgba(210,70,70,.5)" stroke-width="1"/>
+    <line x1="${positions.h2.x}" y1="${positions.h2.y}" x2="${positions.m2.x}" y2="${positions.m2.y}" stroke="rgba(210,70,70,.5)" stroke-width="1"/>`;
+
+  function circle(p, value, r, fs, fill) {
     return `
-      <circle cx="${p.x}" cy="${p.y}" r="20" fill="rgba(113,49,153,.55)" stroke="#d7aa31" stroke-width="1.5"/>
-      <text x="${p.x}" y="${p.y + 6}" text-anchor="middle" font-family="Georgia,serif" font-size="16" fill="#f6d66c">${escapeHtml(String(p.value))}</text>
-      <text x="${p.x}" y="${p.y + 34}" text-anchor="middle" font-size="10" fill="#c9bfa8">${escapeHtml(p.label)}</text>`;
-  }).join("");
+      <circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${fill || "rgba(113,49,153,.55)"}" stroke="#d7aa31" stroke-width="1.2"/>
+      <text x="${p.x}" y="${p.y + fs * 0.35}" text-anchor="middle" font-family="Georgia,serif" font-size="${fs}" fill="#f6d66c">${escapeHtml(String(value))}</text>`;
+  }
+
+  const mainSvg = mainKeys.map(k => circle(positions[k], values[k], 16, 13)).join("");
+  const outerSvg = outerKeys.map(k => circle(positions[k], values[k], 13, 11)).join("");
+  const subSvg = subKeys.map(k => circle(positions[k], values[k], 9, 8, "rgba(90,90,110,.5)")).join("");
+  const centerSvg = circle(positions.e, values.e, 18, 14, "rgba(215,170,49,.35)");
+  const dollarSign = `<text x="${positions.m1.x - 14}" y="${positions.m1.y}" font-size="13" fill="#8fd98f">$</text>`;
+  const heartSign = `<text x="${positions.h2.x - 4}" y="${positions.h2.y + 14}" font-size="13" fill="#e07a7a">♥</text>`;
 
   const box = document.createElement("div");
-  box.style.cssText = "max-width:340px;margin:0 auto 30px;text-align:center;";
+  box.style.cssText = "max-width:360px;margin:0 auto 30px;text-align:center;";
   box.innerHTML = `
-    <div style="color:#c9bfa8;font-size:14px;margin-bottom:10px;">Ключевые точки матрицы</div>
-    <svg viewBox="0 0 260 260" style="width:100%;max-width:320px;">
-      <g transform="translate(40,25)">
-      <line x1="100" y1="30" x2="175" y2="100" stroke="rgba(225,180,52,.4)" stroke-width="1"/>
-      <line x1="175" y1="100" x2="100" y2="170" stroke="rgba(225,180,52,.4)" stroke-width="1"/>
-      <line x1="100" y1="170" x2="25" y2="100" stroke="rgba(225,180,52,.4)" stroke-width="1"/>
-      <line x1="25" y1="100" x2="100" y2="30" stroke="rgba(225,180,52,.4)" stroke-width="1"/>
-      ${center !== undefined ? `
-        <circle cx="100" cy="100" r="22" fill="rgba(215,170,49,.25)" stroke="#f6d66c" stroke-width="2"/>
-        <text x="100" y="106" text-anchor="middle" font-family="Georgia,serif" font-size="18" fill="#f6d66c">${escapeHtml(String(center))}</text>` : ""}
-      ${pointsSvg}
-      </g>
+    <div style="color:#c9bfa8;font-size:14px;margin-bottom:10px;">Диаграмма матрицы</div>
+    <svg viewBox="0 0 280 280" style="width:100%;max-width:340px;">
+      ${outerSquareLines}
+      ${innerDiamondLines}
+      ${lineageLines}
+      ${dollarHeartLines}
+      ${dollarSign}
+      ${heartSign}
+      ${centerSvg}
+      ${subSvg}
+      ${outerSvg}
+      ${mainSvg}
     </svg>
-    ${center !== undefined ? `<div style="color:#c9bfa8;font-size:10px;margin-top:-6px;">Личная сила</div>` : ""}`;
+    <div style="color:#8a8098;font-size:10px;margin-top:6px;">a — визитка · b — ангел-хранитель · c — материальная карма · d — главная задача · e — личная сила</div>
+    <div style="color:#8a8098;font-size:10px;">f/g — таланты по роду отца/матери · k/y — родовые программы · линии рода мужская/женская</div>`;
   container.insertBefore(box, container.firstChild);
 }
 
@@ -1220,6 +1284,64 @@ function calculateCompatibility() {
   }
 
   renderEditableResult(res.blocks, result, "Совместимость - " + birthDate1 + " и " + birthDate2, "");
+  renderCompatibilityDiagrams(d1, m1, y1, d2, m2, y2, result);
+}
+
+function computeDiamondPoints(day, month, year) {
+  const A = reduceTo22(day);
+  const B = month;
+  const C = reduceTo22(String(year).split("").reduce((sum, d) => sum + Number(d), 0));
+  const D = reduceTo22(A + B + C);
+  return { A, B, C, D };
+}
+
+function diamondSvgMarkup(points, title) {
+  const layout = [
+    { key: "A", label: "a", x: 25, y: 100 },
+    { key: "B", label: "b", x: 100, y: 30 },
+    { key: "C", label: "c", x: 175, y: 100 },
+    { key: "D", label: "d", x: 100, y: 170 },
+  ];
+  const pointsSvg = layout.map(p => `
+      <circle cx="${p.x}" cy="${p.y}" r="18" fill="rgba(113,49,153,.55)" stroke="#d7aa31" stroke-width="1.5"/>
+      <text x="${p.x}" y="${p.y + 5}" text-anchor="middle" font-family="Georgia,serif" font-size="14" fill="#f6d66c">${escapeHtml(String(points[p.key]))}</text>
+      <text x="${p.x}" y="${p.y + 30}" text-anchor="middle" font-size="9" fill="#c9bfa8">${p.label}</text>`).join("");
+
+  return `
+    <div style="flex:1;min-width:130px;text-align:center;">
+      <div style="color:#c9bfa8;font-size:12px;margin-bottom:6px;">${escapeHtml(title)}</div>
+      <svg viewBox="0 0 200 200" style="width:100%;max-width:170px;">
+        <g transform="translate(0,10)">
+        <line x1="100" y1="30" x2="175" y2="100" stroke="rgba(225,180,52,.4)" stroke-width="1"/>
+        <line x1="175" y1="100" x2="100" y2="170" stroke="rgba(225,180,52,.4)" stroke-width="1"/>
+        <line x1="100" y1="170" x2="25" y2="100" stroke="rgba(225,180,52,.4)" stroke-width="1"/>
+        <line x1="25" y1="100" x2="100" y2="30" stroke="rgba(225,180,52,.4)" stroke-width="1"/>
+        ${pointsSvg}
+        </g>
+      </svg>
+    </div>`;
+}
+
+function renderCompatibilityDiagrams(d1, m1, y1, d2, m2, y2, container) {
+  const p1 = computeDiamondPoints(d1, m1, y1);
+  const p2 = computeDiamondPoints(d2, m2, y2);
+  const combined = {
+    A: reduceTo22(p1.A + p2.A),
+    B: reduceTo22(p1.B + p2.B),
+    C: reduceTo22(p1.C + p2.C),
+    D: reduceTo22(p1.D + p2.D),
+  };
+
+  const box = document.createElement("div");
+  box.style.cssText = "max-width:600px;margin:0 auto 30px;";
+  box.innerHTML = `
+    <div style="color:#c9bfa8;font-size:14px;margin-bottom:14px;text-align:center;">Диаграммы партнёров и пары</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
+      ${diamondSvgMarkup(p1, "Партнёр № 1")}
+      ${diamondSvgMarkup(p2, "Партнёр № 2")}
+      ${diamondSvgMarkup(combined, "Пара")}
+    </div>`;
+  container.insertBefore(box, container.firstChild);
 }
 
 function renderVedicResult(name, birthDate, container) {
