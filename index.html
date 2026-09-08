@@ -1184,7 +1184,7 @@ function renderAdultMatrixResult(name, birthDate, container) {
       ${healthHtml}
       <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;">
         <button type="button" id="editToggleBtn" class="material-manager-button" style="width:auto;" onclick="toggleResultEditing(this)">✏️ Изменить</button>
-        <button type="button" class="material-manager-button" style="width:auto;" onclick="downloadAdultMatrixText(${JSON.stringify(name)}, ${JSON.stringify(birthDate)})">Скачать (диаграмма + текст)</button>
+        <button type="button" class="material-manager-button" style="width:auto;" onclick='downloadAdultMatrixText(${JSON.stringify(name)}, ${JSON.stringify(birthDate)})'>Скачать (диаграмма + текст)</button>
         <button type="button" class="material-manager-button" style="width:auto;background:rgba(0,0,0,.15);" onclick="location.reload()">Новый расчёт</button>
       </div>
     </div>`;
@@ -1390,7 +1390,7 @@ function renderEditableResult(blocks, container, personLabel, dateLabel) {
       ${bodyBlocksHtml}
       <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;">
         <button type="button" id="editToggleBtn" class="material-manager-button" style="width:auto;" onclick="toggleResultEditing(this)">✏️ Изменить</button>
-        <button type="button" class="material-manager-button" style="width:auto;" onclick="downloadEditableResult(${JSON.stringify(personLabel)}, ${JSON.stringify(dateLabel)})">Скачать текст</button>
+        <button type="button" class="material-manager-button" style="width:auto;" onclick='downloadEditableResult(${JSON.stringify(personLabel)}, ${JSON.stringify(dateLabel)})'>Скачать текст</button>
         <button type="button" class="material-manager-button" style="width:auto;background:rgba(0,0,0,.15);" onclick="location.reload()">Новый расчёт</button>
       </div>
     </div>`;
@@ -1863,7 +1863,7 @@ async function loadDirectionMaterialsList() {
   try {
     const { data, error } = await supabaseClient
       .from(PLATFORM_MATERIALS_TABLE)
-      .select("id, material_type, url, file_path, title, created_at")
+      .select("id, material_type, url, file_path, title, created_at, created_by")
       .eq("section", section)
       .eq("direction", direction)
       .order("created_at", { ascending: false });
@@ -1890,7 +1890,7 @@ async function loadDirectionMaterialsList() {
             <div class="material-row-meta">${meta}${date ? (meta ? " · " : "") + date : ""}</div>
           </div>
           <button class="material-row-open" onclick='openMaterialById(${JSON.stringify(item.id)})'>Открыть</button>
-          ${window.currentUserIsManager ? `<button class="material-row-open" style="margin-left:8px;background:rgba(200,60,60,.35);" onclick='deleteMaterialById(${JSON.stringify(item.id)})' title="Удалить">🗑</button>` : ""}
+          ${(window.currentUserRole === "admin" || item.created_by === window.currentUserId) ? `<button class="material-row-open" style="margin-left:8px;background:rgba(200,60,60,.35);" onclick='deleteMaterialById(${JSON.stringify(item.id)})' title="Удалить">🗑</button>` : ""}
         </div>`;
     }).join("");
   } catch (error) {
@@ -3026,6 +3026,7 @@ async function checkAuth() {
     }
 
     window.currentUserRole = isAdminEmail(userEmail) ? "admin" : role;
+    window.currentUserId = user.id;
     window.currentUserIsManager = isManager;
     window.currentUserHasAccess = hasAccess;
     window.currentUserGrant = currentGrant;
