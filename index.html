@@ -912,6 +912,8 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
         g: "AM12", g2: "AK14", g3: "AI16",
         k: "N37", k2: "P35", k3: "R33",
         y: "AM37", y2: "AK35", y3: "AI33",
+        m1: "AI27", m2: "AF30",
+        h1: "Z36", h2: "AC33",
       };
   const cellRefs = {};
   for (const key in baseCellRefs) cellRefs[key] = shift(baseCellRefs[key]);
@@ -952,17 +954,25 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   positions.c = polar(0, R1);
   positions.d = polar(90, R1);
 
-  // Подточки держим ближе к своему «родительскому» углу, а не растягиваем к центру.
-  positions.a1 = along(positions.a, positions.e, 0.16);
-  positions.a2 = along(positions.a, positions.e, 0.30);
-  positions.a3 = along(positions.a, positions.e, 0.44);
+  // Подточки держим ближе к своему «родительскому» углу; a3/b3 (Анахата, зелёные) — ближе к центру.
+  positions.a2 = along(positions.a, positions.e, 0.16);
+  positions.a1 = along(positions.a, positions.e, 0.30);
+  positions.a3 = along(positions.a, positions.e, 0.60);
   positions.b2 = along(positions.b, positions.e, 0.16);
   positions.b1 = along(positions.b, positions.e, 0.30);
-  positions.b3 = along(positions.b, positions.e, 0.44);
-  positions.c1 = along(positions.c, positions.e, 0.22);
-  positions.c2 = along(positions.c, positions.e, 0.40);
-  positions.d1 = along(positions.d, positions.e, 0.22);
-  positions.d2 = along(positions.d, positions.e, 0.40);
+  positions.b3 = along(positions.b, positions.e, 0.60);
+  positions.c2 = along(positions.c, positions.e, 0.22);
+  positions.c1 = along(positions.c, positions.e, 0.40);
+  positions.d2 = along(positions.d, positions.e, 0.22);
+  positions.d1 = along(positions.d, positions.e, 0.40);
+
+  if (!omitAncestral) {
+    // $ и ♥ — на линиях между точками c/d и центром, в нижне-правой четверти.
+    positions.m1 = along(positions.c, positions.d, 0.62);
+    positions.m2 = along(positions.m1, positions.e, 0.55);
+    positions.h1 = along(positions.d, positions.e, 0.62);
+    positions.h2 = along(positions.h1, positions.c, 0.4);
+  }
 
   if (!omitAncestral) {
     positions.f = polar(225, R2);
@@ -982,8 +992,9 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   const pointColor = {
     a: CHAKRA_COLOR.muladhara, a1: CHAKRA_COLOR.vishudha, a2: CHAKRA_COLOR.adjna, a3: CHAKRA_COLOR.anahata,
     b: CHAKRA_COLOR.sahasrara, b1: CHAKRA_COLOR.vishudha, b2: CHAKRA_COLOR.adjna, b3: CHAKRA_COLOR.anahata,
-    c: CHAKRA_COLOR.muladhara, c1: CHAKRA_COLOR.svadhistana, c2: CHAKRA_COLOR.svadhistana,
-    d: CHAKRA_COLOR.muladhara, d1: CHAKRA_COLOR.svadhistana, d2: CHAKRA_COLOR.svadhistana,
+    c: CHAKRA_COLOR.muladhara, c1: CHAKRA_COLOR.svadhistana, c2: CHAKRA_COLOR.neutral,
+    d: CHAKRA_COLOR.muladhara, d1: CHAKRA_COLOR.svadhistana, d2: CHAKRA_COLOR.neutral,
+    m1: "#6fbf5e", m2: "#6fbf5e", h1: "#d1483e", h2: "#d1483e",
     e: CHAKRA_COLOR.manipura,
     f: CHAKRA_COLOR.neutral, f2: CHAKRA_COLOR.neutral, f3: CHAKRA_COLOR.neutral,
     g: CHAKRA_COLOR.neutral, g2: CHAKRA_COLOR.neutral, g3: CHAKRA_COLOR.neutral,
@@ -993,9 +1004,10 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
 
   const mainKeys = ["a", "b", "c", "d"];
   const outerKeys = omitAncestral ? [] : ["f", "g", "k", "y"];
+  const moneyHeartKeys = omitAncestral ? [] : ["m1", "m2", "h1", "h2"];
   const subKeys = omitAncestral
     ? ["a1", "a2", "a3", "b1", "b2", "b3", "c1", "c2", "d1", "d2"]
-    : ["a1", "a2", "a3", "b1", "b2", "b3", "c1", "c2", "d1", "d2", "f2", "f3", "g2", "g3", "k2", "k3", "y2", "y3"];
+    : ["a1", "a2", "a3", "b1", "b2", "b3", "c1", "c2", "d1", "d2", "f2", "f3", "g2", "g3", "k2", "k3", "y2", "y3", ...moneyHeartKeys];
 
   const outerSquareLines = omitAncestral ? "" : `
     <line x1="${positions.f.x}" y1="${positions.f.y}" x2="${positions.g.x}" y2="${positions.g.y}" stroke="rgba(225,180,52,.3)" stroke-width="1"/>
@@ -1010,6 +1022,13 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   const lineageLines = omitAncestral ? "" : `
     <line x1="${positions.f.x}" y1="${positions.f.y}" x2="${positions.y.x}" y2="${positions.y.y}" stroke="rgba(120,80,190,.5)" stroke-width="1.2" stroke-dasharray="3,2"/>
     <line x1="${positions.g.x}" y1="${positions.g.y}" x2="${positions.k.x}" y2="${positions.k.y}" stroke="rgba(200,60,60,.5)" stroke-width="1.2" stroke-dasharray="3,2"/>`;
+  const moneyHeartLines = omitAncestral ? "" : `
+    <line x1="${positions.c.x}" y1="${positions.c.y}" x2="${positions.m1.x}" y2="${positions.m1.y}" stroke="rgba(140,200,90,.5)" stroke-width="1" stroke-dasharray="2,2"/>
+    <line x1="${positions.m1.x}" y1="${positions.m1.y}" x2="${positions.m2.x}" y2="${positions.m2.y}" stroke="rgba(140,200,90,.5)" stroke-width="1" stroke-dasharray="2,2"/>
+    <line x1="${positions.d.x}" y1="${positions.d.y}" x2="${positions.h1.x}" y2="${positions.h1.y}" stroke="rgba(210,70,70,.5)" stroke-width="1" stroke-dasharray="2,2"/>
+    <line x1="${positions.h1.x}" y1="${positions.h1.y}" x2="${positions.h2.x}" y2="${positions.h2.y}" stroke="rgba(210,70,70,.5)" stroke-width="1" stroke-dasharray="2,2"/>`;
+  const dollarSign = omitAncestral ? "" : `<text x="${positions.m1.x + 12}" y="${positions.m1.y - 6}" font-size="13" fill="#8fd98f" font-weight="700">$</text>`;
+  const heartSign = omitAncestral ? "" : `<text x="${positions.h1.x - 16}" y="${positions.h1.y + 5}" font-size="13" fill="#e07a7a">♥</text>`;
 
   function circle(p, value, r, fs, fill) {
     return `
@@ -1025,7 +1044,7 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
 
   const viewSize = svgSize === "small" ? 215 : 365;
   const svg = `<svg viewBox="0 0 ${viewSize} ${viewSize}" style="width:100%;max-width:${svgSize === "small" ? 230 : 380}px;">
-      ${outerSquareLines}${innerDiamondLines}${lineageLines}${centerSvg}${subSvg}${outerSvg}${mainSvg}
+      ${outerSquareLines}${innerDiamondLines}${lineageLines}${moneyHeartLines}${dollarSign}${heartSign}${centerSvg}${subSvg}${outerSvg}${mainSvg}
     </svg>`;
 
   return { svg, values };
@@ -1124,11 +1143,23 @@ function renderPurposeDiagram(diagramValues, container, afterNode) {
   const box = document.createElement("div");
   box.style.cssText = "max-width:380px;margin:0 auto 30px;text-align:center;";
   box.innerHTML = `
-    <div style="color:#c9bfa8;font-size:14px;margin-bottom:12px;">Предназначение</div>
-    ${pair("Небо", nebo, "Земля", zemlya, pred1, "1-е, личное", CHAKRA_COLOR.manipura)}
-    ${pair("Муж. линия", muzh, "Жен. линия", zhen, pred2, "2-е, социальное", CHAKRA_COLOR.adjna)}
-    ${pair("1-е", pred1, "2-е", pred2, pred3, "3-е, духовное", CHAKRA_COLOR.sahasrara)}
-    ${pair("2-е", pred2, "3-е", pred3, pred4, "4-е, планетарное", CHAKRA_COLOR.svadhistana)}`;
+    <div style="color:#c9bfa8;font-size:14px;margin-bottom:14px;">Предназначение</div>
+
+    <div style="color:#f6d66c;font-family:Georgia,serif;font-size:15px;margin-bottom:8px;">Личное предназначение</div>
+    ${pair("Небо", nebo, "Земля", zemlya, pred1, "", CHAKRA_COLOR.manipura)}
+
+    <div style="color:#f6d66c;font-family:Georgia,serif;font-size:15px;margin:18px 0 8px;">Социальное предназначение</div>
+    ${pair("Муж. линия", muzh, "Жен. линия", zhen, pred2, "", CHAKRA_COLOR.adjna)}
+
+    <div style="margin-top:18px;color:#f6d66c;font-family:Georgia,serif;font-size:15px;">Духовное предназначение</div>
+    <div style="color:#fff;font-family:Georgia,serif;font-size:22px;margin:4px 0;">${pred3}
+      <span style="color:#8a8098;font-size:12px;font-family:Arial,sans-serif;"> (${pred1} + ${pred2} = ${pred3})</span>
+    </div>
+
+    <div style="margin-top:14px;color:#f6d66c;font-family:Georgia,serif;font-size:15px;">Планетарное предназначение</div>
+    <div style="color:#fff;font-family:Georgia,serif;font-size:22px;margin:4px 0;">${pred4}
+      <span style="color:#8a8098;font-size:12px;font-family:Arial,sans-serif;"> (${pred2} + ${pred3} = ${pred4})</span>
+    </div>`;
   container.insertBefore(box, afterNode.nextSibling);
 }
 
@@ -1254,54 +1285,35 @@ function svgElementToPngDataUrl(svgEl) {
   });
 }
 
-async function downloadHtmlFile(filename, htmlBody) {
-  const pdfFilename = filename.replace(/\.html$/i, "") + ".pdf";
-
-  const container = document.createElement("div");
-  container.style.cssText = "position:fixed;left:0;top:0;width:700px;background:#17102f;color:#eee5d0;font-family:Arial,sans-serif;padding:24px;z-index:999999;opacity:1;";
-  container.innerHTML = `
-    <style>
-      h1,h2 { color:#f6d66c; font-family:Georgia,serif; font-weight:500; }
-      h2 { font-size:18px; margin-top:28px; border-bottom:1px solid rgba(225,180,52,.3); padding-bottom:6px; }
-      .num { color:#f6d66c; font-family:Georgia,serif; font-size:19px; margin:14px 0 4px; }
-      p { margin:0 0 14px; line-height:1.5; }
-      table { border-collapse:collapse; width:100%; margin:10px 0; }
-      td { padding:6px 4px; }
-      .diagram-wrap { text-align:center; margin-bottom:20px; }
-    </style>
-    ${htmlBody}`;
-  document.body.appendChild(container);
-
-  // html2canvas плохо справляется с «живым» SVG — конвертируем каждую диаграмму в PNG-картинку заранее.
-  const svgs = Array.from(container.querySelectorAll("svg"));
-  for (const svg of svgs) {
-    const dataUrl = await svgElementToPngDataUrl(svg);
-    if (dataUrl) {
-      const img = document.createElement("img");
-      img.src = dataUrl;
-      img.style.cssText = svg.getAttribute("style") || "";
-      img.style.maxWidth = "100%";
-      svg.replaceWith(img);
-    }
+function downloadHtmlFile(filename, htmlBody) {
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    alert("Браузер заблокировал открытие окна для печати. Разрешите всплывающие окна для этого сайта и попробуйте снова.");
+    return;
   }
-
-  // Даём браузеру время отрисовать контейнер перед захватом.
-  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-
-  try {
-    await html2pdf().set({
-      margin: 10,
-      filename: pdfFilename,
-      html2canvas: { backgroundColor: "#17102f", scale: 2, useCORS: true, logging: false },
-      jsPDF: { unit: "pt", format: "a4", orientation: "portrait" },
-      pagebreak: { mode: ["css", "legacy"] },
-    }).from(container).save();
-  } catch (error) {
-    console.error("Ошибка формирования PDF:", error);
-    alert("Не удалось сформировать PDF.\n\n" + (error.message || error));
-  } finally {
-    document.body.removeChild(container);
-  }
+  printWindow.document.write(`<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8">
+<title>${filename.replace(/\.html$/i, "")}</title>
+<style>
+  @page { margin: 16mm; }
+  body { background:#fff; color:#221733; font-family:Arial,sans-serif; padding:0; max-width:760px; margin:0 auto; }
+  h1,h2 { color:#5d2789; font-family:Georgia,serif; font-weight:600; }
+  h2 { font-size:18px; margin-top:28px; border-bottom:1px solid #d7aa31; padding-bottom:6px; }
+  .num { color:#8a3fbf; font-family:Georgia,serif; font-size:19px; margin:14px 0 4px; font-weight:700; }
+  p { margin:0 0 14px; line-height:1.5; }
+  table { border-collapse:collapse; width:100%; margin:10px 0; }
+  td { padding:6px 4px; }
+  .diagram-wrap { text-align:center; margin-bottom:20px; }
+  svg text { fill: #221733 !important; }
+  svg circle { stroke: #fff !important; }
+</style></head><body>
+  ${htmlBody}
+  <script>
+    window.onload = function () {
+      setTimeout(function () { window.print(); }, 300);
+    };
+  <\/script>
+</body></html>`);
+  printWindow.document.close();
 }
 
 function downloadAdultMatrixText(name, birthDate) {
