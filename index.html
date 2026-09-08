@@ -932,9 +932,9 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
 
   // Чистая геометрия: центр строго по точке e, остальные точки — по углу и расстоянию от центра.
   // Расположение вдоль линии — равными долями, независимо от исходных координат в Excel (те нужны только для значений).
-  const mid = svgSize === "small" ? 100 : 170;
-  const R1 = svgSize === "small" ? 55 : 95;   // радиус главного ромба (a,b,c,d)
-  const R2 = svgSize === "small" ? 82 : 140;  // радиус внешнего квадрата (f,g,k,y)
+  const mid = svgSize === "small" ? 105 : 180;
+  const R1 = svgSize === "small" ? 68 : 118;   // радиус главного ромба (a,b,c,d) — увеличен относительно внешнего квадрата
+  const R2 = svgSize === "small" ? 88 : 152;  // радиус внешнего квадрата (f,g,k,y)
 
   function polar(angleDeg, radius) {
     const rad = (angleDeg * Math.PI) / 180;
@@ -950,12 +950,12 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   positions.c = polar(0, R1);
   positions.d = polar(90, R1);
 
-  positions.a1 = along(positions.a, positions.e, 0.33);
-  positions.a2 = along(positions.a, positions.e, 0.58);
-  positions.a3 = along(positions.a, positions.e, 0.80);
-  positions.b1 = along(positions.b, positions.e, 0.58);
-  positions.b2 = along(positions.b, positions.e, 0.33);
-  positions.b3 = along(positions.b, positions.e, 0.80);
+  positions.a1 = along(positions.a, positions.e, 0.28);
+  positions.a2 = along(positions.a, positions.e, 0.52);
+  positions.a3 = along(positions.a, positions.e, 0.76);
+  positions.b2 = along(positions.b, positions.e, 0.28);
+  positions.b1 = along(positions.b, positions.e, 0.52);
+  positions.b3 = along(positions.b, positions.e, 0.76);
   positions.c1 = along(positions.c, positions.e, 0.5);
   positions.d1 = along(positions.d, positions.e, 0.5);
 
@@ -1018,7 +1018,7 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   const subSvg = subKeys.map(k => circle(positions[k], values[k], 9 * rScale, 8.5 * rScale, pointColor[k])).join("");
   const centerSvg = circle(positions.e, values.e, 18 * rScale, 14 * rScale, pointColor.e);
 
-  const viewSize = svgSize === "small" ? 200 : 340;
+  const viewSize = svgSize === "small" ? 215 : 365;
   const svg = `<svg viewBox="0 0 ${viewSize} ${viewSize}" style="width:100%;max-width:${svgSize === "small" ? 230 : 380}px;">
       ${outerSquareLines}${innerDiamondLines}${lineageLines}${centerSvg}${subSvg}${outerSvg}${mainSvg}
     </svg>`;
@@ -1217,11 +1217,43 @@ function renderAdultMatrixResult(name, birthDate, container) {
   renderMatrixDiamondDiagram(window.AdultMatrixEngine, container, true);
 }
 
+function svgElementToPngDataUrl(svgEl) {
+  return new Promise(function (resolve) {
+    const viewBox = svgEl.getAttribute("viewBox");
+    const [, , vbW, vbH] = viewBox ? viewBox.split(/\s+/).map(Number) : [0, 0, 300, 300];
+    const scale = 3;
+    const clone = svgEl.cloneNode(true);
+    clone.setAttribute("width", vbW);
+    clone.setAttribute("height", vbH);
+    clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+
+    const svgString = new XMLSerializer().serializeToString(clone);
+    const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(svgBlob);
+
+    const img = new Image();
+    img.onload = function () {
+      const canvas = document.createElement("canvas");
+      canvas.width = vbW * scale;
+      canvas.height = vbH * scale;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = function () {
+      URL.revokeObjectURL(url);
+      resolve(null);
+    };
+    img.src = url;
+  });
+}
+
 async function downloadHtmlFile(filename, htmlBody) {
   const pdfFilename = filename.replace(/\.html$/i, "") + ".pdf";
 
   const container = document.createElement("div");
-  container.style.cssText = "position:fixed;left:-9999px;top:0;width:700px;background:#17102f;color:#eee5d0;font-family:Arial,sans-serif;padding:24px;";
+  container.style.cssText = "position:fixed;left:0;top:0;width:700px;background:#17102f;color:#eee5d0;font-family:Arial,sans-serif;padding:24px;z-index:-1000;opacity:0.001;pointer-events:none;";
   container.innerHTML = `
     <style>
       h1,h2 { color:#f6d66c; font-family:Georgia,serif; font-weight:500; }
@@ -1235,11 +1267,27 @@ async function downloadHtmlFile(filename, htmlBody) {
     ${htmlBody}`;
   document.body.appendChild(container);
 
+  // html2canvas плохо справляется с «живым» SVG — конвертируем каждую диаграмму в PNG-картинку заранее.
+  const svgs = Array.from(container.querySelectorAll("svg"));
+  for (const svg of svgs) {
+    const dataUrl = await svgElementToPngDataUrl(svg);
+    if (dataUrl) {
+      const img = document.createElement("img");
+      img.src = dataUrl;
+      img.style.cssText = svg.getAttribute("style") || "";
+      img.style.maxWidth = "100%";
+      svg.replaceWith(img);
+    }
+  }
+
+  // Даём браузеру время отрисовать контейнер перед захватом.
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+
   try {
     await html2pdf().set({
       margin: 10,
       filename: pdfFilename,
-      html2canvas: { backgroundColor: "#17102f", scale: 2, useCORS: true },
+      html2canvas: { backgroundColor: "#17102f", scale: 2, useCORS: true, logging: false },
       jsPDF: { unit: "pt", format: "a4", orientation: "portrait" },
       pagebreak: { mode: ["css", "legacy"] },
     }).from(container).save();
@@ -1293,7 +1341,7 @@ function downloadAdultMatrixText(name, birthDate) {
     });
   }
 
-  downloadHtmlFile("Матрица судьбы - " + name + ".html", bodyHtml);
+  downloadHtmlFile("Взрослая матрица - " + name + " - " + birthDate + ".html", bodyHtml);
 }
 
 async function confirmInterruptTest() {
@@ -1358,7 +1406,7 @@ function calculatePythagoras() {
     return;
   }
 
-  renderEditableResult(res.blocks, result, lastName + " " + firstName, birthDate);
+  renderEditableResult(res.blocks, result, "Нумерология по Пифагору - " + lastName + " " + firstName, birthDate);
   renderPythDigitSquare(res.digitSquare, result);
   window._lastPythagorasResult = res;
 }
@@ -1570,7 +1618,7 @@ function renderVedicResult(name, birthDate, container) {
     return;
   }
 
-  renderEditableResult(res.blocks, container, name, birthDate);
+  renderEditableResult(res.blocks, container, "Ведическая нумерология - " + name, birthDate);
 }
 
 function renderChildMatrixResult(name, birthDate, container) {
