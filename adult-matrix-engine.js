@@ -4674,7 +4674,7 @@ function getFullResult(day, month, year, name) {
 
   const seenPrograms = new Set();
   const programs = [];
-  for (let r = 3; r <= 90; r++) {
+  for (let r = 3; r <= 158; r++) {
     const v = cell("Программы", "B" + r);
     if (v && String(v).trim() !== "" && !seenPrograms.has(v)) {
       seenPrograms.add(v);
