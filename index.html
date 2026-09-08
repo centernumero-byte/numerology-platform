@@ -928,12 +928,14 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   values.b2 = reduceTo22Diag(values.b + values.b1);
   values.b3 = reduceTo22Diag(values.b1 + values.e);
   values.c1 = reduceTo22Diag(values.c + values.e);
+  values.c2 = reduceTo22Diag(values.c + values.c1);
   values.d1 = reduceTo22Diag(values.d + values.e);
+  values.d2 = reduceTo22Diag(values.d + values.d1);
 
   // Чистая геометрия: центр строго по точке e, остальные точки — по углу и расстоянию от центра.
   // Расположение вдоль линии — равными долями, независимо от исходных координат в Excel (те нужны только для значений).
   const mid = svgSize === "small" ? 105 : 180;
-  const R1 = svgSize === "small" ? 68 : 118;   // радиус главного ромба (a,b,c,d) — увеличен относительно внешнего квадрата
+  const R1 = svgSize === "small" ? 78 : 135;   // радиус главного ромба (a,b,c,d) — заметно выступает за пределы квадрата
   const R2 = svgSize === "small" ? 88 : 152;  // радиус внешнего квадрата (f,g,k,y)
 
   function polar(angleDeg, radius) {
@@ -950,35 +952,38 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   positions.c = polar(0, R1);
   positions.d = polar(90, R1);
 
-  positions.a1 = along(positions.a, positions.e, 0.28);
-  positions.a2 = along(positions.a, positions.e, 0.52);
-  positions.a3 = along(positions.a, positions.e, 0.76);
-  positions.b2 = along(positions.b, positions.e, 0.28);
-  positions.b1 = along(positions.b, positions.e, 0.52);
-  positions.b3 = along(positions.b, positions.e, 0.76);
-  positions.c1 = along(positions.c, positions.e, 0.5);
-  positions.d1 = along(positions.d, positions.e, 0.5);
+  // Подточки держим ближе к своему «родительскому» углу, а не растягиваем к центру.
+  positions.a1 = along(positions.a, positions.e, 0.16);
+  positions.a2 = along(positions.a, positions.e, 0.30);
+  positions.a3 = along(positions.a, positions.e, 0.44);
+  positions.b2 = along(positions.b, positions.e, 0.16);
+  positions.b1 = along(positions.b, positions.e, 0.30);
+  positions.b3 = along(positions.b, positions.e, 0.44);
+  positions.c1 = along(positions.c, positions.e, 0.22);
+  positions.c2 = along(positions.c, positions.e, 0.40);
+  positions.d1 = along(positions.d, positions.e, 0.22);
+  positions.d2 = along(positions.d, positions.e, 0.40);
 
   if (!omitAncestral) {
     positions.f = polar(225, R2);
     positions.g = polar(315, R2);
     positions.k = polar(135, R2);
     positions.y = polar(45, R2);
-    positions.f2 = along(positions.f, positions.e, 0.35);
-    positions.f3 = along(positions.f, positions.e, 0.62);
-    positions.g2 = along(positions.g, positions.e, 0.35);
-    positions.g3 = along(positions.g, positions.e, 0.62);
-    positions.k2 = along(positions.k, positions.e, 0.35);
-    positions.k3 = along(positions.k, positions.e, 0.62);
-    positions.y2 = along(positions.y, positions.e, 0.35);
+    positions.f2 = along(positions.f, positions.e, 0.22);
+    positions.f3 = along(positions.f, positions.e, 0.40);
+    positions.g2 = along(positions.g, positions.e, 0.22);
+    positions.g3 = along(positions.g, positions.e, 0.40);
+    positions.k2 = along(positions.k, positions.e, 0.22);
+    positions.k3 = along(positions.k, positions.e, 0.40);
+    positions.y2 = along(positions.y, positions.e, 0.22);
     positions.y3 = along(positions.y, positions.e, 0.62);
   }
 
   const pointColor = {
     a: CHAKRA_COLOR.muladhara, a1: CHAKRA_COLOR.vishudha, a2: CHAKRA_COLOR.adjna, a3: CHAKRA_COLOR.anahata,
     b: CHAKRA_COLOR.sahasrara, b1: CHAKRA_COLOR.vishudha, b2: CHAKRA_COLOR.adjna, b3: CHAKRA_COLOR.anahata,
-    c: CHAKRA_COLOR.muladhara, c1: CHAKRA_COLOR.svadhistana,
-    d: CHAKRA_COLOR.muladhara, d1: CHAKRA_COLOR.svadhistana,
+    c: CHAKRA_COLOR.muladhara, c1: CHAKRA_COLOR.svadhistana, c2: CHAKRA_COLOR.svadhistana,
+    d: CHAKRA_COLOR.muladhara, d1: CHAKRA_COLOR.svadhistana, d2: CHAKRA_COLOR.svadhistana,
     e: CHAKRA_COLOR.manipura,
     f: CHAKRA_COLOR.neutral, f2: CHAKRA_COLOR.neutral, f3: CHAKRA_COLOR.neutral,
     g: CHAKRA_COLOR.neutral, g2: CHAKRA_COLOR.neutral, g3: CHAKRA_COLOR.neutral,
@@ -989,8 +994,8 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   const mainKeys = ["a", "b", "c", "d"];
   const outerKeys = omitAncestral ? [] : ["f", "g", "k", "y"];
   const subKeys = omitAncestral
-    ? ["a1", "a2", "a3", "b1", "b2", "b3", "c1", "d1"]
-    : ["a1", "a2", "a3", "b1", "b2", "b3", "c1", "d1", "f2", "f3", "g2", "g3", "k2", "k3", "y2", "y3"];
+    ? ["a1", "a2", "a3", "b1", "b2", "b3", "c1", "c2", "d1", "d2"]
+    : ["a1", "a2", "a3", "b1", "b2", "b3", "c1", "c2", "d1", "d2", "f2", "f3", "g2", "g3", "k2", "k3", "y2", "y3"];
 
   const outerSquareLines = omitAncestral ? "" : `
     <line x1="${positions.f.x}" y1="${positions.f.y}" x2="${positions.g.x}" y2="${positions.g.y}" stroke="rgba(225,180,52,.3)" stroke-width="1"/>
@@ -1253,7 +1258,7 @@ async function downloadHtmlFile(filename, htmlBody) {
   const pdfFilename = filename.replace(/\.html$/i, "") + ".pdf";
 
   const container = document.createElement("div");
-  container.style.cssText = "position:fixed;left:0;top:0;width:700px;background:#17102f;color:#eee5d0;font-family:Arial,sans-serif;padding:24px;z-index:-1000;opacity:0.001;pointer-events:none;";
+  container.style.cssText = "position:fixed;left:0;top:0;width:700px;background:#17102f;color:#eee5d0;font-family:Arial,sans-serif;padding:24px;z-index:999999;opacity:1;";
   container.innerHTML = `
     <style>
       h1,h2 { color:#f6d66c; font-family:Georgia,serif; font-weight:500; }
