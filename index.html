@@ -935,12 +935,18 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   values.x = reduceTo22Diag(values.d1 + values.c1);
   values.x2 = reduceTo22Diag(values.x + values.c1);
   values.x1 = reduceTo22Diag(values.d1 + values.x);
+  // e1 = f+g+y+k, e2 = e+e1 (родовые энергии сексуальности, стр. «Сексуальность» методички)
+  if (!omitAncestral) {
+    values.e1 = reduceTo22Diag(values.f + values.g + values.y + values.k);
+    values.e2 = reduceTo22Diag(values.e + values.e1);
+  }
 
   // Чистая геометрия: центр строго по точке e, остальные точки — по углу и расстоянию от центра.
   // Расположение вдоль линии — равными долями, независимо от исходных координат в Excel (те нужны только для значений).
   const mid = svgSize === "small" ? 130 : 225;
-  const R1 = svgSize === "small" ? 100 : 175;   // радиус главного ромба — подточки остаются за пределами внешнего квадрата
-  const R2 = svgSize === "small" ? 95 : 165;  // радиус внешнего квадрата (f,g,k,y)
+  // Все 8 углов (a,b,c,d,f,g,k,y) — на одной окружности, равное расстояние от центра.
+  const R1 = svgSize === "small" ? 100 : 175;
+  const R2 = R1;
 
   function polar(angleDeg, radius) {
     const rad = (angleDeg * Math.PI) / 180;
@@ -986,6 +992,8 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
     positions.k3 = along(positions.k, positions.e, 0.42);
     positions.y2 = along(positions.y, positions.e, 0.20);
     positions.y3 = along(positions.y, positions.e, 0.42);
+    positions.e1 = along(positions.e, positions.c, 0.16);
+    positions.e2 = along(positions.e, positions.c, 0.32);
   }
 
   const pointColor = {
@@ -995,7 +1003,7 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
     d: CHAKRA_COLOR.muladhara, d1: CHAKRA_COLOR.svadhistana, d2: "white",
     x: "white", x1: "white", x2: "white",
     m1: "white", m2: "white", h1: "white", h2: "white",
-    e: CHAKRA_COLOR.manipura,
+    e: CHAKRA_COLOR.manipura, e1: "white", e2: "white",
     f: "white", f2: "white", f3: "white",
     g: "white", g2: "white", g3: "white",
     k: "white", k2: "white", k3: "white",
@@ -1007,7 +1015,7 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   const wellbeingKeys = ["x", "x1", "x2"];
   const subKeys = omitAncestral
     ? ["a1", "a2", "a3", "b1", "b2", "b3", "c1", "c2", "d1", "d2", ...wellbeingKeys]
-    : ["a1", "a2", "a3", "b1", "b2", "b3", "c1", "c2", "d1", "d2", "f2", "f3", "g2", "g3", "k2", "k3", "y2", "y3", ...wellbeingKeys];
+    : ["a1", "a2", "a3", "b1", "b2", "b3", "c1", "c2", "d1", "d2", "f2", "f3", "g2", "g3", "k2", "k3", "y2", "y3", "e1", "e2", ...wellbeingKeys];
 
   const outerSquareLines = omitAncestral ? "" : `
     <line x1="${positions.f.x}" y1="${positions.f.y}" x2="${positions.g.x}" y2="${positions.g.y}" stroke="rgba(225,180,52,.3)" stroke-width="1"/>
@@ -1283,6 +1291,13 @@ async function downloadHtmlFile(filename, htmlBody) {
       table { border-collapse:collapse; width:100%; margin:8px 0; }
       td { padding:5px 4px; font-size:13px; }
       .diagram-wrap { text-align:center; margin-bottom:16px; }
+      /* Контейнер наследует глобальные стили тёмной темы платформы (жёлтый/кремовый текст,
+         прозрачные фоны) — для белого фона PDF их нужно переопределить на тёмный текст. */
+      .accordion-item { border: 1px solid #d7aa31; border-radius: 8px; margin-bottom: 8px; overflow: visible; }
+      .accordion-header { background: #f5eee0 !important; color: #5d2789 !important; border: none; padding: 10px 12px; font-family: Georgia, serif; font-size: 16px; display:block; }
+      .accordion-body { color: #221733 !important; padding: 10px 12px; line-height: 1.5; white-space: pre-wrap; display: block !important; }
+      .accordion-body.hidden { display: block !important; }
+      .editable-text { color: #221733 !important; }
     </style>
     ${htmlBody}`;
   document.body.appendChild(container);
