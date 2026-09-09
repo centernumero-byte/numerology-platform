@@ -1356,7 +1356,7 @@ async function downloadHtmlFile(filename, htmlBody) {
   try {
     window.scrollTo(0, 0);
     await html2pdf().set({
-      margin: [24, 12, 24, 12],
+      margin: 16,
       filename: pdfFilename,
       html2canvas: { backgroundColor: "#ffffff", scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: 0 },
       jsPDF: { unit: "pt", format: "a4", orientation: "portrait" },
