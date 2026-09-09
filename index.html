@@ -1336,6 +1336,7 @@ async function downloadHtmlFile(filename, htmlBody) {
       .diagram-wrap, .diagram-wrap * { color: #3a3245 !important; }
       .diagram-wrap { page-break-after: always; break-after: page; }
       tr, td, img { page-break-inside: avoid; break-inside: avoid; }
+      .frag { display: inline-block; page-break-inside: avoid; break-inside: avoid; }
       table { page-break-inside: auto; }
     </style>
     ${htmlBody}`;
@@ -1437,10 +1438,20 @@ function downloadAdultMatrixText(name, birthDate) {
 
   function textToHtml(text) {
     // Переносы строк внутри текста превращаем в настоящие абзацы, а не склеиваем всё подряд.
-    // Абзацы разрешено делить между страницами (это нормально) — важно только не резать
-    // строку/слово посередине, а это делает сам браузер при печати по границам строк.
+    // Дробим по предложениям на мелкие куски (с классом .frag) — так разрыв страницы можно
+    // безопасно ставить только между ними (page-break-inside:avoid на .frag), не трогая
+    // середину слова, и не утаскивая огромный абзац целиком на новую страницу.
     return text.split(/\n+/).map(function (line) {
-      return line.trim() ? `<p>${escapeHtml(line)}</p>` : "";
+      if (!line.trim()) return "";
+      const sentences = line.match(/[^.!?…]+[.!?…]+(\s+|$)|[^.!?…]+$/g) || [line];
+      const chunks = [];
+      let current = "";
+      sentences.forEach(function (s) {
+        if (current && (current + s).length > 140) { chunks.push(current); current = ""; }
+        current += s;
+      });
+      if (current) chunks.push(current);
+      return `<p>${chunks.map(function (c) { return `<span class="frag">${escapeHtml(c.trim())} </span>`; }).join("")}</p>`;
     }).join("");
   }
 
