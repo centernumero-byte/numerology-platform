@@ -6903,8 +6903,25 @@ function getPythBlocks() {
 function getPythFullResult(day, month, year, lastName, firstName, patronymic, alphabet) {
   calculate(day, month, year, lastName, firstName, patronymic, alphabet);
   const blocks = getPythBlocks();
-  const psychomatrix = getPsychomatrix(day, month, year);
-  return { blocks, digitSquare: psychomatrix.counts, psychomatrix };
+  const sheetName = "Расшифровка";
+  // Берём цифры и качества из тех же ячеек, что использует сама расшифровка (C3-C19) —
+  // чтобы диаграмма и текст всегда совпадали, а не считались двумя разными способами.
+  const digitSquare = {
+    1: cell(sheetName, "C3"), 2: cell(sheetName, "C4"), 3: cell(sheetName, "C5"),
+    4: cell(sheetName, "C6"), 5: cell(sheetName, "C7"), 6: cell(sheetName, "C8"),
+    7: cell(sheetName, "C9"), 8: cell(sheetName, "C10"), 9: cell(sheetName, "C11"),
+  };
+  const qualities = {
+    samootsenka: cell(sheetName, "C12"),
+    tsennostDeneg: cell(sheetName, "C13"),
+    potentsialTalanta: cell(sheetName, "C14"),
+    tseleustremlennost: cell(sheetName, "C15"),
+    semeynost: cell(sheetName, "C16"),
+    stabilnost: cell(sheetName, "C17"),
+    temperament: cell(sheetName, "C18"),
+    duhovniyPotentsial: cell(sheetName, "C19"),
+  };
+  return { blocks, digitSquare, psychomatrix: { counts: digitSquare, qualities } };
 }
 
 // Квадрат Пифагора (психоматрица): 4 рабочих числа + подсчёт цифр 1-9 во всём числовом ряду.

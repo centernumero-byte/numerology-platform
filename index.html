@@ -1563,13 +1563,13 @@ function renderPythDigitSquare(psychomatrix, container) {
   const layout = [[1, 4, 7], [2, 5, 8], [3, 6, 9]];
   const cellsHtml = layout.map(function (row) {
     return `<div style="display:flex;gap:8px;">` + row.map(function (digit) {
-      const count = digitSquare[digit] || 0;
-      const repeated = count > 0 ? String(digit).repeat(count) : "—";
+      const raw = digitSquare[digit];
+      const display = (raw === undefined || raw === null || raw === "" || raw === "-") ? "—" : String(raw);
       return `
         <div style="flex:1;aspect-ratio:1;border:1px solid rgba(225,180,52,.5);border-radius:10px;
                     display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,.03);padding:4px;text-align:center;">
           <div style="font-size:10px;color:#8a8098;">${escapeHtml(cellNames[digit])}</div>
-          <div style="font-family:Georgia,serif;font-size:22px;color:#f6d66c;">${escapeHtml(repeated)}</div>
+          <div style="font-family:Georgia,serif;font-size:22px;color:#f6d66c;">${escapeHtml(display)}</div>
         </div>`;
     }).join("") + `</div>`;
   }).join("");
