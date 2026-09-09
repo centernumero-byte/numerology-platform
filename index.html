@@ -943,7 +943,9 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
 
   // Чистая геометрия: центр строго по точке e, остальные точки — по углу и расстоянию от центра.
   // Расположение вдоль линии — равными долями, независимо от исходных координат в Excel (те нужны только для значений).
-  const mid = svgSize === "small" ? 130 : 225;
+  // mid = истинный центр viewBox (410/2=205, 240/2=120) — раньше был сдвинут на +20/+10,
+  // из-за чего точки c и d (справа и снизу) вылезали за край и обрезались.
+  const mid = svgSize === "small" ? 120 : 205;
   // Все 8 углов (a,b,c,d,f,g,k,y) — на одной окружности, равное расстояние от центра.
   const R1 = svgSize === "small" ? 100 : 175;
   const R2 = R1;
@@ -966,10 +968,10 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   // (радиус углового кружка 16, подточек — 9, минимальный зазор между центрами ~25/18px).
   positions.a2 = along(positions.a, positions.e, 0.15);
   positions.a1 = along(positions.a, positions.e, 0.26);
-  positions.a3 = along(positions.a, positions.e, 0.40);
+  positions.a3 = along(positions.a1, positions.e, 0.5);
   positions.b2 = along(positions.b, positions.e, 0.15);
   positions.b1 = along(positions.b, positions.e, 0.26);
-  positions.b3 = along(positions.b, positions.e, 0.40);
+  positions.b3 = along(positions.b1, positions.e, 0.5);
   positions.c2 = along(positions.c, positions.e, 0.15);
   positions.c1 = along(positions.c, positions.e, 0.26);
   positions.d2 = along(positions.d, positions.e, 0.15);
@@ -985,13 +987,13 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
     positions.g = polar(315, R2);
     positions.k = polar(135, R2);
     positions.y = polar(45, R2);
-    positions.f2 = along(positions.f, positions.e, 0.20);
-    positions.f3 = along(positions.f, positions.e, 0.42);
-    positions.g2 = along(positions.g, positions.e, 0.20);
-    positions.g3 = along(positions.g, positions.e, 0.42);
-    positions.k2 = along(positions.k, positions.e, 0.20);
-    positions.k3 = along(positions.k, positions.e, 0.42);
-    positions.y2 = along(positions.y, positions.e, 0.18);
+    positions.f2 = along(positions.f, positions.e, 0.15);
+    positions.f3 = along(positions.f, positions.e, 0.30);
+    positions.g2 = along(positions.g, positions.e, 0.15);
+    positions.g3 = along(positions.g, positions.e, 0.30);
+    positions.k2 = along(positions.k, positions.e, 0.15);
+    positions.k3 = along(positions.k, positions.e, 0.30);
+    positions.y2 = along(positions.y, positions.e, 0.15);
     positions.y3 = along(positions.y, positions.e, 0.30);
     positions.e1 = along(positions.e, positions.c, 0.16);
     positions.e2 = along(positions.e, positions.c, 0.32);
@@ -1282,7 +1284,7 @@ async function downloadHtmlFile(filename, htmlBody) {
   const pdfFilename = filename.replace(/\.html$/i, "") + ".pdf";
 
   const container = document.createElement("div");
-  container.style.cssText = "position:fixed;top:0;left:0;width:720px;background:#fff;color:#221733;font-family:Arial,sans-serif;padding:24px;margin:0;z-index:-1;";
+  container.style.cssText = "position:absolute;top:0;left:-10000px;width:720px;background:#fff;color:#221733;font-family:Arial,sans-serif;padding:24px;margin:0;";
   container.innerHTML = `
     <style>
       h1 { color:#5d2789; font-family:Georgia,serif; font-weight:600; font-size:20px; margin:0 0 16px; }
