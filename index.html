@@ -1558,6 +1558,7 @@ function renderPythDigitSquare(psychomatrix, container) {
   if (!psychomatrix) return;
   const digitSquare = psychomatrix.counts || psychomatrix;
   const q = psychomatrix.qualities;
+  const cellNames = { 1: "характер, воля", 2: "энергия, харизма", 3: "знания, открытия", 4: "здоровье, красота", 5: "логика, восприятие", 6: "мастерство, искусство", 7: "удача, судьба", 8: "долг, порядок", 9: "интеллект, память" };
   const layout = [[1, 4, 7], [2, 5, 8], [3, 6, 9]];
   const cellsHtml = layout.map(function (row) {
     return `<div style="display:flex;gap:8px;">` + row.map(function (digit) {
@@ -1565,8 +1566,8 @@ function renderPythDigitSquare(psychomatrix, container) {
       const repeated = count > 0 ? String(digit).repeat(count) : "—";
       return `
         <div style="flex:1;aspect-ratio:1;border:1px solid rgba(225,180,52,.5);border-radius:10px;
-                    display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,.03);">
-          <div style="font-size:11px;color:#8a8098;">число ${digit}</div>
+                    display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,.03);padding:4px;text-align:center;">
+          <div style="font-size:10px;color:#8a8098;">число ${digit} — ${escapeHtml(cellNames[digit])}</div>
           <div style="font-family:Georgia,serif;font-size:22px;color:#f6d66c;">${escapeHtml(repeated)}</div>
         </div>`;
     }).join("") + `</div>`;
@@ -1601,8 +1602,9 @@ function renderPythDigitSquare(psychomatrix, container) {
       </div>
       <div style="border:1px solid rgba(225,180,52,.3);border-radius:10px;padding:12px 14px;color:#c9bfa8;font-size:12.5px;line-height:1.5;">
         Пустая ячейка не значит «нет способностей» — это просто старт с нуля, качество можно наработать за жизнь.
-        У рождённых в 2000-х годах пустых ячеек обычно больше: у них меньше жёсткой врождённой привязки к готовому набору качеств,
-        зато больше свободы самим формировать сильные стороны в любом направлении.
+        Есть разные подходы к расчёту: в некоторых системах (например, «Идеал») для родившихся в 2000 году и позже
+        в числовой ряд добавляют дополнительные цифры. Здесь мы этого не делаем — расчёт для родившихся до и после
+        2000 года ведётся одинаково, по единой формуле, так же как и во взрослой матрице.
       </div>`;
   }
 
