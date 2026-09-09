@@ -935,12 +935,18 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   values.d1 = reduceTo22Diag(values.d + values.e);
   values.d2 = reduceTo22Diag(values.d + values.d1);
   values.d3 = reduceTo22Diag(values.d1 + values.e);
+  if (!omitAncestral) {
+    values.f4 = reduceTo22Diag(values.f3 + values.e);
+    values.g4 = reduceTo22Diag(values.g3 + values.e);
+    values.k4 = reduceTo22Diag(values.k3 + values.e);
+    values.y4 = reduceTo22Diag(values.y3 + values.e);
+  }
 
   // Чистая геометрия: центр строго по точке e, остальные точки — по углу и расстоянию от центра.
   // Расположение вдоль линии — равными долями, независимо от исходных координат в Excel (те нужны только для значений).
-  const mid = svgSize === "small" ? 115 : 200;
-  const R1 = svgSize === "small" ? 82 : 148;   // радиус главного ромба (a,b,c,d) — заметно выступает за пределы квадрата
-  const R2 = svgSize === "small" ? 100 : 178;  // радиус внешнего квадрата (f,g,k,y)
+  const mid = svgSize === "small" ? 150 : 260;
+  const R1 = svgSize === "small" ? 118 : 205;   // радиус главного ромба — подточки должны оставаться за пределами внешнего квадрата
+  const R2 = svgSize === "small" ? 98 : 172;  // радиус внешнего квадрата (f,g,k,y)
 
   function polar(angleDeg, radius) {
     const rad = (angleDeg * Math.PI) / 180;
@@ -957,25 +963,25 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   positions.d = polar(90, R1);
 
   // Подточки держим ближе к своему «родительскому» углу; a3/b3 (Анахата, зелёные) — ближе к центру.
-  positions.a2 = along(positions.a, positions.e, 0.20);
-  positions.a1 = along(positions.a, positions.e, 0.38);
-  positions.a3 = along(positions.a, positions.e, 0.64);
-  positions.b2 = along(positions.b, positions.e, 0.20);
-  positions.b1 = along(positions.b, positions.e, 0.38);
-  positions.b3 = along(positions.b, positions.e, 0.64);
-  positions.c2 = along(positions.c, positions.e, 0.20);
-  positions.c1 = along(positions.c, positions.e, 0.42);
-  positions.c3 = along(positions.c, positions.e, 0.64);
-  positions.d2 = along(positions.d, positions.e, 0.20);
-  positions.d1 = along(positions.d, positions.e, 0.42);
-  positions.d3 = along(positions.d, positions.e, 0.64);
+  positions.a2 = along(positions.a, positions.e, 0.11);
+  positions.a1 = along(positions.a, positions.e, 0.22);
+  positions.a3 = along(positions.a, positions.e, 0.52);
+  positions.b2 = along(positions.b, positions.e, 0.11);
+  positions.b1 = along(positions.b, positions.e, 0.22);
+  positions.b3 = along(positions.b, positions.e, 0.52);
+  positions.c2 = along(positions.c, positions.e, 0.11);
+  positions.c1 = along(positions.c, positions.e, 0.22);
+  positions.c3 = along(positions.c, positions.e, 0.52);
+  positions.d2 = along(positions.d, positions.e, 0.11);
+  positions.d1 = along(positions.d, positions.e, 0.22);
+  positions.d3 = along(positions.d, positions.e, 0.52);
 
   if (!omitAncestral) {
     // $ и ♥ — на линии между оранжевыми точками c1 и d1, с центральной точкой между ними.
-    positions.m1 = along(positions.c1, positions.d1, 0.30);
-    positions.h1 = along(positions.c1, positions.d1, 0.70);
+    positions.m1 = along(positions.c1, positions.d1, 0.25);
     positions.m2 = along(positions.c1, positions.d1, 0.50);
-    positions.h2 = along(positions.m2, positions.e, 0.35);
+    positions.h1 = along(positions.c1, positions.d1, 0.75);
+    positions.h2 = along(positions.m2, positions.e, 0.55);
   }
 
   if (!omitAncestral) {
@@ -985,12 +991,16 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
     positions.y = polar(45, R2);
     positions.f2 = along(positions.f, positions.e, 0.20);
     positions.f3 = along(positions.f, positions.e, 0.42);
+    positions.f4 = along(positions.f, positions.e, 0.62);
     positions.g2 = along(positions.g, positions.e, 0.20);
     positions.g3 = along(positions.g, positions.e, 0.42);
+    positions.g4 = along(positions.g, positions.e, 0.62);
     positions.k2 = along(positions.k, positions.e, 0.20);
     positions.k3 = along(positions.k, positions.e, 0.42);
+    positions.k4 = along(positions.k, positions.e, 0.62);
     positions.y2 = along(positions.y, positions.e, 0.20);
-    positions.y3 = along(positions.y, positions.e, 0.62);
+    positions.y3 = along(positions.y, positions.e, 0.42);
+    positions.y4 = along(positions.y, positions.e, 0.62);
   }
 
   const pointColor = {
@@ -1000,10 +1010,10 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
     d: CHAKRA_COLOR.muladhara, d1: CHAKRA_COLOR.svadhistana, d2: "white", d3: CHAKRA_COLOR.anahata,
     m1: "white", m2: "white", h1: "white", h2: "white",
     e: CHAKRA_COLOR.manipura,
-    f: "white", f2: "white", f3: "white",
-    g: "white", g2: "white", g3: "white",
-    k: "white", k2: "white", k3: "white",
-    y: "white", y2: "white", y3: "white",
+    f: "white", f2: "white", f3: "white", f4: "white",
+    g: "white", g2: "white", g3: "white", g4: "white",
+    k: "white", k2: "white", k3: "white", k4: "white",
+    y: "white", y2: "white", y3: "white", y4: "white",
   };
 
   const mainKeys = ["a", "b", "c", "d"];
@@ -1011,7 +1021,7 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   const moneyHeartKeys = omitAncestral ? [] : ["m1", "m2", "h1", "h2"];
   const subKeys = omitAncestral
     ? ["a1", "a2", "a3", "b1", "b2", "b3", "c1", "c2", "c3", "d1", "d2", "d3"]
-    : ["a1", "a2", "a3", "b1", "b2", "b3", "c1", "c2", "c3", "d1", "d2", "d3", "f2", "f3", "g2", "g3", "k2", "k3", "y2", "y3", ...moneyHeartKeys];
+    : ["a1", "a2", "a3", "b1", "b2", "b3", "c1", "c2", "c3", "d1", "d2", "d3", "f2", "f3", "f4", "g2", "g3", "g4", "k2", "k3", "k4", "y2", "y3", "y4", ...moneyHeartKeys];
 
   const outerSquareLines = omitAncestral ? "" : `
     <line x1="${positions.f.x}" y1="${positions.f.y}" x2="${positions.g.x}" y2="${positions.g.y}" stroke="rgba(225,180,52,.3)" stroke-width="1"/>
@@ -1130,7 +1140,7 @@ function renderPurposeDiagram(diagramValues, container, afterNode) {
 
   function item(title, formula, result) {
     return `
-      <div style="flex:1;min-width:130px;text-align:center;padding:0 6px;">
+      <div style="width:180px;text-align:center;">
         <div style="color:#f6d66c;font-family:Georgia,serif;font-size:13px;margin-bottom:6px;">${title}</div>
         <div style="color:#fff;font-family:Georgia,serif;font-size:20px;">${result}</div>
         <div style="color:#8a8098;font-size:11px;">(${formula})</div>
@@ -1138,14 +1148,14 @@ function renderPurposeDiagram(diagramValues, container, afterNode) {
   }
 
   const box = document.createElement("div");
-  box.style.cssText = "max-width:560px;margin:0 auto 30px;";
+  box.style.cssText = "max-width:420px;margin:0 auto 30px;";
   box.innerHTML = `
-    <div style="display:flex;justify-content:center;gap:10px;margin-bottom:16px;">
+    <div style="display:flex;justify-content:center;gap:24px;margin-bottom:16px;">
       ${item("Личное предназначение", `Небо ${nebo} + Земля ${zemlya}`, pred1)}
       ${item("Социальное предназначение", `Муж. линия ${muzh} + Жен. линия ${zhen}`, pred2)}
-      ${item("Духовное предназначение", `Личное ${pred1} + Социальное ${pred2}`, pred3)}
     </div>
-    <div style="display:flex;justify-content:center;">
+    <div style="display:flex;justify-content:center;gap:24px;">
+      ${item("Духовное предназначение", `Личное ${pred1} + Социальное ${pred2}`, pred3)}
       ${item("Планетарное предназначение", `Социальное ${pred2} + Духовное ${pred3}`, pred4)}
     </div>`;
   container.insertBefore(box, afterNode.nextSibling);
@@ -1316,7 +1326,7 @@ async function downloadHtmlFile(filename, htmlBody) {
     await html2pdf().set({
       margin: 10,
       filename: pdfFilename,
-      html2canvas: { backgroundColor: "#ffffff", scale: 2, useCORS: true, logging: false, windowWidth: 760 },
+      html2canvas: { backgroundColor: "#ffffff", scale: 2, useCORS: true, logging: false, windowWidth: 820 },
       jsPDF: { unit: "pt", format: "a4", orientation: "portrait" },
       pagebreak: { mode: ["css", "legacy"] },
     }).from(container).save();
