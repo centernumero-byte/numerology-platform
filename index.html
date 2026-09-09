@@ -912,8 +912,6 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
         g: "AM12", g2: "AK14", g3: "AI16",
         k: "N37", k2: "P35", k3: "R33",
         y: "AM37", y2: "AK35", y3: "AI33",
-        m1: "AI27", m2: "AF30",
-        h1: "Z36", h2: "AC33",
       };
   const cellRefs = {};
   for (const key in baseCellRefs) cellRefs[key] = shift(baseCellRefs[key]);
@@ -931,10 +929,12 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   values.b3 = reduceTo22Diag(values.b1 + values.e);
   values.c1 = reduceTo22Diag(values.c + values.e);
   values.c2 = reduceTo22Diag(values.c + values.c1);
-  values.c3 = reduceTo22Diag(values.c1 + values.e);
   values.d1 = reduceTo22Diag(values.d + values.e);
   values.d2 = reduceTo22Diag(values.d + values.d1);
-  values.d3 = reduceTo22Diag(values.d1 + values.e);
+  // Линия Благополучия: x — центральная энергия между c1 и d1, x2 — «под долларом», x1 — «под сердцем».
+  values.x = reduceTo22Diag(values.d1 + values.c1);
+  values.x2 = reduceTo22Diag(values.x + values.c1);
+  values.x1 = reduceTo22Diag(values.d1 + values.x);
 
   // Чистая геометрия: центр строго по точке e, остальные точки — по углу и расстоянию от центра.
   // Расположение вдоль линии — равными долями, независимо от исходных координат в Excel (те нужны только для значений).
@@ -965,18 +965,13 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   positions.b3 = along(positions.b, positions.e, 0.52);
   positions.c2 = along(positions.c, positions.e, 0.11);
   positions.c1 = along(positions.c, positions.e, 0.22);
-  positions.c3 = along(positions.c, positions.e, 0.52);
   positions.d2 = along(positions.d, positions.e, 0.11);
   positions.d1 = along(positions.d, positions.e, 0.22);
-  positions.d3 = along(positions.d, positions.e, 0.52);
 
-  if (!omitAncestral) {
-    // $ и ♥ — на линии между оранжевыми точками c1 и d1, с центральной точкой между ними.
-    positions.m1 = along(positions.c1, positions.d1, 0.25);
-    positions.m2 = along(positions.c1, positions.d1, 0.50);
-    positions.h1 = along(positions.c1, positions.d1, 0.75);
-    positions.h2 = along(positions.m2, positions.e, 0.55);
-  }
+  // Линия Благополучия: c1 → x2 → x → x1 → d1, одной линией.
+  positions.x2 = along(positions.c1, positions.d1, 0.30);
+  positions.x = along(positions.c1, positions.d1, 0.50);
+  positions.x1 = along(positions.c1, positions.d1, 0.70);
 
   if (!omitAncestral) {
     positions.f = polar(225, R2);
@@ -996,8 +991,9 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   const pointColor = {
     a: CHAKRA_COLOR.muladhara, a1: CHAKRA_COLOR.vishudha, a2: CHAKRA_COLOR.adjna, a3: CHAKRA_COLOR.anahata,
     b: CHAKRA_COLOR.sahasrara, b1: CHAKRA_COLOR.vishudha, b2: CHAKRA_COLOR.adjna, b3: CHAKRA_COLOR.anahata,
-    c: CHAKRA_COLOR.muladhara, c1: CHAKRA_COLOR.svadhistana, c2: "white", c3: CHAKRA_COLOR.anahata,
-    d: CHAKRA_COLOR.muladhara, d1: CHAKRA_COLOR.svadhistana, d2: "white", d3: CHAKRA_COLOR.anahata,
+    c: CHAKRA_COLOR.muladhara, c1: CHAKRA_COLOR.svadhistana, c2: "white",
+    d: CHAKRA_COLOR.muladhara, d1: CHAKRA_COLOR.svadhistana, d2: "white",
+    x: "white", x1: "white", x2: "white",
     m1: "white", m2: "white", h1: "white", h2: "white",
     e: CHAKRA_COLOR.manipura,
     f: "white", f2: "white", f3: "white",
@@ -1008,10 +1004,10 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
 
   const mainKeys = ["a", "b", "c", "d"];
   const outerKeys = omitAncestral ? [] : ["f", "g", "k", "y"];
-  const moneyHeartKeys = omitAncestral ? [] : ["m1", "m2", "h1", "h2"];
+  const wellbeingKeys = ["x", "x1", "x2"];
   const subKeys = omitAncestral
-    ? ["a1", "a2", "a3", "b1", "b2", "b3", "c1", "c2", "c3", "d1", "d2", "d3"]
-    : ["a1", "a2", "a3", "b1", "b2", "b3", "c1", "c2", "c3", "d1", "d2", "d3", "f2", "f3", "g2", "g3", "k2", "k3", "y2", "y3", ...moneyHeartKeys];
+    ? ["a1", "a2", "a3", "b1", "b2", "b3", "c1", "c2", "d1", "d2", ...wellbeingKeys]
+    : ["a1", "a2", "a3", "b1", "b2", "b3", "c1", "c2", "d1", "d2", "f2", "f3", "g2", "g3", "k2", "k3", "y2", "y3", ...wellbeingKeys];
 
   const outerSquareLines = omitAncestral ? "" : `
     <line x1="${positions.f.x}" y1="${positions.f.y}" x2="${positions.g.x}" y2="${positions.g.y}" stroke="rgba(225,180,52,.3)" stroke-width="1"/>
@@ -1026,13 +1022,13 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   const lineageLines = omitAncestral ? "" : `
     <line x1="${positions.f.x}" y1="${positions.f.y}" x2="${positions.y.x}" y2="${positions.y.y}" stroke="rgba(120,80,190,.5)" stroke-width="1.2" stroke-dasharray="3,2"/>
     <line x1="${positions.g.x}" y1="${positions.g.y}" x2="${positions.k.x}" y2="${positions.k.y}" stroke="rgba(200,60,60,.5)" stroke-width="1.2" stroke-dasharray="3,2"/>`;
-  const moneyHeartLines = omitAncestral ? "" : `
-    <line x1="${positions.c1.x}" y1="${positions.c1.y}" x2="${positions.m1.x}" y2="${positions.m1.y}" stroke="rgba(140,200,90,.5)" stroke-width="1" stroke-dasharray="2,2"/>
-    <line x1="${positions.m1.x}" y1="${positions.m1.y}" x2="${positions.m2.x}" y2="${positions.m2.y}" stroke="rgba(140,200,90,.5)" stroke-width="1" stroke-dasharray="2,2"/>
-    <line x1="${positions.m2.x}" y1="${positions.m2.y}" x2="${positions.h1.x}" y2="${positions.h1.y}" stroke="rgba(210,70,70,.5)" stroke-width="1" stroke-dasharray="2,2"/>
-    <line x1="${positions.h1.x}" y1="${positions.h1.y}" x2="${positions.d1.x}" y2="${positions.d1.y}" stroke="rgba(210,70,70,.5)" stroke-width="1" stroke-dasharray="2,2"/>`;
-  const dollarSign = omitAncestral ? "" : `<text x="${positions.m1.x + 12}" y="${positions.m1.y - 4}" font-size="13" fill="#8fd98f" font-weight="700">$</text>`;
-  const heartSign = omitAncestral ? "" : `<text x="${positions.h1.x - 16}" y="${positions.h1.y + 5}" font-size="13" fill="#e07a7a">♥</text>`;
+  const wellbeingLine = `
+    <line x1="${positions.c1.x}" y1="${positions.c1.y}" x2="${positions.x2.x}" y2="${positions.x2.y}" stroke="rgba(140,200,90,.5)" stroke-width="1" stroke-dasharray="2,2"/>
+    <line x1="${positions.x2.x}" y1="${positions.x2.y}" x2="${positions.x.x}" y2="${positions.x.y}" stroke="rgba(140,200,90,.5)" stroke-width="1" stroke-dasharray="2,2"/>
+    <line x1="${positions.x.x}" y1="${positions.x.y}" x2="${positions.x1.x}" y2="${positions.x1.y}" stroke="rgba(210,70,70,.5)" stroke-width="1" stroke-dasharray="2,2"/>
+    <line x1="${positions.x1.x}" y1="${positions.x1.y}" x2="${positions.d1.x}" y2="${positions.d1.y}" stroke="rgba(210,70,70,.5)" stroke-width="1" stroke-dasharray="2,2"/>`;
+  const dollarSign = `<text x="${positions.x2.x + 12}" y="${positions.x2.y - 4}" font-size="13" fill="#8fd98f" font-weight="700">$</text>`;
+  const heartSign = `<text x="${positions.x1.x - 16}" y="${positions.x1.y + 5}" font-size="13" fill="#e07a7a">♥</text>`;
 
   function circle(p, value, r, fs, fill) {
     const isWhite = fill === "white";
@@ -1052,7 +1048,7 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
 
   const viewSize = svgSize === "small" ? 240 : 410;
   const svg = `<svg viewBox="0 0 ${viewSize} ${viewSize}" style="width:100%;max-width:${svgSize === "small" ? 250 : 420}px;">
-      ${outerSquareLines}${innerDiamondLines}${lineageLines}${moneyHeartLines}${dollarSign}${heartSign}${centerSvg}${subSvg}${outerSvg}${mainSvg}
+      ${outerSquareLines}${innerDiamondLines}${lineageLines}${wellbeingLine}${dollarSign}${heartSign}${centerSvg}${subSvg}${outerSvg}${mainSvg}
     </svg>`;
 
   return { svg, values };
@@ -1273,7 +1269,61 @@ function svgElementToPngDataUrl(svgEl) {
   });
 }
 
-function downloadHtmlFile(filename, htmlBody) {
+async function downloadHtmlFile(filename, htmlBody) {
+  const pdfFilename = filename.replace(/\.html$/i, "") + ".pdf";
+
+  const container = document.createElement("div");
+  container.style.cssText = "width:720px;background:#fff;color:#221733;font-family:Arial,sans-serif;padding:24px;margin:0;";
+  container.innerHTML = `
+    <style>
+      h1 { color:#5d2789; font-family:Georgia,serif; font-weight:600; font-size:20px; margin:0 0 16px; }
+      h2 { color:#5d2789; font-family:Georgia,serif; font-weight:600; font-size:17px; margin-top:22px; border-bottom:1px solid #d7aa31; padding-bottom:5px; }
+      .num { color:#8a3fbf; font-family:Georgia,serif; font-size:18px; margin:12px 0 4px; font-weight:700; }
+      p { margin:0 0 12px; line-height:1.5; font-size:14px; }
+      table { border-collapse:collapse; width:100%; margin:8px 0; }
+      td { padding:5px 4px; font-size:13px; }
+      .diagram-wrap { text-align:center; margin-bottom:16px; }
+    </style>
+    ${htmlBody}`;
+  document.body.appendChild(container);
+
+  const svgs = Array.from(container.querySelectorAll("svg"));
+  for (const svg of svgs) {
+    const dataUrl = await svgElementToPngDataUrl(svg);
+    if (dataUrl) {
+      const img = document.createElement("img");
+      img.src = dataUrl;
+      img.style.cssText = svg.getAttribute("style") || "";
+      img.style.maxWidth = "100%";
+      svg.replaceWith(img);
+    }
+  }
+
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  await new Promise((r) => setTimeout(r, 150));
+
+  let success = false;
+  try {
+    await html2pdf().set({
+      margin: 10,
+      filename: pdfFilename,
+      html2canvas: { backgroundColor: "#ffffff", scale: 2, useCORS: true, logging: false, windowWidth: 820 },
+      jsPDF: { unit: "pt", format: "a4", orientation: "portrait" },
+      pagebreak: { mode: ["css", "legacy"] },
+    }).from(container).save();
+    success = true;
+  } catch (error) {
+    console.error("Ошибка формирования PDF:", error);
+  }
+  document.body.removeChild(container);
+
+  if (!success) {
+    alert("Не удалось сформировать PDF. Файл будет сохранён в формате HTML вместо этого.");
+    downloadHtmlFallback(filename, htmlBody);
+  }
+}
+
+function downloadHtmlFallback(filename, htmlBody) {
   const fullHtml = `<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8">
 <title>${filename.replace(/\.html$/i, "")}</title>
 <style>
@@ -1316,29 +1366,43 @@ function downloadAdultMatrixText(name, birthDate) {
     .join("");
 
   let bodyHtml = `<div class="diagram-wrap">${extraBlocksHtml}</div>`;
-  bodyHtml += `<h1>Матрица судьбы — ${escapeHtml(name)} (${escapeHtml(birthDate)})</h1>`;
+  bodyHtml += `<h1>Взрослая матрица — ${escapeHtml(name)} (${escapeHtml(birthDate)})</h1>`;
 
+  function textToHtml(text) {
+    // Переносы строк внутри текста превращаем в настоящие абзацы, а не склеиваем всё подряд.
+    return text.split(/\n+/).map(function (line) {
+      return line.trim() ? `<p>${escapeHtml(line)}</p>` : "";
+    }).join("");
+  }
+
+  function programsBlockHtml() {
+    if (!res.programs.length) return "";
+    let html = `<h2>Программы</h2>`;
+    res.programs.forEach(function (p) {
+      html += `<div class="num" style="font-size:15px;">${escapeHtml(p.title)}</div>${textToHtml(editedTexts[cursor++] ?? p.fullText)}`;
+    });
+    return html;
+  }
+
+  // Точно тот же порядок, что и на странице: программы вставляются сразу после блока
+  // «Материальная карма с прошлой жизни», а не в конце.
   res.rasshifrovka.forEach(function (block) {
     bodyHtml += `<h2>${escapeHtml(block.title)}</h2>`;
     block.entries.forEach(function (e) {
-      bodyHtml += `<div class="num">${escapeHtml(String(e.number))}</div><p>${escapeHtml(editedTexts[cursor++] ?? e.text)}</p>`;
+      bodyHtml += `<div class="num">${escapeHtml(String(e.number))}</div>${textToHtml(editedTexts[cursor++] ?? e.text)}`;
     });
+    if (block.title.toLowerCase().startsWith("материальная карма")) {
+      bodyHtml += programsBlockHtml();
+    }
   });
 
   res.health.forEach(function (block) {
     bodyHtml += `<h2>${escapeHtml(block.title)}</h2>`;
     block.intro.forEach(function (t) { bodyHtml += `<p>${escapeHtml(t)}</p>`; });
     block.entries.forEach(function (e) {
-      bodyHtml += `<div class="num">${escapeHtml(e.axis)}: ${escapeHtml(String(e.number))}</div><p>${escapeHtml(editedTexts[cursor++] ?? e.text)}</p>`;
+      bodyHtml += `<div class="num">${escapeHtml(e.axis)}: ${escapeHtml(String(e.number))}</div>${textToHtml(editedTexts[cursor++] ?? e.text)}`;
     });
   });
-
-  if (res.programs.length) {
-    bodyHtml += `<h2>Программы</h2>`;
-    res.programs.forEach(function (p) {
-      bodyHtml += `<p><strong>${escapeHtml(p.title)}</strong><br>${escapeHtml(editedTexts[cursor++] ?? p.fullText)}</p>`;
-    });
-  }
 
   downloadHtmlFile("Взрослая матрица - " + name + " - " + birthDate + ".html", bodyHtml);
 }
