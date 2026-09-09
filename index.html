@@ -1262,8 +1262,9 @@ function renderAdultMatrixResult(name, birthDate, container) {
   let rasshifrovkaHtml = "";
   res.rasshifrovka.forEach(function (block) {
     const body = block.entries.map(function (e) {
-      const numberLine = (typeof e.number === "number")
-        ? `<p style="color:#f6d66c;font-family:Georgia,serif;font-size:20px;margin:0 0 4px;">${escapeHtml(String(e.number))}</p>`
+      const numLabel1265 = typeof e.number === "number" ? String(e.number) : (typeof e.number === "string" ? e.number.trim() : "");
+      const numberLine = numLabel1265
+        ? `<p style="color:#f6d66c;font-family:Georgia,serif;font-size:20px;margin:0 0 4px;">${escapeHtml(numLabel1265)}</p>`
         : "";
       return `${numberLine}${editableDiv(e.text)}`;
     }).join("");
@@ -1620,8 +1621,9 @@ function renderEditableResult(blocks, container, personLabel, dateLabel) {
 
   const bodyBlocksHtml = blocks.map(function (block, bIdx) {
     const entriesHtml = block.entries.map(function (e, eIdx) {
-      const numberLine = (typeof e.number === "number")
-        ? `<p style="color:#f6d66c;font-family:Georgia,serif;font-size:20px;margin:0 0 4px;">${escapeHtml(String(e.number))}</p>`
+      const numLabel = typeof e.number === "number" ? String(e.number) : (typeof e.number === "string" ? e.number.trim() : "");
+      const numberLine = numLabel
+        ? `<p style="color:#f6d66c;font-family:Georgia,serif;font-size:20px;margin:0 0 4px;">${escapeHtml(numLabel)}</p>`
         : "";
       return `${numberLine}<div class="editable-text" contenteditable="false" data-block="${bIdx}" data-entry="${eIdx}" style="margin:0 0 14px;padding:6px;border-radius:6px;outline:none;">${escapeHtml(e.text)}</div>`;
     }).join("");
@@ -1711,7 +1713,8 @@ function downloadEditableResult(personLabel, dateLabel) {
   blocks.forEach(function (block) {
     bodyHtml += `<h2>${escapeHtml(block.title)}</h2>`;
     block.entries.forEach(function (e) {
-      bodyHtml += (typeof e.number === "number" ? `<div class="num">${escapeHtml(String(e.number))}</div>` : "") + `<p>${escapeHtml(e.text)}</p>`;
+      const numLabelPdf = typeof e.number === "number" ? String(e.number) : (typeof e.number === "string" ? e.number.trim() : "");
+      bodyHtml += (numLabelPdf ? `<div class="num">${escapeHtml(numLabelPdf)}</div>` : "") + `<p>${escapeHtml(e.text)}</p>`;
     });
   });
 
