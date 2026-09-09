@@ -962,17 +962,18 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   positions.c = polar(0, R1);
   positions.d = polar(90, R1);
 
-  // Подточки держим ближе к своему «родительскому» углу; a3/b3 (Анахата, зелёные) — ближе к центру.
-  positions.a2 = along(positions.a, positions.e, 0.11);
-  positions.a1 = along(positions.a, positions.e, 0.22);
-  positions.a3 = along(positions.a, positions.e, 0.52);
-  positions.b2 = along(positions.b, positions.e, 0.11);
-  positions.b1 = along(positions.b, positions.e, 0.22);
-  positions.b3 = along(positions.b, positions.e, 0.52);
-  positions.c2 = along(positions.c, positions.e, 0.11);
-  positions.c1 = along(positions.c, positions.e, 0.22);
-  positions.d2 = along(positions.d, positions.e, 0.11);
-  positions.d1 = along(positions.d, positions.e, 0.22);
+  // Подточки: шаг увеличен, чтобы кружки не перекрывали друг друга и сам угловой кружок
+  // (радиус углового кружка 16, подточек — 9, минимальный зазор между центрами ~25/18px).
+  positions.a2 = along(positions.a, positions.e, 0.15);
+  positions.a1 = along(positions.a, positions.e, 0.26);
+  positions.a3 = along(positions.a, positions.e, 0.40);
+  positions.b2 = along(positions.b, positions.e, 0.15);
+  positions.b1 = along(positions.b, positions.e, 0.26);
+  positions.b3 = along(positions.b, positions.e, 0.40);
+  positions.c2 = along(positions.c, positions.e, 0.15);
+  positions.c1 = along(positions.c, positions.e, 0.26);
+  positions.d2 = along(positions.d, positions.e, 0.15);
+  positions.d1 = along(positions.d, positions.e, 0.26);
 
   // Линия Благополучия: c1 → x2 → x → x1 → d1, одной линией.
   positions.x2 = along(positions.c1, positions.d1, 0.30);
@@ -990,14 +991,14 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
     positions.g3 = along(positions.g, positions.e, 0.42);
     positions.k2 = along(positions.k, positions.e, 0.20);
     positions.k3 = along(positions.k, positions.e, 0.42);
-    positions.y2 = along(positions.y, positions.e, 0.20);
-    positions.y3 = along(positions.y, positions.e, 0.42);
+    positions.y2 = along(positions.y, positions.e, 0.18);
+    positions.y3 = along(positions.y, positions.e, 0.30);
     positions.e1 = along(positions.e, positions.c, 0.16);
     positions.e2 = along(positions.e, positions.c, 0.32);
   }
 
   const pointColor = {
-    a: CHAKRA_COLOR.muladhara, a1: CHAKRA_COLOR.vishudha, a2: CHAKRA_COLOR.adjna, a3: CHAKRA_COLOR.anahata,
+    a: CHAKRA_COLOR.sahasrara, a1: CHAKRA_COLOR.vishudha, a2: CHAKRA_COLOR.adjna, a3: CHAKRA_COLOR.anahata,
     b: CHAKRA_COLOR.sahasrara, b1: CHAKRA_COLOR.vishudha, b2: CHAKRA_COLOR.adjna, b3: CHAKRA_COLOR.anahata,
     c: CHAKRA_COLOR.muladhara, c1: CHAKRA_COLOR.svadhistana, c2: "white",
     d: CHAKRA_COLOR.muladhara, d1: CHAKRA_COLOR.svadhistana, d2: "white",
@@ -1281,7 +1282,7 @@ async function downloadHtmlFile(filename, htmlBody) {
   const pdfFilename = filename.replace(/\.html$/i, "") + ".pdf";
 
   const container = document.createElement("div");
-  container.style.cssText = "width:720px;background:#fff;color:#221733;font-family:Arial,sans-serif;padding:24px;margin:0;";
+  container.style.cssText = "position:fixed;top:0;left:0;width:720px;background:#fff;color:#221733;font-family:Arial,sans-serif;padding:24px;margin:0;z-index:-1;";
   container.innerHTML = `
     <style>
       h1 { color:#5d2789; font-family:Georgia,serif; font-weight:600; font-size:20px; margin:0 0 16px; }
@@ -1319,10 +1320,11 @@ async function downloadHtmlFile(filename, htmlBody) {
 
   let success = false;
   try {
+    window.scrollTo(0, 0);
     await html2pdf().set({
       margin: 10,
       filename: pdfFilename,
-      html2canvas: { backgroundColor: "#ffffff", scale: 2, useCORS: true, logging: false, windowWidth: 820 },
+      html2canvas: { backgroundColor: "#ffffff", scale: 2, useCORS: true, logging: false, windowWidth: 820, scrollX: 0, scrollY: 0 },
       jsPDF: { unit: "pt", format: "a4", orientation: "portrait" },
       pagebreak: { mode: ["css", "legacy"] },
     }).from(container).save();
