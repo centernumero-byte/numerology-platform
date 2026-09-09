@@ -1030,6 +1030,10 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
     <line x1="${positions.c.x}" y1="${positions.c.y}" x2="${positions.d.x}" y2="${positions.d.y}" stroke="rgba(225,180,52,.45)" stroke-width="1"/>
     <line x1="${positions.d.x}" y1="${positions.d.y}" x2="${positions.a.x}" y2="${positions.a.y}" stroke="rgba(225,180,52,.45)" stroke-width="1"/>
     <line x1="${positions.a.x}" y1="${positions.a.y}" x2="${positions.b.x}" y2="${positions.b.y}" stroke="rgba(225,180,52,.45)" stroke-width="1"/>`;
+  // Оси через центр: a-e-c (горизонталь) и b-e-d (вертикаль) — вдоль них лежат подточки.
+  const axisLines = `
+    <line x1="${positions.a.x}" y1="${positions.a.y}" x2="${positions.c.x}" y2="${positions.c.y}" stroke="rgba(120,110,150,.35)" stroke-width="1" stroke-dasharray="2,3"/>
+    <line x1="${positions.b.x}" y1="${positions.b.y}" x2="${positions.d.x}" y2="${positions.d.y}" stroke="rgba(120,110,150,.35)" stroke-width="1" stroke-dasharray="2,3"/>`;
   const lineageLines = omitAncestral ? "" : `
     <line x1="${positions.f.x}" y1="${positions.f.y}" x2="${positions.y.x}" y2="${positions.y.y}" stroke="rgba(120,80,190,.5)" stroke-width="1.2" stroke-dasharray="3,2"/>
     <line x1="${positions.g.x}" y1="${positions.g.y}" x2="${positions.k.x}" y2="${positions.k.y}" stroke="rgba(200,60,60,.5)" stroke-width="1.2" stroke-dasharray="3,2"/>`;
@@ -1059,7 +1063,7 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
 
   const viewSize = svgSize === "small" ? 240 : 410;
   const svg = `<svg viewBox="0 0 ${viewSize} ${viewSize}" style="width:100%;max-width:${svgSize === "small" ? 250 : 420}px;">
-      ${outerSquareLines}${innerDiamondLines}${lineageLines}${wellbeingLine}${dollarSign}${heartSign}${centerSvg}${subSvg}${outerSvg}${mainSvg}
+      ${outerSquareLines}${innerDiamondLines}${axisLines}${lineageLines}${wellbeingLine}${dollarSign}${heartSign}${centerSvg}${subSvg}${outerSvg}${mainSvg}
     </svg>`;
 
   return { svg, values };
@@ -1284,7 +1288,7 @@ async function downloadHtmlFile(filename, htmlBody) {
   const pdfFilename = filename.replace(/\.html$/i, "") + ".pdf";
 
   const container = document.createElement("div");
-  container.style.cssText = "position:absolute;top:0;left:-10000px;width:720px;background:#fff;color:#221733;font-family:Arial,sans-serif;padding:24px;margin:0;";
+  container.style.cssText = "position:fixed;top:0;left:0;width:720px;background:#fff;color:#221733;font-family:Arial,sans-serif;padding:24px;margin:0;z-index:999999;";
   container.innerHTML = `
     <style>
       h1 { color:#5d2789; font-family:Georgia,serif; font-weight:600; font-size:20px; margin:0 0 16px; }
@@ -1326,13 +1330,14 @@ async function downloadHtmlFile(filename, htmlBody) {
     await html2pdf().set({
       margin: 10,
       filename: pdfFilename,
-      html2canvas: { backgroundColor: "#ffffff", scale: 2, useCORS: true, logging: false, windowWidth: 820, scrollX: 0, scrollY: 0 },
+      html2canvas: { backgroundColor: "#ffffff", scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: 0 },
       jsPDF: { unit: "pt", format: "a4", orientation: "portrait" },
       pagebreak: { mode: ["css", "legacy"] },
     }).from(container).save();
     success = true;
   } catch (error) {
     console.error("Ошибка формирования PDF:", error);
+    alert("Ошибка формирования PDF: " + (error && error.message ? error.message : error));
   }
   document.body.removeChild(container);
 
