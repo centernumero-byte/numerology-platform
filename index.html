@@ -1335,7 +1335,7 @@ async function downloadHtmlFile(filename, htmlBody) {
          (золотистый/кремовый) — на белом листе PDF их нужно сделать тёмными для читаемости. */
       .diagram-wrap, .diagram-wrap * { color: #3a3245 !important; }
       .diagram-wrap { page-break-after: always; break-after: page; }
-      p, h1, h2, .num, .accordion-header, .key-number-box, tr, td, img { page-break-inside: avoid; break-inside: avoid; }
+      tr, td, img { page-break-inside: avoid; break-inside: avoid; }
       table { page-break-inside: auto; }
     </style>
     ${htmlBody}`;
@@ -1365,7 +1365,7 @@ async function downloadHtmlFile(filename, htmlBody) {
       filename: pdfFilename,
       html2canvas: { backgroundColor: "#ffffff", scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: 0 },
       jsPDF: { unit: "pt", format: "a4", orientation: "portrait" },
-      pagebreak: { mode: ["css", "avoid-all"] },
+      pagebreak: { mode: ["css"] },
     }).from(container).toContainer().toCanvas().then(function (canvas) {
       capturedCanvas = canvas;
     }).toImg().toPdf().save();
@@ -1437,6 +1437,8 @@ function downloadAdultMatrixText(name, birthDate) {
 
   function textToHtml(text) {
     // Переносы строк внутри текста превращаем в настоящие абзацы, а не склеиваем всё подряд.
+    // Абзацы разрешено делить между страницами (это нормально) — важно только не резать
+    // строку/слово посередине, а это делает сам браузер при печати по границам строк.
     return text.split(/\n+/).map(function (line) {
       return line.trim() ? `<p>${escapeHtml(line)}</p>` : "";
     }).join("");
@@ -1456,7 +1458,7 @@ function downloadAdultMatrixText(name, birthDate) {
   res.rasshifrovka.forEach(function (block) {
     bodyHtml += `<h2>${escapeHtml(block.title)}</h2>`;
     block.entries.forEach(function (e) {
-      bodyHtml += `<div class="entry-group">${`<div class="num">${escapeHtml(String(e.number))}</div>${textToHtml(editedTexts[cursor++] ?? e.text)}`}</div>`;
+      bodyHtml += `<div class="num">${escapeHtml(String(e.number))}</div>${textToHtml(editedTexts[cursor++] ?? e.text)}`;
     });
     if (block.title.toLowerCase().startsWith("материальная карма")) {
       bodyHtml += programsBlockHtml();
@@ -1467,7 +1469,7 @@ function downloadAdultMatrixText(name, birthDate) {
     bodyHtml += `<h2>${escapeHtml(block.title)}</h2>`;
     block.intro.forEach(function (t) { bodyHtml += `<p>${escapeHtml(t)}</p>`; });
     block.entries.forEach(function (e) {
-      bodyHtml += `<div class="entry-group">${`<div class="num">${escapeHtml(e.axis)}: ${escapeHtml(String(e.number))}</div>${textToHtml(editedTexts[cursor++] ?? e.text)}`}</div>`;
+      bodyHtml += `<div class="num">${escapeHtml(e.axis)}: ${escapeHtml(String(e.number))}</div>${textToHtml(editedTexts[cursor++] ?? e.text)}`;
     });
   });
 
