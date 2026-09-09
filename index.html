@@ -1318,8 +1318,8 @@ async function downloadHtmlFile(filename, htmlBody) {
   container.innerHTML = `
     <style>
       h1 { color:#5d2789; font-family:Georgia,serif; font-weight:600; font-size:20px; margin:0 0 16px; }
-      h2 { color:#5d2789; font-family:Georgia,serif; font-weight:600; font-size:17px; margin-top:22px; border-bottom:1px solid #d7aa31; padding-bottom:5px; }
-      .num { color:#8a3fbf; font-family:Georgia,serif; font-size:18px; margin:12px 0 4px; font-weight:700; }
+      h2 { color:#5d2789; font-family:Georgia,serif; font-weight:600; font-size:17px; margin-top:22px; border-bottom:1px solid #d7aa31; padding-bottom:5px; page-break-after: avoid; break-after: avoid; }
+      .num { color:#8a3fbf; font-family:Georgia,serif; font-size:18px; margin:12px 0 4px; font-weight:700; page-break-after: avoid; break-after: avoid; }
       p { margin:0 0 12px; line-height:1.5; font-size:14px; }
       table { border-collapse:collapse; width:100%; margin:8px 0; }
       td { padding:5px 4px; font-size:13px; }
@@ -1332,7 +1332,6 @@ async function downloadHtmlFile(filename, htmlBody) {
       .diagram-wrap, .diagram-wrap * { color: #3a3245 !important; }
       .diagram-wrap { page-break-after: always; break-after: page; }
       tr, td, img { page-break-inside: avoid; break-inside: avoid; }
-      .frag { display: inline-block; page-break-inside: avoid; break-inside: avoid; }
       table { page-break-inside: auto; }
     </style>
     ${htmlBody}`;
@@ -1421,19 +1420,8 @@ function downloadAdultMatrixText(name, birthDate) {
 
   function textToHtml(text) {
     // Переносы строк внутри текста превращаем в настоящие абзацы, а не склеиваем всё подряд.
-    // Дробим по предложениям на мелкие куски (класс .frag) — разрыв страницы можно безопасно
-    // ставить только между ними, не трогая середину слова и не утаскивая абзац целиком.
     return text.split(/\n+/).map(function (line) {
-      if (!line.trim()) return "";
-      const sentences = line.match(/[^.!?…]+[.!?…]+(\s+|$)|[^.!?…]+$/g) || [line];
-      const chunks = [];
-      let current = "";
-      sentences.forEach(function (s) {
-        if (current && (current + s).length > 140) { chunks.push(current); current = ""; }
-        current += s;
-      });
-      if (current) chunks.push(current);
-      return `<p>${chunks.map(function (c) { return `<span class="frag">${escapeHtml(c.trim())} </span>`; }).join("")}</p>`;
+      return line.trim() ? `<p>${escapeHtml(line)}</p>` : "";
     }).join("");
   }
 
