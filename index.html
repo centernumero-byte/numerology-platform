@@ -931,8 +931,10 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   values.b3 = reduceTo22Diag(values.b1 + values.e);
   values.c1 = reduceTo22Diag(values.c + values.e);
   values.c2 = reduceTo22Diag(values.c + values.c1);
+  values.c3 = reduceTo22Diag(values.c1 + values.e);
   values.d1 = reduceTo22Diag(values.d + values.e);
   values.d2 = reduceTo22Diag(values.d + values.d1);
+  values.d3 = reduceTo22Diag(values.d1 + values.e);
 
   // Чистая геометрия: центр строго по точке e, остальные точки — по углу и расстоянию от центра.
   // Расположение вдоль линии — равными долями, независимо от исходных координат в Excel (те нужны только для значений).
@@ -963,8 +965,10 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   positions.b3 = along(positions.b, positions.e, 0.64);
   positions.c2 = along(positions.c, positions.e, 0.20);
   positions.c1 = along(positions.c, positions.e, 0.42);
+  positions.c3 = along(positions.c, positions.e, 0.64);
   positions.d2 = along(positions.d, positions.e, 0.20);
   positions.d1 = along(positions.d, positions.e, 0.42);
+  positions.d3 = along(positions.d, positions.e, 0.64);
 
   if (!omitAncestral) {
     // $ и ♥ — на линии между оранжевыми точками c1 и d1, с центральной точкой между ними.
@@ -992,8 +996,8 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   const pointColor = {
     a: CHAKRA_COLOR.muladhara, a1: CHAKRA_COLOR.vishudha, a2: CHAKRA_COLOR.adjna, a3: CHAKRA_COLOR.anahata,
     b: CHAKRA_COLOR.sahasrara, b1: CHAKRA_COLOR.vishudha, b2: CHAKRA_COLOR.adjna, b3: CHAKRA_COLOR.anahata,
-    c: CHAKRA_COLOR.muladhara, c1: CHAKRA_COLOR.svadhistana, c2: "white",
-    d: CHAKRA_COLOR.muladhara, d1: CHAKRA_COLOR.svadhistana, d2: "white",
+    c: CHAKRA_COLOR.muladhara, c1: CHAKRA_COLOR.svadhistana, c2: "white", c3: CHAKRA_COLOR.anahata,
+    d: CHAKRA_COLOR.muladhara, d1: CHAKRA_COLOR.svadhistana, d2: "white", d3: CHAKRA_COLOR.anahata,
     m1: "white", m2: "white", h1: "white", h2: "white",
     e: CHAKRA_COLOR.manipura,
     f: "white", f2: "white", f3: "white",
@@ -1006,8 +1010,8 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   const outerKeys = omitAncestral ? [] : ["f", "g", "k", "y"];
   const moneyHeartKeys = omitAncestral ? [] : ["m1", "m2", "h1", "h2"];
   const subKeys = omitAncestral
-    ? ["a1", "a2", "a3", "b1", "b2", "b3", "c1", "c2", "d1", "d2"]
-    : ["a1", "a2", "a3", "b1", "b2", "b3", "c1", "c2", "d1", "d2", "f2", "f3", "g2", "g3", "k2", "k3", "y2", "y3", ...moneyHeartKeys];
+    ? ["a1", "a2", "a3", "b1", "b2", "b3", "c1", "c2", "c3", "d1", "d2", "d3"]
+    : ["a1", "a2", "a3", "b1", "b2", "b3", "c1", "c2", "c3", "d1", "d2", "d3", "f2", "f3", "g2", "g3", "k2", "k3", "y2", "y3", ...moneyHeartKeys];
 
   const outerSquareLines = omitAncestral ? "" : `
     <line x1="${positions.f.x}" y1="${positions.f.y}" x2="${positions.g.x}" y2="${positions.g.y}" stroke="rgba(225,180,52,.3)" stroke-width="1"/>
@@ -1134,12 +1138,14 @@ function renderPurposeDiagram(diagramValues, container, afterNode) {
   }
 
   const box = document.createElement("div");
-  box.style.cssText = "max-width:520px;margin:0 auto 30px;";
+  box.style.cssText = "max-width:560px;margin:0 auto 30px;";
   box.innerHTML = `
-    <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:6px;">
+    <div style="display:flex;justify-content:center;gap:10px;margin-bottom:16px;">
       ${item("Личное предназначение", `Небо ${nebo} + Земля ${zemlya}`, pred1)}
       ${item("Социальное предназначение", `Муж. линия ${muzh} + Жен. линия ${zhen}`, pred2)}
       ${item("Духовное предназначение", `Личное ${pred1} + Социальное ${pred2}`, pred3)}
+    </div>
+    <div style="display:flex;justify-content:center;">
       ${item("Планетарное предназначение", `Социальное ${pred2} + Духовное ${pred3}`, pred4)}
     </div>`;
   container.insertBefore(box, afterNode.nextSibling);
@@ -1271,7 +1277,7 @@ async function downloadHtmlFile(filename, htmlBody) {
   const pdfFilename = filename.replace(/\.html$/i, "") + ".pdf";
 
   const container = document.createElement("div");
-  container.style.cssText = "position:fixed;left:0;top:0;width:720px;background:#fff;color:#221733;font-family:Arial,sans-serif;padding:24px;z-index:999999;opacity:1;";
+  container.style.cssText = "width:720px;background:#fff;color:#221733;font-family:Arial,sans-serif;padding:24px;margin:0;";
   container.innerHTML = `
     <style>
       h1 { color:#5d2789; font-family:Georgia,serif; font-weight:600; font-size:20px; margin:0 0 16px; }
@@ -1280,14 +1286,15 @@ async function downloadHtmlFile(filename, htmlBody) {
       p { margin:0 0 12px; line-height:1.5; font-size:13px; }
       table { border-collapse:collapse; width:100%; margin:8px 0; }
       td { padding:5px 4px; font-size:13px; }
-      .diagram-wrap { text-align:center; margin-bottom:16px; page-break-after: always; }
+      .diagram-wrap { text-align:center; margin-bottom:16px; }
       svg text { fill: #221733 !important; }
       svg circle { stroke: #fff !important; }
     </style>
     ${htmlBody}`;
+
+  // Вставляем как обычный блок в конец страницы (без position:fixed/absolute) — так надёжнее для захвата в PDF.
   document.body.appendChild(container);
 
-  // Библиотека для PDF плохо обрабатывает «живой» SVG — конвертируем каждую диаграмму в PNG заранее.
   const svgs = Array.from(container.querySelectorAll("svg"));
   for (const svg of svgs) {
     const dataUrl = await svgElementToPngDataUrl(svg);
@@ -1300,21 +1307,27 @@ async function downloadHtmlFile(filename, htmlBody) {
     }
   }
 
+  container.scrollIntoView();
   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  await new Promise((r) => setTimeout(r, 200));
 
+  let success = false;
   try {
     await html2pdf().set({
       margin: 10,
       filename: pdfFilename,
-      html2canvas: { backgroundColor: "#ffffff", scale: 2, useCORS: true, logging: false },
+      html2canvas: { backgroundColor: "#ffffff", scale: 2, useCORS: true, logging: false, windowWidth: 760 },
       jsPDF: { unit: "pt", format: "a4", orientation: "portrait" },
       pagebreak: { mode: ["css", "legacy"] },
     }).from(container).save();
+    success = true;
   } catch (error) {
     console.error("Ошибка формирования PDF:", error);
-    alert("Не удалось сформировать PDF.\n\n" + (error.message || error));
-  } finally {
-    document.body.removeChild(container);
+  }
+  document.body.removeChild(container);
+
+  if (!success) {
+    alert("Не удалось сформировать PDF. Попробуйте ещё раз или обновите страницу.");
   }
 }
 
