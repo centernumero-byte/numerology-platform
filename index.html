@@ -1037,6 +1037,13 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   const lineageLines = omitAncestral ? "" : `
     <line x1="${positions.f.x}" y1="${positions.f.y}" x2="${positions.y.x}" y2="${positions.y.y}" stroke="rgba(120,80,190,.5)" stroke-width="1.2" stroke-dasharray="3,2"/>
     <line x1="${positions.g.x}" y1="${positions.g.y}" x2="${positions.k.x}" y2="${positions.k.y}" stroke="rgba(200,60,60,.5)" stroke-width="1.2" stroke-dasharray="3,2"/>`;
+  const lineageLabels = omitAncestral ? "" : (function () {
+    const mp = along(positions.f, positions.e, 0.55);
+    const fp = along(positions.g, positions.e, 0.55);
+    return `
+      <text x="${mp.x}" y="${mp.y}" text-anchor="middle" font-size="7" fill="rgba(120,80,190,.9)" transform="rotate(-45 ${mp.x} ${mp.y})">линия мужского рода</text>
+      <text x="${fp.x}" y="${fp.y}" text-anchor="middle" font-size="7" fill="rgba(200,60,60,.9)" transform="rotate(45 ${fp.x} ${fp.y})">линия женского рода</text>`;
+  })();
   const wellbeingLine = `
     <line x1="${positions.c1.x}" y1="${positions.c1.y}" x2="${positions.x2.x}" y2="${positions.x2.y}" stroke="rgba(140,200,90,.5)" stroke-width="1" stroke-dasharray="2,2"/>
     <line x1="${positions.x2.x}" y1="${positions.x2.y}" x2="${positions.x.x}" y2="${positions.x.y}" stroke="rgba(140,200,90,.5)" stroke-width="1" stroke-dasharray="2,2"/>
@@ -1063,7 +1070,7 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
 
   const viewSize = svgSize === "small" ? 240 : 410;
   const svg = `<svg viewBox="0 0 ${viewSize} ${viewSize}" style="width:100%;max-width:${svgSize === "small" ? 250 : 420}px;">
-      ${outerSquareLines}${innerDiamondLines}${axisLines}${lineageLines}${wellbeingLine}${dollarSign}${heartSign}${centerSvg}${subSvg}${outerSvg}${mainSvg}
+      ${outerSquareLines}${innerDiamondLines}${axisLines}${lineageLines}${lineageLabels}${wellbeingLine}${dollarSign}${heartSign}${centerSvg}${subSvg}${outerSvg}${mainSvg}
     </svg>`;
 
   return { svg, values };
@@ -1122,7 +1129,7 @@ function renderHealthMapDiagram(v, container, afterNode) {
   box.innerHTML = `
     <div style="color:#c9bfa8;font-size:14px;margin-bottom:10px;text-align:center;">Карта здоровья</div>
     <table style="width:100%;border-collapse:collapse;font-size:13px;color:#eee5d0;border:1px solid rgba(225,180,52,.25);">
-      <thead><tr style="color:#8a8098;font-size:11px;"><td style="padding:6px 8px;border:1px solid rgba(225,180,52,.25);">Чакра</td><td style="text-align:center;border:1px solid rgba(225,180,52,.25);">Физика</td><td style="text-align:center;border:1px solid rgba(225,180,52,.25);">Энергия</td><td style="text-align:center;border:1px solid rgba(225,180,52,.25);">Эмоции</td></tr></thead>
+      <thead><tr style="color:#8a8098;font-size:11px;"><td style="padding:6px 8px 6px 25px;border:1px solid rgba(225,180,52,.25);">Чакры</td><td style="text-align:center;border:1px solid rgba(225,180,52,.25);">Физика</td><td style="text-align:center;border:1px solid rgba(225,180,52,.25);">Энергия</td><td style="text-align:center;border:1px solid rgba(225,180,52,.25);">Эмоции</td></tr></thead>
       <tbody>${rowsHtml}</tbody>
     </table>`;
   container.insertBefore(box, afterNode.nextSibling);
@@ -1288,7 +1295,7 @@ async function downloadHtmlFile(filename, htmlBody) {
   const pdfFilename = filename.replace(/\.html$/i, "") + ".pdf";
 
   const container = document.createElement("div");
-  container.style.cssText = "position:fixed;top:0;left:0;width:720px;background:#fff;color:#221733;font-family:Arial,sans-serif;padding:24px;margin:0;z-index:999999;";
+  container.style.cssText = "width:720px;background:#fff;color:#221733;font-family:Arial,sans-serif;padding:24px;margin:0;";
   container.innerHTML = `
     <style>
       h1 { color:#5d2789; font-family:Georgia,serif; font-weight:600; font-size:20px; margin:0 0 16px; }
@@ -1327,14 +1334,25 @@ async function downloadHtmlFile(filename, htmlBody) {
   let success = false;
   try {
     window.scrollTo(0, 0);
+    let capturedCanvas = null;
     await html2pdf().set({
       margin: 10,
       filename: pdfFilename,
       html2canvas: { backgroundColor: "#ffffff", scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: 0 },
       jsPDF: { unit: "pt", format: "a4", orientation: "portrait" },
       pagebreak: { mode: ["css", "legacy"] },
-    }).from(container).save();
+    }).from(container).toContainer().toCanvas().then(function (canvas) {
+      capturedCanvas = canvas;
+    }).toImg().toPdf().save();
     success = true;
+    if (capturedCanvas) {
+      console.log("PDF-диагностика: захваченный canvas", capturedCanvas.width, "x", capturedCanvas.height,
+        "контейнер:", container.offsetWidth, "x", container.offsetHeight,
+        "детей внутри:", container.children.length);
+      if (capturedCanvas.width < 50 || capturedCanvas.height < 50) {
+        alert("Диагностика: захваченное изображение подозрительно маленькое — " + capturedCanvas.width + "×" + capturedCanvas.height + " px. Контейнер перед захватом был " + container.offsetWidth + "×" + container.offsetHeight + " px, внутри " + container.children.length + " элементов.");
+      }
+    }
   } catch (error) {
     console.error("Ошибка формирования PDF:", error);
     alert("Ошибка формирования PDF: " + (error && error.message ? error.message : error));
