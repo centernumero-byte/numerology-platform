@@ -2288,11 +2288,23 @@ function reorderYantraSection(blocks) {
   const perception = blocks.find(function (b) { return b.title.indexOf("Мировоззрения") !== -1; });
 
   const yantraTitles = [
-    yantraHeader, approach,
+    yantraHeader && { title: "Янтра: Интегральное число", entries: yantraHeader.entries },
+    approach && { title: "Число подхода", entries: approach.entries },
     psyche && { title: "Число души", entries: psyche.entries },
-    method,
+    method && { title: "Число метода", entries: method.entries },
     karma && { title: "Число судьбы", entries: karma.entries },
-    prana, close, losses, partner, skills, luck, task, love, money, care, support, perception,
+    prana && { title: "Число праны", entries: prana.entries },
+    close && { title: "Число близких", entries: close.entries },
+    losses && { title: "Число потерь", entries: losses.entries },
+    partner && { title: "Число партнера", entries: partner.entries },
+    skills && { title: "Число навыков", entries: skills.entries },
+    luck && { title: "Число удачи", entries: luck.entries },
+    task && { title: "Число задачи", entries: task.entries },
+    love && { title: "Число любви", entries: love.entries },
+    money && { title: "Число денег", entries: money.entries },
+    care && { title: "Число заботы", entries: care.entries },
+    support && { title: "Число поддержки", entries: support.entries },
+    perception && { title: "Число восприятия", entries: perception.entries },
   ].filter(Boolean);
 
   const yantraOriginalTitles = [approach, method, prana, close, losses, partner, skills, luck, task, love, money, care, support, perception, yantraHeader]
@@ -2335,6 +2347,16 @@ function getYantraGrid(day, month, year) {
   return { A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, integral };
 }
 
-window.VedicEngine = { calculate, getFullResult: getVedicFullResult, cell, getAll, getYantraGrid };
+// Нумерологический гороскоп 3х3: каждая цифра даты рождения (все цифры дня.месяца.года,
+// без сокращения, нули не ставятся) попадает в свою ячейку — сколько раз цифра встретилась,
+// столько раз она там и написана. Раскладка ячеек фиксированная (сверху вниз): 3 6 9 / 2 5 8 / 1 4 7.
+function getHoroscopeGrid(day, month, year) {
+  const digits = ("" + day + month + year).split("").map(Number);
+  const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 };
+  digits.forEach(function (d) { if (d >= 1 && d <= 9) counts[d]++; });
+  return counts;
+}
+
+window.VedicEngine = { calculate, getFullResult: getVedicFullResult, cell, getAll, getYantraGrid, getHoroscopeGrid };
 
 })(window);

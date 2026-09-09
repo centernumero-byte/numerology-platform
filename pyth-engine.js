@@ -6903,9 +6903,35 @@ function getPythBlocks() {
 function getPythFullResult(day, month, year, lastName, firstName, patronymic, alphabet) {
   calculate(day, month, year, lastName, firstName, patronymic, alphabet);
   const blocks = getPythBlocks();
-  return { blocks };
+  const psychomatrix = getPsychomatrix(day, month, year);
+  return { blocks, digitSquare: psychomatrix.counts, psychomatrix };
 }
 
-window.PythagorasEngine = { calculate, getFullResult: getPythFullResult, cell, getAll, wordDigit, digitalRoot };
+// Квадрат Пифагора (психоматрица): 4 рабочих числа + подсчёт цифр 1-9 во всём числовом ряду.
+function digitSumStr(s) { return String(s).split("").reduce(function (sum, ch) { return sum + Number(ch); }, 0); }
+function getPsychomatrix(day, month, year) {
+  const dateStr = String(day).padStart(2, "0") + String(month).padStart(2, "0") + String(year);
+  const rc1 = digitSumStr(dateStr);
+  const rc2 = digitSumStr(String(rc1));
+  const firstDigit = Number(dateStr[0]);
+  const rc3 = rc1 - 2 * firstDigit;
+  const rc4 = digitSumStr(String(Math.abs(rc3)));
+  const fullStr = dateStr + String(rc1) + String(rc2) + String(rc3) + String(rc4);
+  const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 };
+  fullStr.split("").forEach(function (ch) { const d = Number(ch); if (d >= 1 && d <= 9) counts[d]++; });
+  const qualities = {
+    samootsenka: counts[1] + counts[2] + counts[3],
+    tsennostDeneg: counts[4] + counts[5] + counts[6],
+    potentsialTalanta: counts[7] + counts[8] + counts[9],
+    tseleustremlennost: counts[1] + counts[4] + counts[7],
+    semeynost: counts[2] + counts[5] + counts[8],
+    stabilnost: counts[3] + counts[6] + counts[9],
+    duhovniyPotentsial: counts[1] + counts[5] + counts[9],
+    temperament: counts[3] + counts[5] + counts[7],
+  };
+  return { rc1, rc2, rc3, rc4, counts, qualities };
+}
+
+window.PythagorasEngine = { calculate, getFullResult: getPythFullResult, cell, getAll, wordDigit, digitalRoot, getPsychomatrix };
 
 })(window);

@@ -800,6 +800,20 @@ async function openCalculator(type) {
           style="display:block;width:100%;padding:13px;margin:8px 0 5px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
         <div id="dateError" style="color:#ff9b9b;min-height:22px;margin-bottom:15px;"></div>
 
+        ${type === "vedic" ? `
+        <label>Интересующий год</label>
+        <input id="vedicYear" type="text" placeholder="ГГГГ" maxlength="4" inputmode="numeric" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4)"
+          style="display:block;width:100%;padding:13px;margin:8px 0 5px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
+        <div id="vedicYearError" style="color:#ff9b9b;min-height:22px;margin-bottom:10px;"></div>
+
+        <label>Интересующий месяц</label>
+        <select id="vedicMonth" style="display:block;width:100%;padding:13px;margin:8px 0 20px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
+          <option value="1">Январь</option><option value="2">Февраль</option><option value="3">Март</option>
+          <option value="4">Апрель</option><option value="5">Май</option><option value="6">Июнь</option>
+          <option value="7">Июль</option><option value="8">Август</option><option value="9">Сентябрь</option>
+          <option value="10">Октябрь</option><option value="11">Ноябрь</option><option value="12">Декабрь</option>
+        </select>` : ""}
+
         <button onclick="calculate('${type}')" style="width:100%;padding:14px;border:1px solid #d7aa31;border-radius:10px;background:linear-gradient(90deg,#713199,#5d2789);color:#f8d96d;font-size:16px;cursor:pointer;">Рассчитать</button>
         <button onclick="location.reload()" style="width:100%;padding:14px;margin-top:10px;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.15);color:#f5d46b;font-size:16px;cursor:pointer;">Назад</button>
 
@@ -838,6 +852,22 @@ function calculate(type) {
     if (dateError) dateError.textContent = "Введите корректную дату рождения в формате ДД.ММ.ГГГГ.";
     return;
   }
+
+  let interestYear = null, interestMonth = null;
+  if (type === "vedic") {
+    const yearInput = document.getElementById("vedicYear");
+    const yearError = document.getElementById("vedicYearError");
+    const monthInput = document.getElementById("vedicMonth");
+    if (yearError) yearError.textContent = "";
+    const yearRaw = yearInput ? yearInput.value.trim() : "";
+    if (!/^\d{4}$/.test(yearRaw) || Number(yearRaw) < 1900 || Number(yearRaw) > 2100) {
+      if (yearError) yearError.textContent = "Введите корректный год — 4 цифры, например 2026.";
+      return;
+    }
+    interestYear = Number(yearRaw);
+    interestMonth = monthInput ? Number(monthInput.value) : null;
+  }
+
   if (!result) return;
 
   if (type === "adult" && window.AdultMatrixEngine) {
@@ -1520,11 +1550,14 @@ function calculatePythagoras() {
   }
 
   renderEditableResult(res.blocks, result, "Нумерология по Пифагору - " + lastName + " " + firstName, birthDate);
-  renderPythDigitSquare(res.digitSquare, result);
+  renderPythDigitSquare(res.psychomatrix, result);
   window._lastPythagorasResult = res;
 }
 
-function renderPythDigitSquare(digitSquare, container) {
+function renderPythDigitSquare(psychomatrix, container) {
+  if (!psychomatrix) return;
+  const digitSquare = psychomatrix.counts || psychomatrix;
+  const q = psychomatrix.qualities;
   const layout = [[1, 4, 7], [2, 5, 8], [3, 6, 9]];
   const cellsHtml = layout.map(function (row) {
     return `<div style="display:flex;gap:8px;">` + row.map(function (digit) {
@@ -1540,8 +1573,40 @@ function renderPythDigitSquare(digitSquare, container) {
   }).join("");
 
   const box = document.createElement("div");
-  box.style.cssText = "max-width:300px;margin:0 auto 30px;display:flex;flex-direction:column;gap:8px;";
-  box.innerHTML = `<div style="text-align:center;color:#c9bfa8;font-size:14px;margin-bottom:6px;">Ваш квадрат Пифагора</div>` + cellsHtml;
+  box.style.cssText = "max-width:420px;margin:0 auto 30px;";
+  let html = `<div style="text-align:center;color:#c9bfa8;font-size:14px;margin-bottom:6px;">Ваш квадрат Пифагора</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px;">${cellsHtml}</div>`;
+
+  if (q) {
+    const qualityCards = [
+      ["Самооценка", "столбец 1-2-3", q.samootsenka],
+      ["Ценность денег", "столбец 4-5-6", q.tsennostDeneg],
+      ["Потенциал таланта", "столбец 7-8-9", q.potentsialTalanta],
+      ["Целеустремлённость", "строка 1-4-7", q.tseleustremlennost],
+      ["Семейность", "строка 2-5-8", q.semeynost],
+      ["Стабильность", "строка 3-6-9", q.stabilnost],
+      ["Духовный потенциал", "диагональ 1-5-9", q.duhovniyPotentsial],
+      ["Темперамент", "диагональ 3-5-7", q.temperament],
+    ];
+    html += `
+      <div style="color:#c9bfa8;font-size:13px;text-align:center;margin-bottom:10px;">Производные качества — сколько раз цифры столбца, строки или диагонали встретились в вашем числовом ряду</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;">
+        ${qualityCards.map(function (c) {
+          return `<div style="border:1px solid rgba(225,180,52,.35);border-radius:10px;padding:10px;text-align:center;background:rgba(255,255,255,.02);">
+            <div style="color:#f6d66c;font-size:12px;margin-bottom:2px;">${escapeHtml(c[0])}</div>
+            <div style="color:#8a8098;font-size:10px;margin-bottom:4px;">${escapeHtml(c[1])}</div>
+            <div style="color:#fff;font-family:Georgia,serif;font-size:20px;">${c[2]}</div>
+          </div>`;
+        }).join("")}
+      </div>
+      <div style="border:1px solid rgba(225,180,52,.3);border-radius:10px;padding:12px 14px;color:#c9bfa8;font-size:12.5px;line-height:1.5;">
+        Пустая ячейка не значит «нет способностей» — это просто старт с нуля, качество можно наработать за жизнь.
+        У рождённых в 2000-х годах пустых ячеек обычно больше: у них меньше жёсткой врождённой привязки к готовому набору качеств,
+        зато больше свободы самим формировать сильные стороны в любом направлении.
+      </div>`;
+  }
+
+  box.innerHTML = html;
   container.insertBefore(box, container.firstChild);
 }
 
@@ -1742,6 +1807,7 @@ function renderVedicResult(name, birthDate, container) {
   }
 
   renderEditableResult(res.blocks, container, "Ведическая нумерология - " + name, birthDate);
+  renderHoroscopeGrid(day, month, year, container);
   renderYantraGrid(day, month, year, container);
 }
 
@@ -1757,7 +1823,7 @@ function renderYantraGrid(day, month, year, container) {
   const box = document.createElement("div");
   box.style.cssText = "max-width:640px;margin:20px auto;text-align:center;";
   box.innerHTML = `
-    <div style="color:#f6d66c;font-family:Georgia,serif;font-size:18px;margin-bottom:4px;">Расчёт янтры</div>
+    <div style="color:#f6d66c;font-family:Georgia,serif;font-size:18px;margin-bottom:4px;">Янтра</div>
     <div style="color:#c9bfa8;font-size:13px;margin-bottom:14px;">Интегральное число: ${g.integral}</div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:2px;border:1px solid #d7aa31;">
       ${cells.map(function (c) {
@@ -1765,6 +1831,29 @@ function renderYantraGrid(day, month, year, container) {
           <div style="color:#f6d66c;font-size:11px;text-transform:uppercase;margin-bottom:6px;">${escapeHtml(c[0])}</div>
           <div style="color:#fff;font-size:22px;font-family:Georgia,serif;">${c[1]}</div>
         </div>`;
+      }).join("")}
+    </div>`;
+  container.insertBefore(box, container.firstChild);
+}
+
+function renderHoroscopeGrid(day, month, year, container) {
+  if (!window.VedicEngine.getHoroscopeGrid) return;
+  const h = window.VedicEngine.getHoroscopeGrid(day, month, year);
+  // Раскладка ячеек 3x3 сверху вниз: 3 6 9 / 2 5 8 / 1 4 7 — по методичке.
+  const layout = [[3, 6, 9], [2, 5, 8], [1, 4, 7]];
+  const box = document.createElement("div");
+  box.style.cssText = "max-width:400px;margin:20px auto;text-align:center;";
+  box.innerHTML = `
+    <div style="color:#f6d66c;font-family:Georgia,serif;font-size:18px;margin-bottom:14px;">Нумерологический гороскоп</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:2px;border:1px solid #d7aa31;">
+      ${layout.map(function (row) {
+        return row.map(function (n) {
+          const count = h[n] || 0;
+          const display = count > 0 ? String(n).repeat(count) : "—";
+          return `<div style="background:rgba(255,255,255,.04);border:1px solid rgba(215,170,49,.3);padding:16px 6px;">
+            <div style="color:#fff;font-size:20px;font-family:Georgia,serif;">${display}</div>
+          </div>`;
+        }).join("");
       }).join("")}
     </div>`;
   container.insertBefore(box, container.firstChild);
