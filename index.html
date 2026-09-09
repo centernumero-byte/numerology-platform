@@ -894,13 +894,17 @@ const CHAKRA_COLOR = {
   neutral: "#8a7fae",
 };
 
-function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncestral) {
+function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncestral, hideLineageLabels) {
+  // omitAncestral: false/undefined = все точки; true = совсем без f/g/k/y и их подточек;
+  // "corners" = f/g/k/y (углы) есть, но БЕЗ подточек (s1/s2/p1/p2/p3/p4/s3/s4) и без e1/e2.
+  const omitCorners = omitAncestral === true;
+  const omitSubs = omitAncestral === true || omitAncestral === "corners";
   function shift(ref) {
     const m = ref.match(/^([A-Z]+)(\d+)$/);
     return m[1] + (Number(m[2]) + rowOffset);
   }
 
-  const baseCellRefs = omitAncestral
+  const baseCellRefs = omitCorners
     ? { a: "H24", a1: "O24", a2: "L24", b: "AA6", c: "AS24", d: "AA43", e: "AA23" }
     : {
         a: "H24", a1: "O24", a2: "L24",
@@ -936,7 +940,7 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   values.x2 = reduceTo22Diag(values.x + values.c1);
   values.x1 = reduceTo22Diag(values.d1 + values.x);
   // e1 = f+g+y+k, e2 = e+e1 (родовые энергии сексуальности, стр. «Сексуальность» методички)
-  if (!omitAncestral) {
+  if (!omitCorners && !omitSubs) {
     values.e1 = reduceTo22Diag(values.f + values.g + values.y + values.k);
     values.e2 = reduceTo22Diag(values.e + values.e1);
   }
@@ -982,11 +986,13 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   positions.x = along(positions.c1, positions.d1, 0.50);
   positions.x1 = along(positions.c1, positions.d1, 0.70);
 
-  if (!omitAncestral) {
+  if (!omitCorners) {
     positions.f = polar(225, R2);
     positions.g = polar(315, R2);
     positions.k = polar(135, R2);
     positions.y = polar(45, R2);
+  }
+  if (!omitCorners && !omitSubs) {
     positions.f2 = along(positions.f, positions.e, 0.15);
     positions.f3 = along(positions.f, positions.e, 0.30);
     positions.g2 = along(positions.g, positions.e, 0.15);
@@ -1014,13 +1020,13 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   };
 
   const mainKeys = ["a", "b", "c", "d"];
-  const outerKeys = omitAncestral ? [] : ["f", "g", "k", "y"];
+  const outerKeys = omitCorners ? [] : ["f", "g", "k", "y"];
   const wellbeingKeys = ["x", "x1", "x2"];
-  const subKeys = omitAncestral
-    ? ["a1", "a2", "a3", "b1", "b2", "b3", "c1", "c2", "d1", "d2", ...wellbeingKeys]
-    : ["a1", "a2", "a3", "b1", "b2", "b3", "c1", "c2", "d1", "d2", "f2", "f3", "g2", "g3", "k2", "k3", "y2", "y3", "e1", "e2", ...wellbeingKeys];
+  const subKeys = ["a1", "a2", "a3", "b1", "b2", "b3", "c1", "c2", "d1", "d2"]
+    .concat(omitSubs ? [] : ["f2", "f3", "g2", "g3", "k2", "k3", "y2", "y3", "e1", "e2"])
+    .concat(wellbeingKeys);
 
-  const outerSquareLines = omitAncestral ? "" : `
+  const outerSquareLines = omitCorners ? "" : `
     <line x1="${positions.f.x}" y1="${positions.f.y}" x2="${positions.g.x}" y2="${positions.g.y}" stroke="rgba(225,180,52,.3)" stroke-width="1"/>
     <line x1="${positions.g.x}" y1="${positions.g.y}" x2="${positions.y.x}" y2="${positions.y.y}" stroke="rgba(225,180,52,.3)" stroke-width="1"/>
     <line x1="${positions.y.x}" y1="${positions.y.y}" x2="${positions.k.x}" y2="${positions.k.y}" stroke="rgba(225,180,52,.3)" stroke-width="1"/>
@@ -1034,12 +1040,22 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   const axisLines = `
     <line x1="${positions.a.x}" y1="${positions.a.y}" x2="${positions.c.x}" y2="${positions.c.y}" stroke="rgba(120,110,150,.35)" stroke-width="1" stroke-dasharray="2,3"/>
     <line x1="${positions.b.x}" y1="${positions.b.y}" x2="${positions.d.x}" y2="${positions.d.y}" stroke="rgba(120,110,150,.35)" stroke-width="1" stroke-dasharray="2,3"/>`;
-  const lineageLines = omitAncestral ? "" : `
+  const lineageLines = omitCorners ? "" : `
     <line x1="${positions.f.x}" y1="${positions.f.y}" x2="${positions.y.x}" y2="${positions.y.y}" stroke="rgba(120,80,190,.5)" stroke-width="1.2" stroke-dasharray="3,2"/>
     <line x1="${positions.g.x}" y1="${positions.g.y}" x2="${positions.k.x}" y2="${positions.k.y}" stroke="rgba(200,60,60,.5)" stroke-width="1.2" stroke-dasharray="3,2"/>`;
-  const lineageLabels = omitAncestral ? "" : (function () {
-    const mp = along(positions.f, positions.e, 0.35);
-    const fp = along(positions.g, positions.e, 0.35);
+  const lineageLabels = (omitCorners || hideLineageLabels) ? "" : (function () {
+    const mp = along(positions.f, positions.e, 0.45);
+    const fp = along(positions.g, positions.e, 0.45);
+    // Небольшой перпендикулярный сдвиг (не вдоль линии!), чтобы подпись легла НАД пунктиром
+    // с зазором, а не поверх него.
+    const mDx = positions.e.x - positions.f.x, mDy = positions.e.y - positions.f.y;
+    const mLen = Math.hypot(mDx, mDy) || 1;
+    const mOff = { x: (mDy / mLen) * 4, y: -(mDx / mLen) * 4 };
+    const fDx = positions.e.x - positions.g.x, fDy = positions.e.y - positions.g.y;
+    const fLen = Math.hypot(fDx, fDy) || 1;
+    const fOff = { x: -(fDy / fLen) * 4, y: (fDx / fLen) * 4 };
+    mp.x += mOff.x; mp.y += mOff.y;
+    fp.x += fOff.x; fp.y += fOff.y;
     return `
       <text x="${mp.x}" y="${mp.y}" text-anchor="middle" font-size="7" fill="rgba(120,80,190,.9)" transform="rotate(45 ${mp.x} ${mp.y})">линия мужского рода</text>
       <text x="${fp.x}" y="${fp.y}" text-anchor="middle" font-size="7" fill="rgba(200,60,60,.9)" transform="rotate(-45 ${fp.x} ${fp.y})">линия женского рода</text>`;
@@ -1344,7 +1360,7 @@ async function downloadHtmlFile(filename, htmlBody) {
     window.scrollTo(0, 0);
     let capturedCanvas = null;
     await html2pdf().set({
-      margin: 10,
+      margin: [24, 12, 24, 12],
       filename: pdfFilename,
       html2canvas: { backgroundColor: "#ffffff", scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: 0 },
       jsPDF: { unit: "pt", format: "a4", orientation: "portrait" },
@@ -1693,13 +1709,14 @@ function renderCompatibilityDiagrams(d1, m1, y1, d2, m2, y2, container) {
   const engine = window.CompatibilityEngine;
   engine.calculate(d1, m1, y1, d2, m2, y2, "", "");
 
-  const p1 = buildDiagramSvgMarkup(engine, "Диаграмма совместимости", 0, "small");
-  const p2 = buildDiagramSvgMarkup(engine, "Диаграмма совместимости", 88, "small");
-  // Полная диаграмма пары — с углами f/g/k/y и линией благополучия, как у партнёров.
-  // Если этих ячеек нет в листе на этом смещении строк — откатываемся к упрощённой версии,
+  const p1 = buildDiagramSvgMarkup(engine, "Диаграмма совместимости", 0, "small", false, true);
+  const p2 = buildDiagramSvgMarkup(engine, "Диаграмма совместимости", 88, "small", false, true);
+  // Полная диаграмма пары — с углами f/g/k/y и линией благополучия, но БЕЗ подточек s1/s2/p1-p4/e1/e2
+  // (лишние для сводной диаграммы пары) и без подписей «линия мужского/женского рода».
+  // Если этих ячеек нет в листе на этом смещении строк — откатываемся к полностью упрощённой версии,
   // чтобы не сломать всю диаграмму совместимости.
-  const combined = buildDiagramSvgMarkup(engine, "Диаграмма совместимости", 175, "small", false)
-    || buildDiagramSvgMarkup(engine, "Диаграмма совместимости", 175, "small", true);
+  const combined = buildDiagramSvgMarkup(engine, "Диаграмма совместимости", 175, "small", "corners", true)
+    || buildDiagramSvgMarkup(engine, "Диаграмма совместимости", 175, "small", true, true);
   if (!p1 || !p2 || !combined) return;
 
   function labeledDiagram(title, result) {
