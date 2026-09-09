@@ -1038,8 +1038,8 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
     <line x1="${positions.f.x}" y1="${positions.f.y}" x2="${positions.y.x}" y2="${positions.y.y}" stroke="rgba(120,80,190,.5)" stroke-width="1.2" stroke-dasharray="3,2"/>
     <line x1="${positions.g.x}" y1="${positions.g.y}" x2="${positions.k.x}" y2="${positions.k.y}" stroke="rgba(200,60,60,.5)" stroke-width="1.2" stroke-dasharray="3,2"/>`;
   const lineageLabels = omitAncestral ? "" : (function () {
-    const mp = along(positions.f, positions.e, 0.55);
-    const fp = along(positions.g, positions.e, 0.55);
+    const mp = along(positions.f, positions.e, 0.35);
+    const fp = along(positions.g, positions.e, 0.35);
     return `
       <text x="${mp.x}" y="${mp.y}" text-anchor="middle" font-size="7" fill="rgba(120,80,190,.9)" transform="rotate(45 ${mp.x} ${mp.y})">линия мужского рода</text>
       <text x="${fp.x}" y="${fp.y}" text-anchor="middle" font-size="7" fill="rgba(200,60,60,.9)" transform="rotate(-45 ${fp.x} ${fp.y})">линия женского рода</text>`;
@@ -1049,8 +1049,8 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
     <line x1="${positions.x2.x}" y1="${positions.x2.y}" x2="${positions.x.x}" y2="${positions.x.y}" stroke="rgba(140,200,90,.5)" stroke-width="1" stroke-dasharray="2,2"/>
     <line x1="${positions.x.x}" y1="${positions.x.y}" x2="${positions.x1.x}" y2="${positions.x1.y}" stroke="rgba(210,70,70,.5)" stroke-width="1" stroke-dasharray="2,2"/>
     <line x1="${positions.x1.x}" y1="${positions.x1.y}" x2="${positions.d1.x}" y2="${positions.d1.y}" stroke="rgba(210,70,70,.5)" stroke-width="1" stroke-dasharray="2,2"/>`;
-  const dollarSign = `<text x="${positions.x2.x + 12}" y="${positions.x2.y - 4}" font-size="13" fill="#8fd98f" font-weight="700">$</text>`;
-  const heartSign = `<text x="${positions.x1.x - 16}" y="${positions.x1.y + 5}" font-size="13" fill="#e07a7a">♥</text>`;
+  const dollarSign = `<text x="${positions.x2.x}" y="${positions.x2.y - 14}" text-anchor="middle" font-size="13" fill="#8fd98f" font-weight="700">$</text>`;
+  const heartSign = `<text x="${positions.x1.x}" y="${positions.x1.y - 12}" text-anchor="middle" font-size="13" fill="#e07a7a">♥</text>`;
 
   function circle(p, value, r, fs, fill) {
     const isWhite = fill === "white";
@@ -1076,7 +1076,7 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   return { svg, values };
 }
 
-function renderMatrixDiamondDiagram(engine, container, includeHealthMap) {
+function renderMatrixDiamondDiagram(engine, container, includeHealthMap, purposeCount) {
   const result = buildDiagramSvgMarkup(engine, "Диаграмма", 0, "large");
   if (!result) return;
   const { svg, values } = result;
@@ -1091,7 +1091,7 @@ function renderMatrixDiamondDiagram(engine, container, includeHealthMap) {
     renderHealthMapDiagram(values, container, box);
     afterNode = box.nextSibling;
   }
-  renderPurposeDiagram(values, container, afterNode);
+  renderPurposeDiagram(values, container, afterNode, purposeCount);
 }
 
 function renderHealthMapDiagram(v, container, afterNode) {
@@ -1135,16 +1135,17 @@ function renderHealthMapDiagram(v, container, afterNode) {
   container.insertBefore(box, afterNode.nextSibling);
 }
 
-function renderPurposeDiagram(diagramValues, container, afterNode) {
+function renderPurposeDiagram(diagramValues, container, afterNode, count) {
+  count = count || 4;
   const v = diagramValues;
   const nebo = reduceTo22Diag(v.b + v.d);
   const zemlya = reduceTo22Diag(v.a + v.c);
   const pred1 = reduceTo22Diag(nebo + zemlya);
-  const muzh = reduceTo22Diag(v.f + v.y);
-  const zhen = reduceTo22Diag(v.g + v.k);
-  const pred2 = reduceTo22Diag(muzh + zhen);
-  const pred3 = reduceTo22Diag(pred1 + pred2);
-  const pred4 = reduceTo22Diag(pred2 + pred3);
+  const muzh = v.f != null ? reduceTo22Diag(v.f + v.y) : null;
+  const zhen = v.g != null ? reduceTo22Diag(v.g + v.k) : null;
+  const pred2 = (muzh != null && zhen != null) ? reduceTo22Diag(muzh + zhen) : null;
+  const pred3 = pred2 != null ? reduceTo22Diag(pred1 + pred2) : null;
+  const pred4 = pred3 != null ? reduceTo22Diag(pred2 + pred3) : null;
 
   function item(title, formula, result) {
     return `
@@ -1155,17 +1156,19 @@ function renderPurposeDiagram(diagramValues, container, afterNode) {
       </div>`;
   }
 
+  const items = [item("Личное предназначение", `Небо ${nebo} + Земля ${zemlya}`, pred1)];
+  if (count >= 2 && pred2 != null) items.push(item("Социальное предназначение", `Муж. линия ${muzh} + Жен. линия ${zhen}`, pred2));
+  if (count >= 3 && pred3 != null) items.push(item("Духовное предназначение", `Личное ${pred1} + Социальное ${pred2}`, pred3));
+  if (count >= 4 && pred4 != null) items.push(item("Планетарное предназначение", `Социальное ${pred2} + Духовное ${pred3}`, pred4));
+
+  const rows = [];
+  for (let i = 0; i < items.length; i += 2) rows.push(items.slice(i, i + 2));
+
   const box = document.createElement("div");
   box.style.cssText = "max-width:420px;margin:0 auto 30px;";
-  box.innerHTML = `
-    <div style="display:flex;justify-content:center;gap:24px;margin-bottom:16px;">
-      ${item("Личное предназначение", `Небо ${nebo} + Земля ${zemlya}`, pred1)}
-      ${item("Социальное предназначение", `Муж. линия ${muzh} + Жен. линия ${zhen}`, pred2)}
-    </div>
-    <div style="display:flex;justify-content:center;gap:24px;">
-      ${item("Духовное предназначение", `Личное ${pred1} + Социальное ${pred2}`, pred3)}
-      ${item("Планетарное предназначение", `Социальное ${pred2} + Духовное ${pred3}`, pred4)}
-    </div>`;
+  box.innerHTML = rows.map(function (row) {
+    return `<div style="display:flex;justify-content:center;gap:24px;margin-bottom:16px;">${row.join("")}</div>`;
+  }).join("");
   container.insertBefore(box, afterNode.nextSibling);
 }
 
@@ -1316,6 +1319,7 @@ async function downloadHtmlFile(filename, htmlBody) {
          (золотистый/кремовый) — на белом листе PDF их нужно сделать тёмными для читаемости. */
       .diagram-wrap, .diagram-wrap * { color: #3a3245 !important; }
       .diagram-wrap { page-break-after: always; break-after: page; }
+      p, h1, h2, .num, .accordion-header, .key-number-box { page-break-inside: avoid; break-inside: avoid; }
     </style>
     ${htmlBody}`;
   document.body.appendChild(container);
@@ -1691,7 +1695,11 @@ function renderCompatibilityDiagrams(d1, m1, y1, d2, m2, y2, container) {
 
   const p1 = buildDiagramSvgMarkup(engine, "Диаграмма совместимости", 0, "small");
   const p2 = buildDiagramSvgMarkup(engine, "Диаграмма совместимости", 88, "small");
-  const combined = buildDiagramSvgMarkup(engine, "Диаграмма совместимости", 175, "small", true);
+  // Полная диаграмма пары — с углами f/g/k/y и линией благополучия, как у партнёров.
+  // Если этих ячеек нет в листе на этом смещении строк — откатываемся к упрощённой версии,
+  // чтобы не сломать всю диаграмму совместимости.
+  const combined = buildDiagramSvgMarkup(engine, "Диаграмма совместимости", 175, "small", false)
+    || buildDiagramSvgMarkup(engine, "Диаграмма совместимости", 175, "small", true);
   if (!p1 || !p2 || !combined) return;
 
   function labeledDiagram(title, result) {
@@ -1712,7 +1720,7 @@ function renderCompatibilityDiagrams(d1, m1, y1, d2, m2, y2, container) {
     </div>`;
   container.insertBefore(box, container.firstChild);
 
-  renderHealthMapDiagram(combined.values, container, box);
+  renderPurposeDiagram(combined.values, container, box, 3);
 }
 
 function renderVedicResult(name, birthDate, container) {
@@ -1744,7 +1752,7 @@ function renderChildMatrixResult(name, birthDate, container) {
 
   renderEditableResult(res.rasshifrovka, container, "Детская матрица - " + name, birthDate);
   window._lastChildMatrixResult = res;
-  renderMatrixDiamondDiagram(window.ChildMatrixEngine, container, false);
+  renderMatrixDiamondDiagram(window.ChildMatrixEngine, container, true, 2);
 }
 
 /* ============================================================
