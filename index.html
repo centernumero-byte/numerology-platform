@@ -1044,8 +1044,8 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
     <line x1="${positions.f.x}" y1="${positions.f.y}" x2="${positions.y.x}" y2="${positions.y.y}" stroke="rgba(120,80,190,.5)" stroke-width="1.2" stroke-dasharray="3,2"/>
     <line x1="${positions.g.x}" y1="${positions.g.y}" x2="${positions.k.x}" y2="${positions.k.y}" stroke="rgba(200,60,60,.5)" stroke-width="1.2" stroke-dasharray="3,2"/>`;
   const lineageLabels = (omitCorners || hideLineageLabels) ? "" : (function () {
-    const mp = along(positions.f, positions.e, 0.45);
-    const fp = along(positions.g, positions.e, 0.45);
+    const mp = along(positions.f, positions.e, 0.55);
+    const fp = along(positions.g, positions.e, 0.55);
     // Небольшой перпендикулярный сдвиг (не вдоль линии!), чтобы подпись легла НАД пунктиром
     // с зазором, а не поверх него.
     const mDx = positions.e.x - positions.f.x, mDy = positions.e.y - positions.f.y;
@@ -1335,7 +1335,8 @@ async function downloadHtmlFile(filename, htmlBody) {
          (золотистый/кремовый) — на белом листе PDF их нужно сделать тёмными для читаемости. */
       .diagram-wrap, .diagram-wrap * { color: #3a3245 !important; }
       .diagram-wrap { page-break-after: always; break-after: page; }
-      p, h1, h2, .num, .accordion-header, .key-number-box { page-break-inside: avoid; break-inside: avoid; }
+      p, h1, h2, .num, .accordion-header, .key-number-box, tr, td, img { page-break-inside: avoid; break-inside: avoid; }
+      table { page-break-inside: auto; }
     </style>
     ${htmlBody}`;
   document.body.appendChild(container);
