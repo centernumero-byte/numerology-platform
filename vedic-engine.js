@@ -366,7 +366,7 @@ SHEET_DATA_VEDIC["Расшифровка"].formulas["D11"] = function(SHEET, cel
 SHEET_DATA_VEDIC["Расшифровка"].literals["B12"] = "Шудра";
 SHEET_DATA_VEDIC["Расшифровка"].formulas["C12"] = function(SHEET, cell, rangeVals) { return cell("Данные", "E379"); };
 SHEET_DATA_VEDIC["Расшифровка"].formulas["D12"] = function(SHEET, cell, rangeVals) { return cell("Данные 2", "B42"); };
-SHEET_DATA_VEDIC["Расшифровка"].literals["B13"] = "Нумерологический гороскоп - Это вид гороскопа, который показывает наш потенциал по рождению. Он показывает, какой потенциал энергии заложен в нашей судьбе. Когда мы рождаемся, у нас уже есть определенный потенциал во всех сферах нашей жизни. Где то много, где-то нет. Где нет – там уроки и наработка опыта, с помощью того, что уже есть. Чем больше заполненных квадратов в гороскопе, тем гармоничнее личность человека. Если заполненных квадратов меньше или между квадратами нет связей, человеку приходится больше работать над гармонизацией своего состояния и жизни, и потенциал меньше.";
+SHEET_DATA_VEDIC["Расшифровка"].literals["B13"] = "Нумерологический гороскоп - это вид гороскопа, который показывает наш потенциал по рождению";
 SHEET_DATA_VEDIC["Расшифровка"].formulas["C13"] = function(SHEET, cell, rangeVals) { return cell("Рассчет", "B19"); };
 SHEET_DATA_VEDIC["Расшифровка"].formulas["D13"] = function(SHEET, cell, rangeVals) { return fn_VLOOKUP((cell(SHEET, "C13") * 1), rangeVals("Данные 2", "A97", "B103"), 2, 0); };
 SHEET_DATA_VEDIC["Расшифровка"].formulas["C14"] = function(SHEET, cell, rangeVals) { return cell("Рассчет", "B17"); };
@@ -2262,12 +2262,79 @@ function getVedicBlocks() {
   return blocks;
 }
 
+// Внутри блока "Янтра" пункты должны идти в фиксированном порядке, с добавленными
+// "Число души" (= Число Дживы) и "Число судьбы" (= Число Кармы), взятыми из их
+// собственных, уже посчитанных блоков — без пересчёта, просто переиспользуем значения.
+function reorderYantraSection(blocks) {
+  const byTitle = {};
+  blocks.forEach(function (b) { byTitle[b.title] = b; });
+
+  const psyche = blocks.find(function (b) { return b.title.indexOf("Число Дживы") === 0; });
+  const karma = blocks.find(function (b) { return b.title.indexOf("Число Кармы") === 0; });
+  const yantraHeader = blocks.find(function (b) { return b.title.indexOf("Янтра") === 0; });
+  const approach = blocks.find(function (b) { return b.title === "Число подхода"; });
+  const method = blocks.find(function (b) { return b.title === "Число Метода"; });
+  const prana = blocks.find(function (b) { return b.title === "Число Праны"; });
+  const close = blocks.find(function (b) { return b.title.indexOf("взаимоотношений с близкими") !== -1; });
+  const losses = blocks.find(function (b) { return b.title.indexOf("расходы, потери") !== -1 || b.title.indexOf("расходов, потери") !== -1; });
+  const partner = blocks.find(function (b) { return b.title.indexOf("Отношения с партнером") === 0; });
+  const skills = blocks.find(function (b) { return b.title.indexOf("талантов, способностей") !== -1; });
+  const luck = blocks.find(function (b) { return b.title.indexOf("радости и удачи") !== -1; });
+  const task = blocks.find(function (b) { return b.title.indexOf("Ключевых задач") !== -1; });
+  const love = blocks.find(function (b) { return b.title.indexOf("приносит любовь") !== -1; });
+  const money = blocks.find(function (b) { return b.title.indexOf("Самореализации, денег") !== -1; });
+  const care = blocks.find(function (b) { return b.title.indexOf("отдачи, заботливости") !== -1; });
+  const support = blocks.find(function (b) { return b.title.indexOf("наших возможностей") !== -1; });
+  const perception = blocks.find(function (b) { return b.title.indexOf("Мировоззрения") !== -1; });
+
+  const yantraTitles = [
+    yantraHeader, approach,
+    psyche && { title: "Число души", entries: psyche.entries },
+    method,
+    karma && { title: "Число судьбы", entries: karma.entries },
+    prana, close, losses, partner, skills, luck, task, love, money, care, support, perception,
+  ].filter(Boolean);
+
+  const yantraOriginalTitles = [approach, method, prana, close, losses, partner, skills, luck, task, love, money, care, support, perception, yantraHeader]
+    .filter(Boolean).map(function (b) { return b.title; });
+
+  const result = [];
+  let inserted = false;
+  blocks.forEach(function (b) {
+    if (yantraOriginalTitles.indexOf(b.title) !== -1) {
+      if (!inserted) { result.push.apply(result, yantraTitles); inserted = true; }
+      return;
+    }
+    result.push(b);
+  });
+  return result;
+}
+
 function getVedicFullResult(day, month, year, name) {
   calculate(day, month, year, name);
-  const blocks = getVedicBlocks();
+  const blocks = reorderYantraSection(getVedicBlocks());
   return { blocks };
 }
 
-window.VedicEngine = { calculate, getFullResult: getVedicFullResult, cell, getAll };
+// Расчёт всех 16 чисел янтры + интегрального числа напрямую по дате, по формулам методички.
+function reduceDigits(n) {
+  n = Math.abs(Math.round(n));
+  while (n > 9) { n = String(n).split("").reduce(function (s, d) { return s + Number(d); }, 0); }
+  return n;
+}
+function getYantraGrid(day, month, year) {
+  const A = reduceDigits(month);
+  const B = reduceDigits(day);
+  const C = reduceDigits(String(year).split("").reduce(function (s, d) { return s + Number(d); }, 0));
+  const dateDigits = ("" + day + month + year).split("").reduce(function (s, d) { return s + Number(d); }, 0);
+  const D = reduceDigits(dateDigits);
+  const E = C - 2, F = D + 2, G = A - 2, H = B + 2;
+  const I = D + 1, J = C + 1, K = B - 1, L = A - 1;
+  const M = B + 1, N = A - 3, O = D + 3, P = C - 1;
+  const integral = reduceDigits(A + B + C + D);
+  return { A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, integral };
+}
+
+window.VedicEngine = { calculate, getFullResult: getVedicFullResult, cell, getAll, getYantraGrid };
 
 })(window);

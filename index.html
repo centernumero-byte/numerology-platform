@@ -1742,6 +1742,32 @@ function renderVedicResult(name, birthDate, container) {
   }
 
   renderEditableResult(res.blocks, container, "Ведическая нумерология - " + name, birthDate);
+  renderYantraGrid(day, month, year, container);
+}
+
+function renderYantraGrid(day, month, year, container) {
+  if (!window.VedicEngine.getYantraGrid) return;
+  const g = window.VedicEngine.getYantraGrid(day, month, year);
+  const cells = [
+    ["Число подхода", g.A], ["Число души", g.B], ["Число метода", g.C], ["Число судьбы", g.D],
+    ["Число праны", g.E], ["Число близких", g.F], ["Число потерь", g.G], ["Число партнера", g.H],
+    ["Число навыков", g.I], ["Число удачи", g.J], ["Число задачи", g.K], ["Число любви", g.L],
+    ["Число денег", g.M], ["Число заботы", g.N], ["Число поддержки", g.O], ["Число восприятия", g.P],
+  ];
+  const box = document.createElement("div");
+  box.style.cssText = "max-width:640px;margin:20px auto;text-align:center;";
+  box.innerHTML = `
+    <div style="color:#f6d66c;font-family:Georgia,serif;font-size:18px;margin-bottom:4px;">Расчёт янтры</div>
+    <div style="color:#c9bfa8;font-size:13px;margin-bottom:14px;">Интегральное число: ${g.integral}</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:2px;border:1px solid #d7aa31;">
+      ${cells.map(function (c) {
+        return `<div style="background:rgba(255,255,255,.04);border:1px solid rgba(215,170,49,.3);padding:10px 6px;">
+          <div style="color:#f6d66c;font-size:11px;text-transform:uppercase;margin-bottom:6px;">${escapeHtml(c[0])}</div>
+          <div style="color:#fff;font-size:22px;font-family:Georgia,serif;">${c[1]}</div>
+        </div>`;
+      }).join("")}
+    </div>`;
+  container.insertBefore(box, container.firstChild);
 }
 
 function renderChildMatrixResult(name, birthDate, container) {
