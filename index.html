@@ -1041,8 +1041,8 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
     const mp = along(positions.f, positions.e, 0.55);
     const fp = along(positions.g, positions.e, 0.55);
     return `
-      <text x="${mp.x}" y="${mp.y}" text-anchor="middle" font-size="7" fill="rgba(120,80,190,.9)" transform="rotate(-45 ${mp.x} ${mp.y})">линия мужского рода</text>
-      <text x="${fp.x}" y="${fp.y}" text-anchor="middle" font-size="7" fill="rgba(200,60,60,.9)" transform="rotate(45 ${fp.x} ${fp.y})">линия женского рода</text>`;
+      <text x="${mp.x}" y="${mp.y}" text-anchor="middle" font-size="7" fill="rgba(120,80,190,.9)" transform="rotate(45 ${mp.x} ${mp.y})">линия мужского рода</text>
+      <text x="${fp.x}" y="${fp.y}" text-anchor="middle" font-size="7" fill="rgba(200,60,60,.9)" transform="rotate(-45 ${fp.x} ${fp.y})">линия женского рода</text>`;
   })();
   const wellbeingLine = `
     <line x1="${positions.c1.x}" y1="${positions.c1.y}" x2="${positions.x2.x}" y2="${positions.x2.y}" stroke="rgba(140,200,90,.5)" stroke-width="1" stroke-dasharray="2,2"/>
@@ -1312,6 +1312,10 @@ async function downloadHtmlFile(filename, htmlBody) {
       .accordion-body { color: #221733 !important; padding: 10px 12px; line-height: 1.5; white-space: pre-wrap; display: block !important; }
       .accordion-body.hidden { display: block !important; }
       .editable-text { color: #221733 !important; }
+      /* Карта здоровья / диаграмма-предназначения используют инлайн-цвета под тёмную тему
+         (золотистый/кремовый) — на белом листе PDF их нужно сделать тёмными для читаемости. */
+      .diagram-wrap, .diagram-wrap * { color: #3a3245 !important; }
+      .diagram-wrap { page-break-after: always; break-after: page; }
     </style>
     ${htmlBody}`;
   document.body.appendChild(container);
