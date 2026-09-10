@@ -1634,6 +1634,10 @@ function downloadHtmlFile(filename, htmlBody) {
     printWindow.document.open();
     printWindow.document.write(fullHtml);
     printWindow.document.close();
+    // Явно выставляем заголовок ещё раз — некоторые браузеры не всегда
+    // подхватывают <title> из document.write() к моменту печати, и тогда
+    // в диалоге печати/имени PDF-файла остаётся "about:blank".
+    printWindow.document.title = title;
   } else {
     // Если всплывающие окна заблокированы — просто скачиваем как HTML-файл,
     // который можно открыть и распечатать вручную.
