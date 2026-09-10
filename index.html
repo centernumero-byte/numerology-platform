@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#211443">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Numerology">
+<meta name="apple-mobile-web-app-title" content="Numerology Platform">
 <style>
 * {
   box-sizing: border-box;
@@ -425,7 +425,7 @@ body {
 .key-number-box span { font-size: 12px; color: #b8ad98; }
 
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
 
@@ -1637,13 +1637,44 @@ async function downloadHtmlFile(filename, htmlBody) {
   let success = false;
   try {
     window.scrollTo(0, 0);
-    await html2pdf().set({
+    const worker = html2pdf().set({
       margin: [40, 24, 40, 24],
       filename: pdfFilename,
       html2canvas: { backgroundColor: "#ffffff", scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: 0 },
       jsPDF: { unit: "pt", format: "a4", orientation: "portrait" },
       pagebreak: { mode: ["css"] },
-    }).from(container).save();
+    }).from(container);
+
+    const pdfBlob = await worker.outputPdf("blob");
+    const file = new File([pdfBlob], pdfFilename, { type: "application/pdf" });
+
+    let shared = false;
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        // Делимся ТОЛЬКО файлом — без title/text/url, иначе iOS добавляет
+        // ссылку на blob: рядом с самим PDF при пересылке (например, в WhatsApp).
+        await navigator.share({ files: [file] });
+        shared = true;
+      } catch (shareErr) {
+        if (shareErr && shareErr.name === "AbortError") {
+          shared = true; // пользователь сам закрыл окно "Поделиться" — не ошибка
+        }
+        // В остальных случаях (например, потеряна привязка к жесту) — просто
+        // пробуем обычное скачивание ниже.
+      }
+    }
+
+    if (!shared) {
+      const url = URL.createObjectURL(pdfBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = pdfFilename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+    }
+
     success = true;
   } catch (error) {
     console.error("Ошибка формирования PDF:", error);
