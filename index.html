@@ -425,7 +425,6 @@ body {
 .key-number-box span { font-size: 12px; color: #b8ad98; }
 
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
 
@@ -1592,96 +1591,52 @@ function svgElementToPngDataUrl(svgEl) {
   });
 }
 
-async function downloadHtmlFile(filename, htmlBody) {
-  const pdfFilename = filename.replace(/\.html$/i, "") + ".pdf";
-
-  const container = document.createElement("div");
-  container.style.cssText = "width:720px;background:#fff;color:#221733;font-family:Arial,sans-serif;padding:24px;margin:0;";
-  container.innerHTML = `
-    <style>
-      h1 { color:#5d2789; font-family:Georgia,serif; font-weight:600; font-size:20px; margin:0 0 16px; line-height:1.3; page-break-inside: avoid; break-inside: avoid; }
-      h2 { color:#5d2789; font-family:Georgia,serif; font-weight:600; font-size:17px; margin-top:22px; border-bottom:1px solid #d7aa31; padding-bottom:5px; line-height:1.3; page-break-after: avoid; break-after: avoid; page-break-inside: avoid; break-inside: avoid; }
-      .num { color:#8a3fbf; font-family:Georgia,serif; font-size:18px; margin:12px 0 4px; font-weight:700; line-height:1.3; page-break-after: avoid; break-after: avoid; page-break-inside: avoid; break-inside: avoid; }
-      p { margin:0 0 12px; line-height:1.5; font-size:14px; page-break-inside: avoid; break-inside: avoid; orphans: 3; widows: 3; }
-      table { border-collapse:collapse; width:100%; margin:8px 0; page-break-inside: avoid; break-inside: avoid; }
+function downloadHtmlFile(filename, htmlBody) {
+  const title = filename.replace(/\.(html|pdf)$/i, "");
+  const printCss = `
+      @page { margin: 18mm 14mm; }
+      * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      html, body { background:#fff; margin:0; padding:0; }
+      body { color:#221733; font-family:Arial,sans-serif; }
+      .doc-wrap { max-width:720px; margin:0 auto; padding:14px; }
+      h1 { color:#5d2789; font-family:Georgia,serif; font-weight:600; font-size:20px; margin:0 0 16px; line-height:1.3; break-inside: avoid; }
+      h2 { color:#5d2789; font-family:Georgia,serif; font-weight:600; font-size:17px; margin-top:22px; border-bottom:1px solid #d7aa31; padding-bottom:5px; line-height:1.3; break-after: avoid; break-inside: avoid; }
+      .num { color:#8a3fbf; font-family:Georgia,serif; font-size:18px; margin:12px 0 4px; font-weight:700; line-height:1.3; break-after: avoid; break-inside: avoid; }
+      p { margin:0 0 12px; line-height:1.5; font-size:14px; break-inside: avoid; orphans: 3; widows: 3; }
+      table { border-collapse:collapse; width:100%; margin:8px 0; break-inside: avoid; }
       td { padding:5px 4px; font-size:13px; }
-      .entry-block { page-break-inside: avoid; break-inside: avoid; margin-bottom: 8px; }
-      .diagram-wrap { text-align:center; margin-bottom:16px; }
-      .accordion-item { border: 1px solid #d7aa31; border-radius: 8px; margin-bottom: 8px; overflow: visible; page-break-inside: avoid; break-inside: avoid; }
-      .accordion-header { background: #f5eee0 !important; color: #5d2789 !important; border: none; padding: 10px 12px; font-family: Georgia, serif; font-size: 16px; display:block; line-height:1.3; }
-      .accordion-body { color: #221733 !important; padding: 10px 12px; line-height: 1.5; white-space: normal; display: block !important; }
-      .accordion-body.hidden { display: block !important; }
-      .editable-text { color: #221733 !important; }
+      .entry-block { break-inside: avoid; margin-bottom: 8px; }
+      .diagram-wrap { text-align:center; margin-bottom:16px; break-inside: avoid; }
       .diagram-wrap, .diagram-wrap * { color: #3a3245 !important; }
-      .diagram-wrap { page-break-after: always; break-after: page; }
-      tr, td, img { page-break-inside: avoid; break-inside: avoid; }
-    </style>
-    ${htmlBody}`;
-  document.body.appendChild(container);
+      .accordion-item { border: 1px solid #d7aa31; border-radius: 8px; margin-bottom: 8px; break-inside: avoid; }
+      .accordion-header { background: #f5eee0; color: #5d2789; border: none; padding: 10px 12px; font-family: Georgia, serif; font-size: 16px; display:block; line-height:1.3; }
+      .accordion-body { color: #221733; padding: 10px 12px; line-height: 1.5; white-space: normal; display: block; }
+      .editable-text { color: #221733 !important; }
+      tr, td, img { break-inside: avoid; }
+      svg { max-width: 100%; height: auto; }`;
 
-  const svgs = Array.from(container.querySelectorAll("svg"));
-  for (const svg of svgs) {
-    const dataUrl = await svgElementToPngDataUrl(svg);
-    if (dataUrl) {
-      const img = document.createElement("img");
-      img.src = dataUrl;
-      img.style.cssText = svg.getAttribute("style") || "";
-      img.style.maxWidth = "100%";
-      svg.replaceWith(img);
-    }
-  }
+  const fullHtml = `<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8">
+<title>${title.replace(/[<>]/g, "")}</title>
+<style>${printCss}</style>
+</head><body><div class="doc-wrap">${htmlBody}</div>
+<script>
+  window.addEventListener("load", function () {
+    setTimeout(function () { window.focus(); window.print(); }, 350);
+  });
+<\/script>
+</body></html>`;
 
-  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-  await new Promise((r) => setTimeout(r, 150));
-
-  let success = false;
-  try {
-    window.scrollTo(0, 0);
-    const worker = html2pdf().set({
-      margin: [40, 24, 40, 24],
-      filename: pdfFilename,
-      html2canvas: { backgroundColor: "#ffffff", scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: 0 },
-      jsPDF: { unit: "pt", format: "a4", orientation: "portrait" },
-      pagebreak: { mode: ["css"] },
-    }).from(container);
-
-    const pdfBlob = await worker.outputPdf("blob");
-    const file = new File([pdfBlob], pdfFilename, { type: "application/pdf" });
-
-    let shared = false;
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        // Делимся ТОЛЬКО файлом — без title/text/url, иначе iOS добавляет
-        // ссылку на blob: рядом с самим PDF при пересылке (например, в WhatsApp).
-        await navigator.share({ files: [file] });
-        shared = true;
-      } catch (shareErr) {
-        if (shareErr && shareErr.name === "AbortError") {
-          shared = true; // пользователь сам закрыл окно "Поделиться" — не ошибка
-        }
-        // В остальных случаях (например, потеряна привязка к жесту) — просто
-        // пробуем обычное скачивание ниже.
-      }
-    }
-
-    if (!shared) {
-      const url = URL.createObjectURL(pdfBlob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = pdfFilename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 4000);
-    }
-
-    success = true;
-  } catch (error) {
-    console.error("Ошибка формирования PDF:", error);
-  }
-  document.body.removeChild(container);
-
-  if (!success) {
+  // Печать через отдельное окно — использует родной движок печати браузера
+  // (тот же самый "Печать → Сохранить как PDF"), который куда надёжнее
+  // сторонних библиотек в вопросах разрывов страниц.
+  const printWindow = window.open("", "_blank");
+  if (printWindow) {
+    printWindow.document.open();
+    printWindow.document.write(fullHtml);
+    printWindow.document.close();
+  } else {
+    // Если всплывающие окна заблокированы — просто скачиваем как HTML-файл,
+    // который можно открыть и распечатать вручную.
     downloadHtmlFallback(filename, htmlBody);
   }
 }
