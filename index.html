@@ -1301,7 +1301,7 @@ function renderAdultMatrixResult(name, birthDate, container) {
       <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;">
         <button type="button" id="editToggleBtn" class="material-manager-button" style="width:auto;" onclick="toggleResultEditing(this)">✏️ Изменить</button>
         <button type="button" class="material-manager-button" style="width:auto;" onclick='downloadAdultMatrixText(${JSON.stringify(name)}, ${JSON.stringify(birthDate)})'>Скачать (диаграмма + текст)</button>
-        <button type="button" class="material-manager-button" style="width:auto;background:rgba(0,0,0,.15);" onclick="location.reload()">Новый расчёт</button>
+        <button type="button" class="material-manager-button" style="width:auto;background:rgba(0,0,0,.15);" onclick="openCalculator('adult')">Новый расчёт</button>
       </div>
     </div>`;
 
@@ -1550,7 +1550,7 @@ function calculatePythagoras() {
     return;
   }
 
-  renderEditableResult(res.blocks, result, "Нумерология по Пифагору - " + lastName + " " + firstName, birthDate);
+  renderEditableResult(res.blocks, result, "Нумерология по Пифагору - " + lastName + " " + firstName, birthDate, "pythagoras");
   renderPythDigitSquare(res.psychomatrix, result);
   window._lastPythagorasResult = res;
 }
@@ -1615,7 +1615,7 @@ function renderPythDigitSquare(psychomatrix, container) {
 
 /* Общий рендер результата с возможностью редактирования перед скачиванием.
    Используется для калькулятора по Пифагору (и может переиспользоваться для остальных). */
-function renderEditableResult(blocks, container, personLabel, dateLabel) {
+function renderEditableResult(blocks, container, personLabel, dateLabel, calculatorType) {
   let idCounter = 0;
   const nextId = () => "acc-edit-" + (idCounter++);
 
@@ -1643,7 +1643,7 @@ function renderEditableResult(blocks, container, personLabel, dateLabel) {
       <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;">
         <button type="button" id="editToggleBtn" class="material-manager-button" style="width:auto;" onclick="toggleResultEditing(this)">✏️ Изменить</button>
         <button type="button" class="material-manager-button" style="width:auto;" onclick='downloadEditableResult(${JSON.stringify(personLabel)}, ${JSON.stringify(dateLabel)})'>Скачать текст</button>
-        <button type="button" class="material-manager-button" style="width:auto;background:rgba(0,0,0,.15);" onclick="location.reload()">Новый расчёт</button>
+        <button type="button" class="material-manager-button" style="width:auto;background:rgba(0,0,0,.15);" onclick='${calculatorType ? `openCalculator(${JSON.stringify(calculatorType)})` : "location.reload()"}'>Новый расчёт</button>
       </div>
     </div>`;
 
@@ -1747,7 +1747,7 @@ function calculateCompatibility() {
     return;
   }
 
-  renderEditableResult(res.blocks, result, "Совместимость - " + birthDate1 + " и " + birthDate2, "");
+  renderEditableResult(res.blocks, result, "Совместимость - " + birthDate1 + " и " + birthDate2, "", "compatibility");
   renderCompatibilityDiagrams(d1, m1, y1, d2, m2, y2, result);
 }
 
@@ -1811,7 +1811,7 @@ function renderVedicResult(name, birthDate, container) {
     return;
   }
 
-  renderEditableResult(res.blocks, container, "Ведическая нумерология - " + name, birthDate);
+  renderEditableResult(res.blocks, container, "Ведическая нумерология - " + name, birthDate, "vedic");
   renderHoroscopeGrid(day, month, year, container);
   renderYantraGrid(day, month, year, container);
 }
@@ -1876,7 +1876,7 @@ function renderChildMatrixResult(name, birthDate, container) {
     return;
   }
 
-  renderEditableResult(res.rasshifrovka, container, "Детская матрица - " + name, birthDate);
+  renderEditableResult(res.rasshifrovka, container, "Детская матрица - " + name, birthDate, "child");
   window._lastChildMatrixResult = res;
   renderMatrixDiamondDiagram(window.ChildMatrixEngine, container, true, 2);
 }
