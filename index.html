@@ -1431,10 +1431,11 @@ function downloadForecastText() {
   function energyBlockText(num) {
     const data = (window.ForecastData && window.ForecastData[String(num)]) || null;
     if (!data) return "";
-    let html = `<div class="num">${escapeHtml(String(num))}</div>`;
+    let html = `<div class="entry-block"><div class="num">${escapeHtml(String(num))}</div>`;
     data.main.split(/\n+/).forEach(t => { if (t.trim()) html += `<p>${escapeHtml(t.trim())}</p>`; });
     if (data.positive) html += `<p><strong>Положительные:</strong> ${escapeHtml(data.positive)}</p>`;
     if (data.negative) html += `<p><strong>Отрицательные:</strong> ${escapeHtml(data.negative)}</p>`;
+    html += `</div>`;
     return html;
   }
 
@@ -1448,6 +1449,16 @@ function downloadForecastText() {
   });
 
   downloadHtmlFile("Прогноз - " + (window._forecastBirthDate || "") + ".html", bodyHtml);
+}
+
+function stripDuplicateTitle(fullText, title) {
+  const idx = fullText.indexOf("\n");
+  if (idx === -1) return fullText;
+  const firstLine = fullText.slice(0, idx).trim();
+  if (firstLine === String(title).trim()) {
+    return fullText.slice(idx + 1).replace(/^\n+/, "");
+  }
+  return fullText;
 }
 
 function renderAdultMatrixResult(name, birthDate, container) {
@@ -1485,7 +1496,7 @@ function renderAdultMatrixResult(name, birthDate, container) {
   const programsHtml = res.programs.length
     ? accordionItem("Программы", res.programs.map(function (p) {
         const innerId = nextId();
-        return `<div class="accordion-item" style="border-color:rgba(225,180,52,.25);"><button type="button" class="accordion-header" style="font-size:15px;padding:12px 14px;" onclick="toggleAccordionBody('${innerId}')"><span>${escapeHtml(p.title)}</span><span>▾</span></button><div class="accordion-body hidden" id="${innerId}">${editableDiv(p.fullText)}</div></div>`;
+        return `<div class="accordion-item" style="border-color:rgba(225,180,52,.25);"><button type="button" class="accordion-header" style="font-size:15px;padding:12px 14px;" onclick="toggleAccordionBody('${innerId}')"><span>${escapeHtml(p.title)}</span><span>▾</span></button><div class="accordion-body hidden" id="${innerId}">${editableDiv(stripDuplicateTitle(p.fullText, p.title))}</div></div>`;
       }).join(""))
     : "";
 
@@ -1587,6 +1598,7 @@ async function downloadHtmlFile(filename, htmlBody) {
       p { margin:0 0 12px; line-height:1.5; font-size:14px; page-break-inside: avoid; break-inside: avoid; orphans: 3; widows: 3; }
       table { border-collapse:collapse; width:100%; margin:8px 0; page-break-inside: avoid; break-inside: avoid; }
       td { padding:5px 4px; font-size:13px; }
+      .entry-block { page-break-inside: avoid; break-inside: avoid; margin-bottom: 8px; }
       .diagram-wrap { text-align:center; margin-bottom:16px; }
       .accordion-item { border: 1px solid #d7aa31; border-radius: 8px; margin-bottom: 8px; overflow: visible; page-break-inside: avoid; break-inside: avoid; }
       .accordion-header { background: #f5eee0 !important; color: #5d2789 !important; border: none; padding: 10px 12px; font-family: Georgia, serif; font-size: 16px; display:block; line-height:1.3; }
@@ -1623,7 +1635,7 @@ async function downloadHtmlFile(filename, htmlBody) {
       filename: pdfFilename,
       html2canvas: { backgroundColor: "#ffffff", scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: 0 },
       jsPDF: { unit: "pt", format: "a4", orientation: "portrait" },
-      pagebreak: { mode: ["css", "avoid-all"] },
+      pagebreak: { mode: ["css"] },
     }).from(container).save();
     success = true;
   } catch (error) {
@@ -1692,7 +1704,8 @@ function downloadAdultMatrixText(name, birthDate) {
     if (!res.programs.length) return "";
     let html = `<h2>Программы</h2>`;
     res.programs.forEach(function (p) {
-      html += `<div class="num" style="font-size:15px;">${escapeHtml(p.title)}</div>${textToHtml(editedTexts[cursor++] ?? p.fullText)}`;
+      const text = stripDuplicateTitle(editedTexts[cursor++] ?? p.fullText, p.title);
+      html += `<div class="entry-block"><div class="num" style="font-size:15px;">${escapeHtml(p.title)}</div>${textToHtml(text)}</div>`;
     });
     return html;
   }
@@ -1702,7 +1715,7 @@ function downloadAdultMatrixText(name, birthDate) {
   res.rasshifrovka.forEach(function (block) {
     bodyHtml += `<h2>${escapeHtml(block.title)}</h2>`;
     block.entries.forEach(function (e) {
-      bodyHtml += `<div class="num">${escapeHtml(String(e.number))}</div>${textToHtml(editedTexts[cursor++] ?? e.text)}`;
+      bodyHtml += `<div class="entry-block"><div class="num">${escapeHtml(String(e.number))}</div>${textToHtml(editedTexts[cursor++] ?? e.text)}</div>`;
     });
     if (block.title.toLowerCase().startsWith("материальная карма")) {
       bodyHtml += programsBlockHtml();
@@ -1713,7 +1726,7 @@ function downloadAdultMatrixText(name, birthDate) {
     bodyHtml += `<h2>${escapeHtml(block.title)}</h2>`;
     block.intro.forEach(function (t) { bodyHtml += `<p>${escapeHtml(t)}</p>`; });
     block.entries.forEach(function (e) {
-      bodyHtml += `<div class="num">${escapeHtml(e.axis)}: ${escapeHtml(String(e.number))}</div>${textToHtml(editedTexts[cursor++] ?? e.text)}`;
+      bodyHtml += `<div class="entry-block"><div class="num">${escapeHtml(e.axis)}: ${escapeHtml(String(e.number))}</div>${textToHtml(editedTexts[cursor++] ?? e.text)}</div>`;
     });
   });
 
