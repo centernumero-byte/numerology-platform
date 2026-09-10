@@ -1150,15 +1150,20 @@ function renderHealthMapDiagram(v, container, afterNode) {
   const l5 = reduceTo22Diag(v.d1 + v.c1);
   const l6 = reduceTo22Diag(v.d + v.c);
 
+  // Физика — горизонтальная линия (a: слева-направо), Энергия — вертикальная линия (b: сверху-вниз).
   const chakras = [
-    { name: "Сахасрара", color: CHAKRA_COLOR.sahasrara, phys: v.b, energy: v.a, emo: l },
-    { name: "Аджна", color: CHAKRA_COLOR.adjna, phys: v.b2, energy: v.a2, emo: l1 },
-    { name: "Вишудха", color: CHAKRA_COLOR.vishudha, phys: v.b1, energy: v.a1, emo: l2 },
-    { name: "Анахата", color: CHAKRA_COLOR.anahata, phys: v.b3, energy: v.a3, emo: l3 },
+    { name: "Сахасрара", color: CHAKRA_COLOR.sahasrara, phys: v.a, energy: v.b, emo: l },
+    { name: "Аджна", color: CHAKRA_COLOR.adjna, phys: v.a2, energy: v.b2, emo: l1 },
+    { name: "Вишудха", color: CHAKRA_COLOR.vishudha, phys: v.a1, energy: v.b1, emo: l2 },
+    { name: "Анахата", color: CHAKRA_COLOR.anahata, phys: v.a3, energy: v.b3, emo: l3 },
     { name: "Манипура", color: CHAKRA_COLOR.manipura, phys: v.e, energy: v.e, emo: l4 },
-    { name: "Свадхистана", color: CHAKRA_COLOR.svadhistana, phys: v.d1, energy: v.c1, emo: l5 },
-    { name: "Муладхара", color: CHAKRA_COLOR.muladhara, phys: v.d, energy: v.c, emo: l6 },
+    { name: "Свадхистана", color: CHAKRA_COLOR.svadhistana, phys: v.c1, energy: v.d1, emo: l5 },
+    { name: "Муладхара", color: CHAKRA_COLOR.muladhara, phys: v.c, energy: v.d, emo: l6 },
   ];
+
+  const itogPhys = reduceTo22Diag(chakras.reduce((s, ch) => s + ch.phys, 0));
+  const itogEnergy = reduceTo22Diag(chakras.reduce((s, ch) => s + ch.energy, 0));
+  const itogEmo = reduceTo22Diag(chakras.reduce((s, ch) => s + ch.emo, 0));
 
   const rowsHtml = chakras.map((ch, i) => `
     <tr style="background:${i % 2 === 0 ? "rgba(255,255,255,.03)" : "transparent"};">
@@ -1169,7 +1174,13 @@ function renderHealthMapDiagram(v, container, afterNode) {
       <td style="text-align:center;color:#f6d66c;border:1px solid rgba(225,180,52,.25);">${ch.phys}</td>
       <td style="text-align:center;color:#f6d66c;border:1px solid rgba(225,180,52,.25);">${ch.energy}</td>
       <td style="text-align:center;color:#f6d66c;border:1px solid rgba(225,180,52,.25);">${ch.emo}</td>
-    </tr>`).join("");
+    </tr>`).join("") + `
+    <tr style="background:rgba(225,180,52,.12);font-weight:600;">
+      <td style="padding:7px 8px;border:1px solid rgba(225,180,52,.25);white-space:nowrap;">Итог</td>
+      <td style="text-align:center;color:#f6d66c;border:1px solid rgba(225,180,52,.25);">${itogPhys}</td>
+      <td style="text-align:center;color:#f6d66c;border:1px solid rgba(225,180,52,.25);">${itogEnergy}</td>
+      <td style="text-align:center;color:#f6d66c;border:1px solid rgba(225,180,52,.25);">${itogEmo}</td>
+    </tr>`;
 
   const box = document.createElement("div");
   box.style.cssText = "max-width:420px;margin:0 auto 30px;";
@@ -1338,16 +1349,16 @@ function forecastEnergyBlockHtml(num, idPrefix, idx) {
        ${data.negative ? `<p style="color:#e08a8a;margin:10px 0 4px;font-weight:600;">Отрицательные:</p><p style="margin:0;">${escapeHtml(data.negative)}</p>` : ""}`
     : `<p>Текст для энергии ${escapeHtml(String(num))} не найден.</p>`;
   return `
-    <div class="accordion-item" style="border-color:rgba(225,180,52,.25);">
+    <div class="accordion-item" style="border-color:rgba(225,180,52,.25);margin-bottom:0;">
       <button type="button" class="accordion-header" style="font-size:15px;padding:12px 14px;" onclick="toggleAccordionBody('${id}')">
         <span>Энергия ${escapeHtml(String(num))}</span><span>▾</span>
       </button>
-      <div class="accordion-body hidden" id="${id}">${body}</div>
+      <div class="accordion-body" id="${id}">${body}</div>
     </div>`;
 }
 
 function forecastPeriodPanelHtml(row, idx) {
-  return `<div id="forecastPanel-${idx}" class="forecast-panel" style="${idx === window._forecastCurrentIdx ? "" : "display:none;"}">
+  return `<div id="forecastPanel-${idx}" class="forecast-panel" style="display:flex;flex-direction:column;gap:8px;${idx === window._forecastCurrentIdx ? "" : "display:none;"}">
     ${forecastEnergyBlockHtml(row.energy1, "fc1", idx)}
     ${forecastEnergyBlockHtml(row.energy2, "fc2", idx)}
     ${forecastEnergyBlockHtml(row.energy3, "fc3", idx)}
@@ -1396,7 +1407,7 @@ function selectForecastPeriod(idx) {
   window._forecastCurrentIdx = idx;
   document.querySelectorAll(".forecast-panel").forEach(function (el) { el.style.display = "none"; });
   const panel = document.getElementById("forecastPanel-" + idx);
-  if (panel) panel.style.display = "";
+  if (panel) panel.style.display = "flex";
   document.querySelectorAll("[id^='forecastTab-']").forEach(function (el) { el.classList.remove("active"); });
   const tab = document.getElementById("forecastTab-" + idx);
   if (tab) { tab.classList.add("active"); tab.scrollIntoView({ block: "nearest", inline: "center" }); }
