@@ -482,6 +482,7 @@ body {
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="adult-matrix-engine.js"></script>
+<script src="forecast-data.js"></script>
 <script src="child-matrix-engine.js"></script>
 <script src="compat-engine.js"></script>
 <script src="pyth-engine.js"></script>
@@ -1218,6 +1219,218 @@ function renderPurposeDiagram(diagramValues, container, afterNode, count) {
   container.insertBefore(box, afterNode.nextSibling);
 }
 
+/* ============================================================
+   ПРОГНОЗ ПО ВОЗРАСТНЫМ ПЕРИОДАМ (взрослая матрица)
+   ============================================================ */
+
+// 8 "больших кругов" по кругу матрицы — те же самые точки, что уже используются
+// в диаграмме (buildDiagramSvgMarkup): a=0 лет, f=10, b=20, g=30, c=40, y=50, d=60, k=70.
+function getForecastAnchors(engine) {
+  const refs = { a: "H24", b: "AA6", c: "AS24", d: "AA43", f: "N12", g: "AM12", k: "N37", y: "AM37" };
+  const v = {};
+  for (const key in refs) v[key] = engine.cell("Диаграмма", refs[key]);
+  return [v.a, v.f, v.b, v.g, v.c, v.y, v.d, v.k]; // offsets 0,10,20,30,40,50,60,70
+}
+
+// Внутри каждого десятилетия — фиксированная схема из 8 точек (подтверждено реальным
+// файлом-калькулятором): якорь + 7 "фрактальных" точек, каждая — сумма двух соседних
+// уже найденных значений, с приведением к ≤22 (цифровая сумма).
+const FORECAST_TEMPLATE = [
+  { pos: 0, range: null },
+  { pos: 1.25, range: [1, 2.5] },
+  { pos: 2.5, range: [2.5, 3.5] },
+  { pos: 3.75, range: [3.5, 4] },
+  { pos: 5, range: null },
+  { pos: 6.25, range: [6, 7.5] },
+  { pos: 7.5, range: [7.5, 8.5] },
+  { pos: 8.75, range: [8.5, 9] },
+];
+
+function forecastFmtAge(n) {
+  const rounded = Math.round(n * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : String(rounded).replace(".", ",");
+}
+
+function forecastLabel(decadeStart, entry) {
+  if (entry.range) {
+    return `${forecastFmtAge(decadeStart + entry.range[0])}-${forecastFmtAge(decadeStart + entry.range[1])} лет`;
+  }
+  if (entry.pos === 0) {
+    return decadeStart === 0 ? "0/80 лет" : `${decadeStart} лет`;
+  }
+  return `${decadeStart + entry.pos} лет`;
+}
+
+// Строит полную таблицу периодов от 0 до maxAge (по умолчанию с запасом до 90 лет).
+function buildForecastTable(anchors, maxAge) {
+  maxAge = maxAge || 90;
+  const decades = Math.ceil(maxAge / 10) + 1;
+  const rows = [];
+  for (let d = 0; d < decades; d++) {
+    const left = anchors[d % 8];
+    const right = anchors[(d + 1) % 8];
+    const decadeStart = d * 10;
+    const mid5 = reduceTo22Diag(left + right);
+    const qLeft = reduceTo22Diag(left + mid5);
+    const qRight = reduceTo22Diag(mid5 + right);
+    const eLL = reduceTo22Diag(left + qLeft);
+    const eLR = reduceTo22Diag(qLeft + mid5);
+    const eRL = reduceTo22Diag(mid5 + qRight);
+    const eRR = reduceTo22Diag(qRight + right);
+    const values = [left, eLL, qLeft, eLR, mid5, eRL, qRight, eRR];
+    FORECAST_TEMPLATE.forEach(function (entry, i) {
+      rows.push({
+        pos: decadeStart + entry.pos,
+        label: forecastLabel(decadeStart, entry),
+        energy1: values[i],
+      });
+    });
+  }
+  rows.push({ pos: decades * 10, label: (decades * 10) === 80 ? "0/80 лет" : `${decades * 10} лет`, energy1: anchors[decades % 8] });
+
+  // 2-я энергия: значение первой энергии на точке ±40 лет (по кругу), 3-я — сумма первых двух.
+  const perDecade = FORECAST_TEMPLATE.length; // 8
+  rows.forEach(function (row, i) {
+    const mirrorSteps = 4 * perDecade; // 40 лет = 4 десятилетия по 8 точек
+    let mirrorIdx = i + mirrorSteps;
+    if (mirrorIdx >= rows.length) mirrorIdx = i - mirrorSteps;
+    const mirrorRow = rows[mirrorIdx];
+    row.energy2 = mirrorRow ? mirrorRow.energy1 : row.energy1;
+    row.energy3 = reduceTo22Diag(row.energy1 + row.energy2);
+  });
+  return rows;
+}
+
+function computeExactAge(birthDateStr) {
+  const [d, m, y] = birthDateStr.split(".").map(Number);
+  const birth = new Date(y, m - 1, d);
+  const now = new Date();
+  let years = now.getFullYear() - birth.getFullYear();
+  const thisYearBirthday = new Date(now.getFullYear(), m - 1, d);
+  let fraction;
+  if (now >= thisYearBirthday) {
+    const nextBirthday = new Date(now.getFullYear() + 1, m - 1, d);
+    fraction = (now - thisYearBirthday) / (nextBirthday - thisYearBirthday);
+  } else {
+    years -= 1;
+    const prevBirthday = new Date(now.getFullYear() - 1, m - 1, d);
+    fraction = (now - prevBirthday) / (thisYearBirthday - prevBirthday);
+  }
+  return years + fraction;
+}
+
+function findNearestForecastIndex(table, age) {
+  let bestIdx = 0, bestDist = Infinity;
+  table.forEach(function (row, i) {
+    const dist = Math.abs(row.pos - age);
+    if (dist < bestDist) { bestDist = dist; bestIdx = i; }
+  });
+  return bestIdx;
+}
+
+function forecastEnergyBlockHtml(num, idPrefix, idx) {
+  const data = (window.ForecastData && window.ForecastData[String(num)]) || null;
+  const id = `${idPrefix}-${idx}`;
+  const body = data
+    ? `<p style="color:#f6d66c;font-family:Georgia,serif;font-size:13px;margin:0 0 8px;">Возможны ключевые события</p>
+       ${data.main.split(/\n+/).map(t => t.trim() ? `<p style="margin:0 0 10px;">${escapeHtml(t)}</p>` : "").join("")}
+       ${data.positive ? `<p style="color:#8fd98f;margin:10px 0 4px;font-weight:600;">Положительные:</p><p style="margin:0 0 10px;">${escapeHtml(data.positive)}</p>` : ""}
+       ${data.negative ? `<p style="color:#e08a8a;margin:10px 0 4px;font-weight:600;">Отрицательные:</p><p style="margin:0;">${escapeHtml(data.negative)}</p>` : ""}`
+    : `<p>Текст для энергии ${escapeHtml(String(num))} не найден.</p>`;
+  return `
+    <div class="accordion-item" style="border-color:rgba(225,180,52,.25);">
+      <button type="button" class="accordion-header" style="font-size:15px;padding:12px 14px;" onclick="toggleAccordionBody('${id}')">
+        <span>Энергия ${escapeHtml(String(num))}</span><span>▾</span>
+      </button>
+      <div class="accordion-body hidden" id="${id}">${body}</div>
+    </div>`;
+}
+
+function forecastPeriodPanelHtml(row, idx) {
+  return `<div id="forecastPanel-${idx}" class="forecast-panel" style="${idx === window._forecastCurrentIdx ? "" : "display:none;"}">
+    ${forecastEnergyBlockHtml(row.energy1, "fc1", idx)}
+    ${forecastEnergyBlockHtml(row.energy2, "fc2", idx)}
+    ${forecastEnergyBlockHtml(row.energy3, "fc3", idx)}
+  </div>`;
+}
+
+function buildForecastHtml(birthDate) {
+  const engine = window.AdultMatrixEngine;
+  const anchors = getForecastAnchors(engine);
+  const table = buildForecastTable(anchors, 90);
+  const age = computeExactAge(birthDate);
+  const currentIdx = findNearestForecastIndex(table, age);
+
+  // Видимый на платформе диапазон — от «20 лет», ранние детские периоды не показываем.
+  const visibleStart = table.findIndex(r => r.pos >= 20);
+  const visibleIdxs = [];
+  for (let i = visibleStart; i < table.length; i++) visibleIdxs.push(i);
+
+  window._forecastTable = table;
+  window._forecastCurrentIdx = currentIdx;
+  window._forecastBirthDate = birthDate;
+
+  const tabsHtml = visibleIdxs.map(function (i) {
+    const row = table[i];
+    const active = i === currentIdx ? " active" : "";
+    return `<button type="button" class="materials-tab${active}" id="forecastTab-${i}" onclick="selectForecastPeriod(${i})">${escapeHtml(row.label)}</button>`;
+  }).join("");
+
+  const panelsHtml = visibleIdxs.map(i => forecastPeriodPanelHtml(table[i], i)).join("");
+
+  const body = `
+    <div class="materials-tabs" style="max-height:140px;overflow-y:auto;">${tabsHtml}</div>
+    <div id="forecastPanels">${panelsHtml}</div>
+    <button type="button" class="material-manager-button" style="width:auto;margin-top:14px;" onclick="downloadForecastText()">Скачать прогноз (5 периодов)</button>`;
+
+  return `
+    <div class="accordion-item">
+      <button type="button" class="accordion-header" onclick="toggleAccordionBody('forecast-section-body')">
+        <span>Прогноз</span><span>▾</span>
+      </button>
+      <div class="accordion-body hidden" id="forecast-section-body">${body}</div>
+    </div>`;
+}
+
+function selectForecastPeriod(idx) {
+  window._forecastCurrentIdx = idx;
+  document.querySelectorAll(".forecast-panel").forEach(function (el) { el.style.display = "none"; });
+  const panel = document.getElementById("forecastPanel-" + idx);
+  if (panel) panel.style.display = "";
+  document.querySelectorAll("[id^='forecastTab-']").forEach(function (el) { el.classList.remove("active"); });
+  const tab = document.getElementById("forecastTab-" + idx);
+  if (tab) { tab.classList.add("active"); tab.scrollIntoView({ block: "nearest", inline: "center" }); }
+}
+
+function downloadForecastText() {
+  const table = window._forecastTable;
+  if (!table) return;
+  const n = table.length;
+  const centerIdx = window._forecastCurrentIdx || 0;
+  const idxs = [-2, -1, 0, 1, 2].map(o => Math.min(Math.max(centerIdx + o, 0), n - 1));
+
+  function energyBlockText(num) {
+    const data = (window.ForecastData && window.ForecastData[String(num)]) || null;
+    if (!data) return "";
+    let html = `<div class="num">${escapeHtml(String(num))}</div>`;
+    data.main.split(/\n+/).forEach(t => { if (t.trim()) html += `<p>${escapeHtml(t.trim())}</p>`; });
+    if (data.positive) html += `<p><strong>Положительные:</strong> ${escapeHtml(data.positive)}</p>`;
+    if (data.negative) html += `<p><strong>Отрицательные:</strong> ${escapeHtml(data.negative)}</p>`;
+    return html;
+  }
+
+  let bodyHtml = `<h1>Прогноз по возрастным периодам</h1>`;
+  idxs.forEach(function (i) {
+    const row = table[i];
+    bodyHtml += `<h2>${escapeHtml(row.label)}${i === centerIdx ? " (текущий период)" : ""}</h2>`;
+    bodyHtml += energyBlockText(row.energy1);
+    bodyHtml += energyBlockText(row.energy2);
+    bodyHtml += energyBlockText(row.energy3);
+  });
+
+  downloadHtmlFile("Прогноз - " + (window._forecastBirthDate || "") + ".html", bodyHtml);
+}
+
 function renderAdultMatrixResult(name, birthDate, container) {
   const [day, month, year] = birthDate.split(".").map(Number);
 
@@ -1271,6 +1484,7 @@ function renderAdultMatrixResult(name, birthDate, container) {
     rasshifrovkaHtml += accordionItem(block.title, body);
     if (block.title.toLowerCase().startsWith("материальная карма")) {
       rasshifrovkaHtml += programsHtml;
+      rasshifrovkaHtml += buildForecastHtml(birthDate);
     }
   });
 
