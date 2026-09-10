@@ -2531,13 +2531,11 @@ async function openMaterialById(id) {
       // Открываем вкладку СРАЗУ (по клику), чтобы мобильный браузер не заблокировал её как всплывающее окно —
       // адрес подставляем уже после того, как получим ссылку.
       const newTab = window.open("", "_blank");
-      const extMatch = item.file_path.match(/\.([a-zA-Z0-9]+)$/);
-      const ext = extMatch ? extMatch[1] : "pdf";
-      const safeTitle = (item.title || "Файл").replace(/[\\/:*?"<>|]/g, " ").trim();
-      const downloadName = `${safeTitle}.${ext}`;
+      // Обычное открытие — БЕЗ принудительного скачивания: человек хочет посмотреть файл,
+      // а не сразу получить его в "Загрузки". Браузер сам откроет PDF во вкладке.
       const { data, error } = await supabaseClient.storage
         .from(PLATFORM_STORAGE_BUCKET)
-        .createSignedUrl(item.file_path, 60 * 60, { download: downloadName });
+        .createSignedUrl(item.file_path, 60 * 60);
       if (error) throw error;
       if (!data?.signedUrl) throw new Error("Не удалось получить ссылку на файл.");
       if (newTab) {
