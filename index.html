@@ -1176,7 +1176,7 @@ function renderHealthMapDiagram(v, container, afterNode) {
       <td style="text-align:center;color:#f6d66c;border:1px solid rgba(225,180,52,.25);">${ch.emo}</td>
     </tr>`).join("") + `
     <tr style="background:rgba(225,180,52,.12);font-weight:600;">
-      <td style="padding:7px 8px;border:1px solid rgba(225,180,52,.25);white-space:nowrap;">Итог</td>
+      <td style="padding:7px 8px;border:1px solid rgba(225,180,52,.25);white-space:nowrap;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#9aa0a6;margin-right:7px;vertical-align:middle;"></span><span style="vertical-align:middle;">Итог</span></td>
       <td style="text-align:center;color:#f6d66c;border:1px solid rgba(225,180,52,.25);">${itogPhys}</td>
       <td style="text-align:center;color:#f6d66c;border:1px solid rgba(225,180,52,.25);">${itogEnergy}</td>
       <td style="text-align:center;color:#f6d66c;border:1px solid rgba(225,180,52,.25);">${itogEmo}</td>
@@ -1342,19 +1342,27 @@ function findNearestForecastIndex(table, age) {
 function forecastEnergyBlockHtml(num, idPrefix, idx) {
   const data = (window.ForecastData && window.ForecastData[String(num)]) || null;
   const id = `${idPrefix}-${idx}`;
-  const body = data
-    ? `<p style="color:#f6d66c;font-family:Georgia,serif;font-size:13px;margin:0 0 8px;">Возможны ключевые события</p>
-       ${data.main.split(/\n+/).map(t => t.trim() ? `<p style="margin:0 0 10px;">${escapeHtml(t)}</p>` : "").join("")}
-       ${data.positive ? `<p style="color:#8fd98f;margin:10px 0 4px;font-weight:600;">Положительные:</p><p style="margin:0 0 10px;">${escapeHtml(data.positive)}</p>` : ""}
-       ${data.negative ? `<p style="color:#e08a8a;margin:10px 0 4px;font-weight:600;">Отрицательные:</p><p style="margin:0;">${escapeHtml(data.negative)}</p>` : ""}`
-    : `<p>Текст для энергии ${escapeHtml(String(num))} не найден.</p>`;
-  return `
-    <div class="accordion-item" style="border-color:rgba(225,180,52,.25);margin-bottom:0;">
-      <button type="button" class="accordion-header" style="font-size:15px;padding:12px 14px;" onclick="toggleAccordionBody('${id}')">
-        <span>Энергия ${escapeHtml(String(num))}</span><span>▾</span>
-      </button>
-      <div class="accordion-body" id="${id}">${body}</div>
-    </div>`;
+  const parts = [];
+  if (data) {
+    data.main.split(/\n+/).forEach(function (t) {
+      if (t.trim()) parts.push(`<p style="margin:0 0 8px;">${escapeHtml(t.trim())}</p>`);
+    });
+    if (data.positive || data.negative) {
+      parts.push(`<p style="color:#f6d66c;font-family:Georgia,serif;font-size:13px;margin:10px 0 6px;">Возможны ключевые события</p>`);
+    }
+    if (data.positive) {
+      parts.push(`<p style="color:#8fd98f;margin:0 0 2px;font-weight:600;">Положительные:</p>`);
+      parts.push(`<p style="margin:0 0 8px;">${escapeHtml(data.positive)}</p>`);
+    }
+    if (data.negative) {
+      parts.push(`<p style="color:#e08a8a;margin:0 0 2px;font-weight:600;">Отрицательные:</p>`);
+      parts.push(`<p style="margin:0;">${escapeHtml(data.negative)}</p>`);
+    }
+  } else {
+    parts.push(`<p>Текст для энергии ${escapeHtml(String(num))} не найден.</p>`);
+  }
+  const body = parts.join("");
+  return `<div class="accordion-item" style="border-color:rgba(225,180,52,.25);margin-bottom:0;"><button type="button" class="accordion-header" style="font-size:15px;padding:12px 14px;" onclick="toggleAccordionBody('${id}')"><span>Энергия ${escapeHtml(String(num))}</span><span>▾</span></button><div class="accordion-body" id="${id}" style="white-space:normal;">${body}</div></div>`;
 }
 
 function forecastPeriodPanelHtml(row, idx) {
