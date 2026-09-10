@@ -1616,6 +1616,18 @@ async function downloadHtmlFile(filename, htmlBody) {
     ${htmlBody}`;
   document.body.appendChild(container);
 
+  const svgs = Array.from(container.querySelectorAll("svg"));
+  for (const svg of svgs) {
+    const dataUrl = await svgElementToPngDataUrl(svg);
+    if (dataUrl) {
+      const img = document.createElement("img");
+      img.src = dataUrl;
+      img.style.cssText = svg.getAttribute("style") || "";
+      img.style.maxWidth = "100%";
+      svg.replaceWith(img);
+    }
+  }
+
   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
   await new Promise((r) => setTimeout(r, 150));
 
@@ -1659,6 +1671,7 @@ async function downloadHtmlFile(filename, htmlBody) {
     success = true;
   } catch (error) {
     console.error("Ошибка формирования PDF:", error);
+    alert("Не удалось сформировать PDF: " + (error && error.message ? error.message : error) + "\n\nСейчас будет скачан файл в формате HTML вместо этого.");
   }
   document.body.removeChild(container);
 
