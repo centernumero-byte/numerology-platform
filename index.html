@@ -1606,7 +1606,7 @@ function downloadHtmlFile(filename, htmlBody) {
       table { border-collapse:collapse; width:100%; margin:8px 0; break-inside: avoid; }
       td { padding:5px 4px; font-size:13px; }
       .entry-block { margin-bottom: 8px; }
-      .diagram-wrap { text-align:center; margin-bottom:16px; break-inside: avoid; }
+      .diagram-wrap { text-align:center; margin-bottom:16px; break-inside: avoid; break-after: page; }
       .diagram-wrap, .diagram-wrap * { color: #3a3245 !important; }
       .accordion-item { border: 1px solid #d7aa31; border-radius: 8px; margin-bottom: 8px; }
       .accordion-header { background: #f5eee0; color: #5d2789; border: none; padding: 10px 12px; font-family: Georgia, serif; font-size: 16px; display:block; line-height:1.3; }
@@ -1619,30 +1619,41 @@ function downloadHtmlFile(filename, htmlBody) {
 <title>${title.replace(/[<>]/g, "")}</title>
 <style>${printCss}</style>
 </head><body><div class="doc-wrap">${htmlBody}</div>
-<script>
-  window.addEventListener("load", function () {
-    setTimeout(function () { window.focus(); window.print(); }, 350);
-  });
-<\/script>
 </body></html>`;
 
-  // Печать через отдельное окно — использует родной движок печати браузера
-  // (тот же самый "Печать → Сохранить как PDF"), который куда надёжнее
-  // сторонних библиотек в вопросах разрывов страниц.
-  const printWindow = window.open("", "_blank");
-  if (printWindow) {
-    printWindow.document.open();
-    printWindow.document.write(fullHtml);
-    printWindow.document.close();
-    // Явно выставляем заголовок ещё раз — некоторые браузеры не всегда
-    // подхватывают <title> из document.write() к моменту печати, и тогда
-    // в диалоге печати/имени PDF-файла остаётся "about:blank".
-    printWindow.document.title = title;
-  } else {
-    // Если всплывающие окна заблокированы — просто скачиваем как HTML-файл,
-    // который можно открыть и распечатать вручную.
-    downloadHtmlFallback(filename, htmlBody);
+  // Печать через скрытый iframe — тот же самый родной движок печати браузера,
+  // но без открытия нового окна/вкладки. Это надёжнее на мобильных браузерах,
+  // где window.open часто даёт пустой экран или зависает.
+  const iframe = document.createElement("iframe");
+  iframe.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;";
+  document.body.appendChild(iframe);
+
+  function cleanup() {
+    setTimeout(function () {
+      if (iframe.parentNode) document.body.removeChild(iframe);
+    }, 1000);
   }
+
+  iframe.onload = function () {
+    try {
+      iframe.contentDocument.title = title;
+    } catch (e) { /* игнорируем — не критично */ }
+    setTimeout(function () {
+      try {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+      } catch (error) {
+        console.error("Ошибка печати:", error);
+        downloadHtmlFallback(filename, htmlBody);
+      }
+      cleanup();
+    }, 400);
+  };
+
+  const idoc = iframe.contentWindow.document;
+  idoc.open();
+  idoc.write(fullHtml);
+  idoc.close();
 }
 
 function downloadHtmlFallback(filename, htmlBody) {
@@ -1697,6 +1708,28 @@ function downloadAdultMatrixText(name, birthDate) {
     }).join("");
   }
 
+  function forecastBlockHtml() {
+    const table = window._forecastTable;
+    if (!table || !table.length) return "";
+    const centerIdx = window._forecastCurrentIdx || 0;
+    const idxs = [-2, -1, 0, 1, 2].map(o => Math.min(Math.max(centerIdx + o, 0), table.length - 1));
+    let html = `<h2>Прогноз</h2>`;
+    idxs.forEach(function (i) {
+      const row = table[i];
+      html += `<div class="num" style="font-size:15px;">${escapeHtml(row.label)}${i === centerIdx ? " (текущий период)" : ""}</div>`;
+      [row.energy1, row.energy2, row.energy3].forEach(function (num) {
+        const data = (window.ForecastData && window.ForecastData[String(num)]) || null;
+        if (!data) return;
+        html += `<div class="entry-block"><div class="num" style="font-size:15px;">Энергия ${escapeHtml(String(num))}</div>`;
+        data.main.split(/\n+/).forEach(function (t) { if (t.trim()) html += `<p>${escapeHtml(t.trim())}</p>`; });
+        if (data.positive) html += `<p><strong>Положительные:</strong> ${escapeHtml(data.positive)}</p>`;
+        if (data.negative) html += `<p><strong>Отрицательные:</strong> ${escapeHtml(data.negative)}</p>`;
+        html += `</div>`;
+      });
+    });
+    return html;
+  }
+
   function programsBlockHtml() {
     if (!res.programs.length) return "";
     let html = `<h2>Программы</h2>`;
@@ -1707,8 +1740,8 @@ function downloadAdultMatrixText(name, birthDate) {
     return html;
   }
 
-  // Точно тот же порядок, что и на странице: программы вставляются сразу после блока
-  // «Материальная карма с прошлой жизни», а не в конце.
+  // Точно тот же порядок, что и на странице: программы и прогноз вставляются сразу после
+  // блока «Материальная карма с прошлой жизни», а не в конце.
   res.rasshifrovka.forEach(function (block) {
     bodyHtml += `<h2>${escapeHtml(block.title)}</h2>`;
     block.entries.forEach(function (e) {
@@ -1716,6 +1749,7 @@ function downloadAdultMatrixText(name, birthDate) {
     });
     if (block.title.toLowerCase().startsWith("материальная карма")) {
       bodyHtml += programsBlockHtml();
+      bodyHtml += forecastBlockHtml();
     }
   });
 
@@ -2491,9 +2525,13 @@ async function openMaterialById(id) {
       // Открываем вкладку СРАЗУ (по клику), чтобы мобильный браузер не заблокировал её как всплывающее окно —
       // адрес подставляем уже после того, как получим ссылку.
       const newTab = window.open("", "_blank");
+      const extMatch = item.file_path.match(/\.([a-zA-Z0-9]+)$/);
+      const ext = extMatch ? extMatch[1] : "pdf";
+      const safeTitle = (item.title || "Файл").replace(/[\\/:*?"<>|]/g, " ").trim();
+      const downloadName = `${safeTitle}.${ext}`;
       const { data, error } = await supabaseClient.storage
         .from(PLATFORM_STORAGE_BUCKET)
-        .createSignedUrl(item.file_path, 60 * 60);
+        .createSignedUrl(item.file_path, 60 * 60, { download: downloadName });
       if (error) throw error;
       if (!data?.signedUrl) throw new Error("Не удалось получить ссылку на файл.");
       if (newTab) {
