@@ -1406,8 +1406,7 @@ function buildForecastHtml(birthDate) {
 
   const body = `
     <div class="materials-tabs" style="max-height:140px;overflow-y:auto;">${tabsHtml}</div>
-    <div id="forecastPanels">${panelsHtml}</div>
-    <button type="button" class="material-manager-button" style="width:auto;margin-top:14px;" onclick="downloadForecastText()">Скачать прогноз (5 периодов)</button>`;
+    <div id="forecastPanels">${panelsHtml}</div>`;
 
   return `
     <div class="accordion-item">
@@ -1646,7 +1645,11 @@ async function downloadHtmlFile(filename, htmlBody) {
     const file = new File([pdfBlob], pdfFilename, { type: "application/pdf" });
 
     let shared = false;
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    // Окно "Поделиться" открываем только на телефоне — там это единственный
+    // способ скачать файл с нормальным именем и без лишней ссылки рядом.
+    // На компьютере это только мешает — там файл и так спокойно уходит в "Загрузки".
+    const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobileDevice && navigator.canShare && navigator.canShare({ files: [file] })) {
       try {
         // Делимся ТОЛЬКО файлом — без title/text/url, иначе iOS добавляет
         // ссылку на blob: рядом с самим PDF при пересылке (например, в WhatsApp).
