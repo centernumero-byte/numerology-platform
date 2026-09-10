@@ -168,6 +168,13 @@ function excelCriteriaMatch(value, criteria) {
       case "=": return v === num;
     }
   }
+  // Excel считает число и его текстовое представление равными (2 === "2").
+  // Без этой проверки часть цифр (хранящихся как строки после MID) молча
+  // выпадала из COUNTIFS, и подсчёт был неполным.
+  if (typeof criteria === "number") {
+    if (value === "" || value === undefined || value === null) return false;
+    return Number(value) === criteria;
+  }
   return value === criteria;
 }
 function fn_COUNTIFS(...args) {
