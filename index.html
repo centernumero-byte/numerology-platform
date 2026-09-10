@@ -2531,15 +2531,25 @@ async function openMaterialById(id) {
       // Открываем вкладку СРАЗУ (по клику), чтобы мобильный браузер не заблокировал её как всплывающее окно —
       // адрес подставляем уже после того, как получим ссылку.
       const newTab = window.open("", "_blank");
-      // Обычное открытие — БЕЗ принудительного скачивания: человек хочет посмотреть файл,
-      // а не сразу получить его в "Загрузки". Браузер сам откроет PDF во вкладке.
       const { data, error } = await supabaseClient.storage
         .from(PLATFORM_STORAGE_BUCKET)
         .createSignedUrl(item.file_path, 60 * 60);
       if (error) throw error;
       if (!data?.signedUrl) throw new Error("Не удалось получить ссылку на файл.");
+
+      // Показываем файл в собственной обёртке — тогда во вкладке видно нормальное
+      // название материала, а не служебное имя файла в хранилище (там оно всегда
+      // с случайным кодом впереди, чтобы файлы с одинаковыми именами не перезаписывали друг друга).
+      const niceTitle = (item.title || "Материал").replace(/[<>]/g, "");
+      const wrapperHtml = `<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8">
+<title>${niceTitle}</title>
+<style>html,body{margin:0;padding:0;height:100%;background:#525659;}iframe{width:100%;height:100%;border:0;display:block;}</style>
+</head><body><iframe src="${data.signedUrl}"></iframe></body></html>`;
+
       if (newTab) {
-        newTab.location.href = data.signedUrl;
+        newTab.document.open();
+        newTab.document.write(wrapperHtml);
+        newTab.document.close();
       } else {
         window.open(data.signedUrl, "_blank", "noopener,noreferrer");
       }
