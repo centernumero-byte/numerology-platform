@@ -1626,7 +1626,7 @@ function downloadHtmlFile(filename, htmlBody) {
   // починить без возможности протестировать библиотеку вживую — поэтому
   // остаёмся на печати браузера как на единственном проверенно рабочем варианте.
   const iframe = document.createElement("iframe");
-  iframe.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;";
+  iframe.style.cssText = "position:absolute;left:-10000px;top:0;width:800px;height:1200px;border:0;";
   document.body.appendChild(iframe);
 
   function cleanup() {
@@ -1648,7 +1648,7 @@ function downloadHtmlFile(filename, htmlBody) {
         downloadHtmlFallback(filename, htmlBody);
       }
       cleanup();
-    }, 400);
+    }, 700);
   };
 
   const idoc = iframe.contentWindow.document;
