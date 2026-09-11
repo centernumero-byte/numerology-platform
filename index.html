@@ -3499,7 +3499,14 @@ async function renderAccess() {
         <div class="table-title">${isRealAdmin ? "Зарегистрированные пользователи" : "My Students"}</div>
         <div id="adminUsersTable">Загрузка...</div>
       </div>
+      ${isRealAdmin ? `
+      <div class="table-card" style="margin-top:18px;">
+        <div class="table-title">Журнал удалённых аккаунтов</div>
+        <div id="deletedUsersTable">Загрузка...</div>
+      </div>` : ""}
     </div>`;
+
+  if (isRealAdmin) loadDeletedUsersLog();
 
   if (!isRealAdmin) {
     const codeEl = document.getElementById("teacherOwnCode");
@@ -3605,7 +3612,7 @@ async function loadAdminUsers() {
   box.innerHTML = backLink + `
     <div style="overflow-x:auto;">
     <table class="data-table">
-      <thead><tr><th>Пользователь</th><th>Email</th><th>Телефон</th><th>Роль</th>${isRealAdmin ? "<th>Students</th><th>Teacher</th>" : ""}<th>Статус</th></tr></thead>
+      <thead><tr><th>Пользователь</th><th>Email</th><th>Телефон</th><th>Роль</th><th>Зарегистрирован</th>${isRealAdmin ? "<th>Students</th><th>Teacher</th>" : ""}<th>Статус</th>${isRealAdmin ? "<th></th>" : ""}</tr></thead>
       <tbody>
         ${users.map(function (user) {
           const isClickableNumerologist = isRealAdmin && user.role === "numerologist" && !adminUsersFilterTeacher;
@@ -3617,8 +3624,10 @@ async function loadAdminUsers() {
             <td>${escapeHtml(user.email || "—")}</td>
             <td>${escapeHtml(user.phone || "—")}</td>
             <td>${escapeHtml(roleLabel(user.role))}</td>
+            <td>${user.created_at ? new Date(user.created_at).toLocaleDateString("ru-RU") : "—"}</td>
             ${isRealAdmin ? `${studentsLinkCell}<td>${escapeHtml(teacherName(user.teacher_id))}</td>` : ""}
             <td>${escapeHtml(user.status || "—")}</td>
+            ${isRealAdmin ? `<td><button type="button" class="material-manager-button" style="width:auto;padding:6px 10px;font-size:12px;" onclick='deleteUserAccount(${JSON.stringify(user.id)}, ${JSON.stringify(nameOf(user))})'>Удалить</button></td>` : ""}
           </tr>`;
         }).join("")}
       </tbody>
@@ -3629,6 +3638,54 @@ async function loadAdminUsers() {
 function viewNumerologistStudents(id, name) {
   adminUsersFilterTeacher = { id, name };
   loadAdminUsers();
+}
+
+async function deleteUserAccount(userId, name) {
+  if (!confirm(`Удалить аккаунт «${name}» полностью? Данные о регистрации и удалении останутся в архиве, но сам аккаунт и вход по нему исчезнут навсегда.`)) return;
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const resp = await fetch("https://skvprhqsxnlacshucncq.supabase.co/functions/v1/delete-user", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + session.access_token },
+      body: JSON.stringify({ userId }),
+    });
+    const result = await resp.json();
+    if (!resp.ok || result.error) throw new Error(result.error || ("Сервер вернул ошибку " + resp.status));
+    alert("Аккаунт удалён.");
+    loadAdminUsers();
+  } catch (error) {
+    console.error("Ошибка удаления пользователя:", error);
+    alert("Не удалось удалить аккаунт: " + (error.message || error));
+  }
+}
+
+async function loadDeletedUsersLog() {
+  const box = document.getElementById("deletedUsersTable");
+  if (!box) return;
+  const { data, error } = await supabaseClient
+    .from("deleted_users_log")
+    .select("email, first_name, last_name, role, registered_at, had_any_calculations, deleted_at")
+    .order("deleted_at", { ascending: false });
+  if (error) { box.innerHTML = `<div class="empty-table">Не удалось загрузить журнал.</div>`; return; }
+  const rows = data || [];
+  if (!rows.length) { box.innerHTML = `<div class="empty-table">Пока никто не удалялся.</div>`; return; }
+  box.innerHTML = `
+    <div style="overflow-x:auto;">
+    <table class="data-table">
+      <thead><tr><th>Email</th><th>Имя</th><th>Роль</th><th>Зарегистрирован</th><th>Делал расчёты</th><th>Удалён</th></tr></thead>
+      <tbody>
+        ${rows.map(r => `
+          <tr>
+            <td>${escapeHtml(r.email || "—")}</td>
+            <td>${escapeHtml([r.last_name, r.first_name].filter(Boolean).join(" ") || "—")}</td>
+            <td>${escapeHtml(roleLabel(r.role))}</td>
+            <td>${r.registered_at ? new Date(r.registered_at).toLocaleDateString("ru-RU") : "—"}</td>
+            <td>${r.had_any_calculations ? "Да" : "Нет"}</td>
+            <td>${new Date(r.deleted_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}</td>
+          </tr>`).join("")}
+      </tbody>
+    </table>
+    </div>`;
 }
 
 function closeNumerologistDrilldown() {
