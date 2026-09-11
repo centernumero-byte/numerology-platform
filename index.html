@@ -1833,7 +1833,7 @@ async function downloadAdultMatrixMobile(name, birthDate) {
 
     // Делим все записи на порции — так каждый запрос к серверу остаётся
     // лёгким и укладывается в его лимиты, даже если весь расчёт очень длинный.
-    const CHUNK_SIZE = 20;
+    const CHUNK_SIZE = 8;
     function chunkBlocks(blocks) {
       const chunks = [];
       let current = [];
