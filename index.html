@@ -583,6 +583,7 @@ function hasGrant(section, direction) {
   if (section === "library") return itemGrantActive(scope.library);
   if (section === "my-calculations") return itemGrantActive(scope.my_calculations);
   if (section === "access") return itemGrantActive(scope.access);
+  if (section === "statistics") return itemGrantActive(scope.statistics);
   if (!direction) return false;
   return itemGrantActive(scope[direction] && scope[direction][section]);
 }
@@ -723,7 +724,7 @@ async function showSection(section) {
     return;
   }
   if (section === "statistics") {
-    if (!isAdmin && !window.currentUserIsManager) { renderLockedSection(section); return; }
+    if (!isAdmin && !hasGrant("statistics")) { renderLockedSection(section); return; }
     await renderStatistics();
     return;
   }
@@ -3113,6 +3114,38 @@ async function saveLibraryLink(id) {
    МОИ РАСЧЁТЫ
    ============================================================ */
 
+const DIRECTION_ORDER = ["adult", "child", "compatibility", "vedic", "pythagoras"];
+
+function calcStatsByDirection(rows) {
+  const counts = Object.fromEntries(DIRECTION_ORDER.map((d) => [d, 0]));
+  rows.forEach((r) => { if (counts[r.direction] !== undefined) counts[r.direction]++; });
+  return `<div class="stats-grid">` +
+    DIRECTION_ORDER.map((d) => `<div class="stat-card"><span>${escapeHtml(DIRECTION_NAMES[d] || d)}</span><strong>${counts[d]}</strong></div>`).join("") +
+    `<div class="stat-card"><span>Всего</span><strong>${rows.length}</strong></div>` +
+    `</div>`;
+}
+
+function calcHistoryTable(rows, showEmail) {
+  if (!rows.length) return `<div class="empty-table">Пока нет сохранённых расчётов.</div>`;
+  return `
+    <div style="overflow-x:auto;">
+    <table class="data-table">
+      <thead><tr>${showEmail ? "<th>Email</th>" : ""}<th>Дата и время</th><th>Направление</th><th>Клиент</th><th>Дата рождения</th><th></th></tr></thead>
+      <tbody>
+        ${rows.map(r => `
+          <tr>
+            ${showEmail ? `<td>${escapeHtml(r._email || "—")}</td>` : ""}
+            <td>${new Date(r.created_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}</td>
+            <td>${escapeHtml(DIRECTION_NAMES[r.direction] || r.direction)}</td>
+            <td>${escapeHtml(r.person_name || (r.last_name ? r.last_name + " " + (r.first_name || "") : "—"))}</td>
+            <td>${escapeHtml(r.birth_date || "—")}${r.birth_date2 ? " / " + escapeHtml(r.birth_date2) : ""}</td>
+            <td><a href="javascript:void(0)" style="color:#d7aa31;" onclick='reopenCalculation(${JSON.stringify(r).replace(/'/g, "&#39;")})'>Открыть →</a></td>
+          </tr>`).join("")}
+      </tbody>
+    </table>
+    </div>`;
+}
+
 async function renderMyCalculations() {
   const contentCards = document.getElementById("contentCards");
   if (!contentCards) return;
@@ -3122,14 +3155,11 @@ async function renderMyCalculations() {
       <div class="dashboard-head">
         <div>
           <h2>Мои расчёты</h2>
-          <p>История ваших расчётов.</p>
+          <p id="myCalcSubtitle">История расчётов.</p>
         </div>
       </div>
-      <div class="stats-grid" id="myCalcStats">
-        <div class="stat-card"><span>Всего расчётов</span><strong>—</strong></div>
-        <div class="stat-card"><span>За этот месяц</span><strong>—</strong></div>
-        <div class="stat-card"><span>Последний расчёт</span><strong>—</strong></div>
-      </div>
+      <div id="myCalcPicker"></div>
+      <div id="myCalcStatsWrap"></div>
       <div class="table-card">
         <div class="table-title">История расчётов</div>
         <div id="myCalcTable">Загрузка...</div>
@@ -3140,44 +3170,52 @@ async function renderMyCalculations() {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) { document.getElementById("myCalcTable").innerHTML = `<div class="empty-table">Нужно войти в аккаунт.</div>`; return; }
 
-    const { data, error } = await supabaseClient
-      .from("calculation_history")
-      .select("id, direction, title, person_name, birth_date, birth_date2, last_name, first_name, patronymic, alphabet, created_at")
-      .eq("user_id", session.user.id)
-      .order("created_at", { ascending: false });
-    if (error) throw error;
+    const isRealAdmin = window.currentUserRole === "admin";
 
-    const rows = data || [];
-    const statsBox = document.getElementById("myCalcStats");
-    const now = new Date();
-    const thisMonth = rows.filter(r => {
-      const d = new Date(r.created_at);
-      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
-    }).length;
-    const lastDate = rows.length ? new Date(rows[0].created_at).toLocaleDateString("ru-RU") : "—";
-    statsBox.innerHTML = `
-      <div class="stat-card"><span>Всего расчётов</span><strong>${rows.length}</strong></div>
-      <div class="stat-card"><span>За этот месяц</span><strong>${thisMonth}</strong></div>
-      <div class="stat-card"><span>Последний расчёт</span><strong>${lastDate}</strong></div>`;
+    if (!isRealAdmin) {
+      // Учитель или ученица — видят только свою собственную историю, без выбора.
+      const { data, error } = await supabaseClient
+        .from("calculation_history")
+        .select("id, direction, title, person_name, birth_date, birth_date2, last_name, first_name, patronymic, alphabet, created_at")
+        .eq("user_id", session.user.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      const rows = data || [];
+      document.getElementById("myCalcStatsWrap").innerHTML = calcStatsByDirection(rows);
+      document.getElementById("myCalcTable").innerHTML = calcHistoryTable(rows, false);
+      return;
+    }
 
-    const box = document.getElementById("myCalcTable");
-    if (!rows.length) { box.innerHTML = `<div class="empty-table">Пока нет сохранённых расчётов.</div>`; return; }
+    // Администратор — может смотреть всю платформу целиком либо выбрать конкретного человека.
+    const { data: users } = await supabaseClient.from("profiles").select("id, email, first_name, last_name");
+    const emailById = Object.fromEntries((users || []).map((u) => [u.id, u.email]));
 
-    box.innerHTML = `
-      <div style="overflow-x:auto;">
-      <table class="data-table">
-        <thead><tr><th>Дата</th><th>Направление</th><th>Расчёт</th><th></th></tr></thead>
-        <tbody>
-          ${rows.map(r => `
-            <tr>
-              <td>${new Date(r.created_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}</td>
-              <td>${escapeHtml(DIRECTION_NAMES[r.direction] || r.direction)}</td>
-              <td>${escapeHtml(r.title)}</td>
-              <td><a href="javascript:void(0)" style="color:#d7aa31;" onclick='reopenCalculation(${JSON.stringify(r)})'>Открыть →</a></td>
-            </tr>`).join("")}
-        </tbody>
-      </table>
+    document.getElementById("myCalcPicker").innerHTML = `
+      <div class="table-card" style="margin-bottom:18px;">
+        <div class="table-title">Чьи расчёты показать</div>
+        <select id="myCalcUserSelect" style="width:100%;max-width:420px;padding:12px;border-radius:8px;border:1px solid rgba(225,180,52,.4);background:#1c1433;color:#f5f0df;">
+          <option value="">Вся платформа (все пользователи)</option>
+          ${(users || []).map((u) => `<option value="${escapeHtml(u.id)}">${escapeHtml((u.last_name || "") + " " + (u.first_name || "") + " — " + (u.email || ""))}</option>`).join("")}
+        </select>
       </div>`;
+
+    async function loadFor(userId) {
+      document.getElementById("myCalcTable").innerHTML = "Загрузка...";
+      let query = supabaseClient
+        .from("calculation_history")
+        .select("id, user_id, direction, title, person_name, birth_date, birth_date2, last_name, first_name, patronymic, alphabet, created_at")
+        .order("created_at", { ascending: false });
+      if (userId) query = query.eq("user_id", userId);
+      const { data, error } = await query;
+      if (error) { document.getElementById("myCalcTable").innerHTML = `<div class="empty-table">Не удалось загрузить историю.</div>`; return; }
+      const rows = (data || []).map((r) => ({ ...r, _email: emailById[r.user_id] }));
+      document.getElementById("myCalcSubtitle").textContent = userId ? "История расчётов выбранного пользователя." : "История расчётов по всей платформе.";
+      document.getElementById("myCalcStatsWrap").innerHTML = calcStatsByDirection(rows);
+      document.getElementById("myCalcTable").innerHTML = calcHistoryTable(rows, !userId);
+    }
+
+    document.getElementById("myCalcUserSelect").addEventListener("change", (e) => loadFor(e.target.value));
+    await loadFor("");
   } catch (error) {
     console.error("Ошибка загрузки истории расчётов:", error);
     document.getElementById("myCalcTable").innerHTML = `<div class="empty-table">Не удалось загрузить историю.</div>`;
@@ -3229,7 +3267,7 @@ async function applyTeacherCode() {
     const { data: teachers, error: teachersError } = await supabaseClient.from("profiles").select("id").eq("role", "numerologist");
     if (teachersError) throw teachersError;
     const match = (teachers || []).find(t => t.id.slice(0, 8).toUpperCase() === code);
-    if (!match) { setMsg("Учитель с таким кодом не найден. Проверьте код.", false); return; }
+    if (!match) { setMsg("Teacher с таким кодом не найден. Проверьте код.", false); return; }
 
     const { error: updateError } = await supabaseClient.from("profiles").update({ teacher_id: match.id }).eq("id", session.user.id);
     if (updateError) throw updateError;
@@ -3311,6 +3349,7 @@ async function renderAccess() {
             <tr><td>Библиотека нумеролога</td><td>${itemStatus(scope.library)}</td></tr>
             <tr><td>Мои расчёты</td><td>${itemStatus(scope.my_calculations)}</td></tr>
             <tr><td>Доступы</td><td>${itemStatus(scope.access)}</td></tr>
+            <tr><td>Статистика</td><td>${itemStatus(scope.statistics)}</td></tr>
           </tbody>
         </table>
         </div>`;
@@ -3337,14 +3376,14 @@ async function renderAccess() {
     <div class="dashboard-wrap">
       <div class="dashboard-head">
         <div>
-          <h2>${isRealAdmin ? "Доступы пользователей" : "Мои ученицы"}</h2>
-          <p>${isRealAdmin ? "Управление доступом всех зарегистрированных пользователей." : "Доступ виден и управляется только для ваших учениц."}</p>
+          <h2>${isRealAdmin ? "Доступы пользователей" : "My Students"}</h2>
+          <p>${isRealAdmin ? "Управление доступом всех зарегистрированных пользователей." : "Доступ виден и управляется только для ваших учеников и учениц."}</p>
         </div>
-        <div class="dashboard-badge">${isRealAdmin ? "Администратор" : "Учитель"}</div>
+        <div class="dashboard-badge">${isRealAdmin ? "Admin" : "Teacher"}</div>
       </div>
       ${!isRealAdmin ? `<div class="table-card" style="margin-bottom:18px;">
-        <div class="table-title">Ваш код для учениц</div>
-        <p style="margin:0;">Дайте этот код ученице — при регистрации она введёт его и сразу окажется прикреплена к вам, без вашего участия:</p>
+        <div class="table-title">Ваш код для учеников/учениц</div>
+        <p style="margin:0;">Дайте этот код ученику или ученице — при регистрации он/она введёт его и сразу окажется прикреплена к вам, без вашего участия:</p>
         <div style="font-size:28px;font-family:Georgia,serif;color:#f6d66c;letter-spacing:3px;margin-top:8px;" id="teacherOwnCode">…</div>
       </div>` : ""}
 
@@ -3396,6 +3435,12 @@ async function renderAccess() {
             </label>
             ${termSelectHtml("", 'id="scopeAccessTerm"')}
           </div>
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;min-width:220px;">
+              <input type="checkbox" id="scopeStatistics" class="scope-flag"> Статистика
+            </label>
+            ${termSelectHtml("", 'id="scopeStatisticsTerm"')}
+          </div>
         </div>
 
         <button class="material-manager-button" style="width:auto;" onclick="grantPlatformAccess()">Выдать доступ</button>
@@ -3413,8 +3458,8 @@ async function renderAccess() {
           <label>
             <span style="display:block;margin-bottom:7px;">Роль</span>
             <select id="roleValueSelect" class="material-manager-input" style="margin-bottom:0;">
-              <option value="student">Ученица</option>
-              <option value="numerologist">Учитель</option>
+              <option value="student">Student</option>
+              <option value="numerologist">Teacher</option>
             </select>
           </label>
           <button class="material-manager-button" style="width:auto;height:47px;margin-top:0;" onclick="setUserRole()">Назначить</button>
@@ -3423,14 +3468,14 @@ async function renderAccess() {
       </div>
 
       <div class="table-card" style="margin-bottom:18px;">
-        <div class="table-title">Прикрепить ученицу к учителю</div>
+        <div class="table-title">Прикрепить Student к Teacher</div>
         <div style="display:grid;grid-template-columns:2fr 2fr auto;gap:12px;align-items:end;">
           <label>
-            <span style="display:block;margin-bottom:7px;">Ученица</span>
+            <span style="display:block;margin-bottom:7px;">Student</span>
             <select id="attachStudentSelect" class="material-manager-input" style="margin-bottom:0;"></select>
           </label>
           <label>
-            <span style="display:block;margin-bottom:7px;">Учитель</span>
+            <span style="display:block;margin-bottom:7px;">Teacher</span>
             <select id="attachTeacherSelect" class="material-manager-input" style="margin-bottom:0;"></select>
           </label>
           <button class="material-manager-button" style="width:auto;height:47px;margin-top:0;" onclick="attachStudentToTeacher()">Прикрепить</button>
@@ -3439,7 +3484,7 @@ async function renderAccess() {
       </div>` : ""}
 
       <div class="table-card">
-        <div class="table-title">${isRealAdmin ? "Зарегистрированные пользователи" : "Мои ученицы"}</div>
+        <div class="table-title">${isRealAdmin ? "Зарегистрированные пользователи" : "My Students"}</div>
         <div id="adminUsersTable">Загрузка...</div>
       </div>
     </div>`;
@@ -3458,8 +3503,8 @@ async function renderAccess() {
 let adminUsersFilterTeacher = null; // { id, name } — admin drilled into one numerologist's students
 
 function roleLabel(role) {
-  const labels = { student: "Ученица", numerologist: "Учитель", admin: "Администратор" };
-  return labels[String(role || "student").trim().toLowerCase()] || (role || "Ученица");
+  const labels = { student: "Student", numerologist: "Teacher", admin: "Admin" };
+  return labels[String(role || "student").trim().toLowerCase()] || (role || "Student");
 }
 
 async function loadAdminUsers() {
@@ -3514,7 +3559,7 @@ async function loadAdminUsers() {
     fillSelect(accessSelect, list, "Нет пользователей");
     if (isRealAdmin) {
       fillSelect(roleSelect, list, "Нет пользователей");
-      fillSelect(attachStudentSelect, list.filter(u => (u.role || "student") !== "numerologist" && (u.role || "student") !== "admin"), "Нет учениц");
+      fillSelect(attachStudentSelect, list.filter(u => (u.role || "student") !== "numerologist" && (u.role || "student") !== "admin"), "Нет учеников/учениц");
       fillSelect(attachTeacherSelect, list.filter(u => u.role === "numerologist"), "Нет учителей");
     }
   }
@@ -3526,8 +3571,8 @@ async function loadAdminUsers() {
   if (!users.length) {
     box.innerHTML = backLink + `<div class="empty-table">${
       adminUsersFilterTeacher
-        ? "У этого учителя пока нет учениц."
-        : (isRealAdmin ? "Зарегистрированных пользователей пока нет." : "У вас пока нет учениц. Попросите администратора прикрепить их к вам.")
+        ? "У этого учителя пока нет учеников/учениц."
+        : (isRealAdmin ? "Зарегистрированных пользователей пока нет." : "У вас пока нет учеников/учениц. Попросите администратора прикрепить их к вам.")
     }</div>`;
     return;
   }
@@ -3548,12 +3593,12 @@ async function loadAdminUsers() {
   box.innerHTML = backLink + `
     <div style="overflow-x:auto;">
     <table class="data-table">
-      <thead><tr><th>Пользователь</th><th>Email</th><th>Телефон</th><th>Роль</th>${isRealAdmin ? "<th>Ученики</th><th>Учитель</th>" : ""}<th>Статус</th></tr></thead>
+      <thead><tr><th>Пользователь</th><th>Email</th><th>Телефон</th><th>Роль</th>${isRealAdmin ? "<th>Students</th><th>Teacher</th>" : ""}<th>Статус</th></tr></thead>
       <tbody>
         ${users.map(function (user) {
           const isClickableNumerologist = isRealAdmin && user.role === "numerologist" && !adminUsersFilterTeacher;
           const studentsLinkCell = isClickableNumerologist
-            ? `<td><a href="javascript:void(0)" onclick='viewNumerologistStudents(${JSON.stringify(user.id)},${JSON.stringify(nameOf(user))})' style="color:#d7aa31;">Учитель ${teacherNumber[user.id]} — посмотреть →</a></td>`
+            ? `<td><a href="javascript:void(0)" onclick='viewNumerologistStudents(${JSON.stringify(user.id)},${JSON.stringify(nameOf(user))})' style="color:#d7aa31;">Teacher ${teacherNumber[user.id]} — посмотреть →</a></td>`
             : `<td>—</td>`;
           return `<tr>
             <td>${escapeHtml(nameOf(user))}</td>
@@ -3604,7 +3649,7 @@ async function attachStudentToTeacher() {
   const message = document.getElementById("attachAdminMessage");
   const setMsg = (text, ok) => { if (message) { message.textContent = text; message.style.color = ok ? "#8fe3a1" : "#ff9d9d"; } };
 
-  if (!studentId || !teacherId) { setMsg("Выберите ученицу и учителя.", false); return; }
+  if (!studentId || !teacherId) { setMsg("Выберите Student и Teacher.", false); return; }
   setMsg("Прикрепляю...", true);
 
   const { error } = await supabaseClient.from("profiles").update({ teacher_id: teacherId }).eq("id", studentId);
@@ -3613,7 +3658,7 @@ async function attachStudentToTeacher() {
     setMsg("Не удалось прикрепить: " + (error.message || "ошибка Supabase"), false);
     return;
   }
-  setMsg("Ученица прикреплена к учителю.", true);
+  setMsg("Student прикреплён к Teacher.", true);
   await loadAdminUsers();
 }
 
@@ -3666,12 +3711,16 @@ function collectScope() {
   const accessTerm = document.getElementById("scopeAccessTerm")?.value || "unlimited";
   scope.access = accessChecked ? Object.assign({ granted: true }, computeEndsAt(accessTerm)) : { granted: false };
 
+  const statsChecked = document.getElementById("scopeStatistics")?.checked;
+  const statsTerm = document.getElementById("scopeStatisticsTerm")?.value || "unlimited";
+  scope.statistics = statsChecked ? Object.assign({ granted: true }, computeEndsAt(statsTerm)) : { granted: false };
+
   return scope;
 }
 
 function scopeHasAnything(scope) {
   return Object.keys(scope).some(function (key) {
-    if (key === "library" || key === "my_calculations" || key === "access") return !!scope[key]?.granted;
+    if (key === "library" || key === "my_calculations" || key === "access" || key === "statistics") return !!scope[key]?.granted;
     return Object.values(scope[key] || {}).some(function (item) { return item && item.granted; });
   });
 }
@@ -3733,11 +3782,25 @@ async function renderStatistics() {
   const contentCards = document.getElementById("contentCards");
   if (!contentCards) return;
   contentCards.className = "";
+
+  const isRealAdmin = window.currentUserRole === "admin";
+  const { data: { session } } = await supabaseClient.auth.getSession();
+
   contentCards.innerHTML = `
     <div class="dashboard-wrap">
       <div class="dashboard-head">
-        <div><h2>Отчёты и статистика</h2><p>Основные показатели платформы.</p></div>
+        <div><h2>Отчёты и статистика</h2><p>${isRealAdmin ? "Основные показатели платформы." : "Показатели по вашим ученикам/ученицам."}</p></div>
       </div>
+      <div class="stats-grid" id="clientStats">
+        <div class="stat-card"><span>Всего ${isRealAdmin ? "клиентов" : "учеников/учениц"}</span><strong>…</strong></div>
+        <div class="stat-card"><span>Новых за месяц</span><strong>…</strong></div>
+        <div class="stat-card"><span>Активных за месяц</span><strong>…</strong></div>
+      </div>
+      <div class="table-card" style="margin-bottom:18px;">
+        <div class="table-title">Расчётов по направлениям</div>
+        <div class="stats-grid" id="calcByDirectionStats">Загрузка...</div>
+      </div>
+      ${isRealAdmin ? `
       <div class="stats-grid" id="platformStats">
         <div class="stat-card"><span>Материалы</span><strong>…</strong></div>
         <div class="stat-card"><span>Пособия</span><strong>…</strong></div>
@@ -3752,10 +3815,44 @@ async function renderStatistics() {
           <tbody id="sectionStats"><tr><td colspan="3">Загрузка...</td></tr></tbody>
         </table>
         </div>
-      </div>
+      </div>` : ""}
     </div>`;
 
   try {
+    // ---- Клиенты/ученики и расчёты ----
+    let profilesQuery = supabaseClient.from("profiles").select("id, role, created_at");
+    if (!isRealAdmin) profilesQuery = profilesQuery.eq("teacher_id", session.user.id);
+    const { data: clientProfiles } = await profilesQuery;
+    const clients = (clientProfiles || []).filter((p) => p.role !== "admin" && p.role !== "numerologist" || !isRealAdmin);
+    const clientIds = new Set((isRealAdmin ? (clientProfiles || []) : clients).map((p) => p.id));
+
+    const now = new Date();
+    const newThisMonth = (isRealAdmin ? clientProfiles || [] : clients).filter((p) => {
+      const d = new Date(p.created_at);
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    }).length;
+
+    let historyQuery = supabaseClient.from("calculation_history").select("user_id, direction, created_at");
+    const { data: allHistory } = await historyQuery;
+    const relevantHistory = isRealAdmin ? (allHistory || []) : (allHistory || []).filter((h) => clientIds.has(h.user_id));
+
+    const activeThisMonth = new Set(
+      relevantHistory.filter((h) => {
+        const d = new Date(h.created_at);
+        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+      }).map((h) => h.user_id)
+    ).size;
+
+    document.getElementById("clientStats").innerHTML = `
+      <div class="stat-card"><span>Всего ${isRealAdmin ? "клиентов" : "учеников/учениц"}</span><strong>${isRealAdmin ? (clientProfiles || []).length : clients.length}</strong></div>
+      <div class="stat-card"><span>Новых за месяц</span><strong>${newThisMonth}</strong></div>
+      <div class="stat-card"><span>Активных за месяц</span><strong>${activeThisMonth}</strong></div>`;
+
+    document.getElementById("calcByDirectionStats").innerHTML = calcStatsByDirection(relevantHistory);
+
+    if (!isRealAdmin) return;
+
+    // ---- Материалы платформы (только у администратора) ----
     const { data, error } = await supabaseClient.from(PLATFORM_MATERIALS_TABLE).select("section");
     if (error) throw error;
 
@@ -3777,7 +3874,6 @@ async function renderStatistics() {
       <tr><td>Тесты</td><td>${counts.tests}</td><td>${counts.tests ? "Есть материалы" : "Пока пусто"}</td></tr>`;
   } catch (error) {
     console.error("Ошибка статистики:", error);
-    document.getElementById("sectionStats").innerHTML = `<tr><td colspan="3">Статистика недоступна.</td></tr>`;
   }
 }
 
