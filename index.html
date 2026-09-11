@@ -867,6 +867,7 @@ function isValidBirthDate(value) {
 }
 
 async function saveCalculationHistory(fields) {
+  if (window._skipHistorySave) return;
   try {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) return;
@@ -1594,7 +1595,7 @@ function renderAdultMatrixResult(name, birthDate, container) {
       ${healthHtml}
       <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;">
         <button type="button" id="editToggleBtn" class="material-manager-button" style="width:auto;" onclick="toggleResultEditing(this)">✏️ Изменить</button>
-        <button type="button" class="material-manager-button" style="width:auto;" onclick='downloadAdultMatrixAuto(${JSON.stringify(name)}, ${JSON.stringify(birthDate)})'>Скачать (диаграмма + текст)</button>
+        <button type="button" id="calcDownloadBtn" class="material-manager-button" style="width:auto;" onclick='downloadAdultMatrixAuto(${JSON.stringify(name)}, ${JSON.stringify(birthDate)})'>Скачать (диаграмма + текст)</button>
         <button type="button" class="material-manager-button" style="width:auto;background:rgba(0,0,0,.15);" onclick="openCalculator('adult')">Новый расчёт</button>
       </div>
     </div>`;
@@ -2170,7 +2171,7 @@ function renderEditableResult(blocks, container, personLabel, dateLabel, calcula
       ${bodyBlocksHtml}
       <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;">
         <button type="button" id="editToggleBtn" class="material-manager-button" style="width:auto;" onclick="toggleResultEditing(this)">✏️ Изменить</button>
-        <button type="button" class="material-manager-button" style="width:auto;" onclick='downloadEditableResult(${JSON.stringify(personLabel)}, ${JSON.stringify(dateLabel)})'>Скачать текст</button>
+        <button type="button" id="calcDownloadBtn" class="material-manager-button" style="width:auto;" onclick='downloadEditableResult(${JSON.stringify(personLabel)}, ${JSON.stringify(dateLabel)})'>Скачать текст</button>
         <button type="button" class="material-manager-button" style="width:auto;background:rgba(0,0,0,.15);" onclick='${calculatorType ? `openCalculator(${JSON.stringify(calculatorType)})` : "location.reload()"}'>Новый расчёт</button>
       </div>
     </div>`;
@@ -3139,7 +3140,7 @@ function calcHistoryTable(rows, showEmail) {
             <td>${escapeHtml(DIRECTION_NAMES[r.direction] || r.direction)}</td>
             <td>${escapeHtml(r.person_name || (r.last_name ? r.last_name + " " + (r.first_name || "") : "—"))}</td>
             <td>${escapeHtml(r.birth_date || "—")}${r.birth_date2 ? " / " + escapeHtml(r.birth_date2) : ""}</td>
-            <td><a href="javascript:void(0)" style="color:#d7aa31;" onclick='reopenCalculation(${JSON.stringify(r).replace(/'/g, "&#39;")})'>Открыть →</a></td>
+            <td><a href="javascript:void(0)" style="color:#d7aa31;" onclick='reopenCalculation(${JSON.stringify(r).replace(/'/g, "&#39;")})'>Скачать →</a></td>
           </tr>`).join("")}
       </tbody>
     </table>
@@ -3223,27 +3224,38 @@ async function renderMyCalculations() {
 }
 
 async function reopenCalculation(r) {
-  await openCalculator(r.direction);
-  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  window._skipHistorySave = true;
+  try {
+    await openCalculator(r.direction);
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
-  if (r.direction === "pythagoras") {
-    const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ""; };
-    set("pythLastName", r.last_name);
-    set("pythFirstName", r.first_name);
-    set("pythPatronymic", r.patronymic);
-    set("pythAlphabet", r.alphabet || "russian");
-    set("birthDate", r.birth_date);
-    calculatePythagoras();
-  } else if (r.direction === "compatibility") {
-    const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ""; };
-    set("birthDate1", r.birth_date);
-    set("birthDate2", r.birth_date2);
-    calculateCompatibility();
-  } else {
-    const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ""; };
-    set("name", r.person_name);
-    set("birthDate", r.birth_date);
-    calculate(r.direction);
+    if (r.direction === "pythagoras") {
+      const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ""; };
+      set("pythLastName", r.last_name);
+      set("pythFirstName", r.first_name);
+      set("pythPatronymic", r.patronymic);
+      set("pythAlphabet", r.alphabet || "russian");
+      set("birthDate", r.birth_date);
+      calculatePythagoras();
+    } else if (r.direction === "compatibility") {
+      const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ""; };
+      set("birthDate1", r.birth_date);
+      set("birthDate2", r.birth_date2);
+      calculateCompatibility();
+    } else {
+      const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ""; };
+      set("name", r.person_name);
+      set("birthDate", r.birth_date);
+      calculate(r.direction);
+    }
+
+    // Даём результату отрисоваться и сразу запускаем скачивание — из истории
+    // человек хочет именно скачать сохранённый расчёт, а не просто посмотреть его на экране.
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    await new Promise(resolve => setTimeout(resolve, 150));
+    document.getElementById("calcDownloadBtn")?.click();
+  } finally {
+    window._skipHistorySave = false;
   }
 }
 
