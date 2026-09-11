@@ -483,6 +483,7 @@ body {
     <div class="top" id="welcomeTop">
       <div class="welcome">
         <h1>Добро пожаловать, <span id="clientName">Центр Нумера</span>! ✨</h1>
+        <div id="studentSchoolLine" style="display:none;color:#8a8098;font-size:14px;margin-top:4px;"></div>
       </div>
       <div class="account">
         <div class="account-icon">♙</div>
@@ -3135,7 +3136,7 @@ function calcHistoryTable(rows, showEmail) {
       <tbody>
         ${rows.map(r => `
           <tr>
-            ${showEmail ? `<td>${escapeHtml(r._email || "—")}</td>` : ""}
+            ${showEmail ? `<td><a href="javascript:void(0)" style="color:#8a8098;text-decoration:underline;" onclick='showUserDetailModal(${JSON.stringify(r.user_id)})'>${escapeHtml(r._email || "—")}</a></td>` : ""}
             <td>${new Date(r.created_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}</td>
             <td>${escapeHtml(DIRECTION_NAMES[r.direction] || r.direction)}</td>
             <td>${escapeHtml(r.person_name || (r.last_name ? r.last_name + " " + (r.first_name || "") : "—"))}</td>
@@ -3397,6 +3398,15 @@ async function renderAccess() {
         <div class="table-title">Ваш код для учеников/учениц</div>
         <p style="margin:0;">Дайте этот код ученику или ученице — при регистрации он/она введёт его и сразу окажется прикреплена к вам, без вашего участия:</p>
         <div style="font-size:28px;font-family:Georgia,serif;color:#f6d66c;letter-spacing:3px;margin-top:8px;" id="teacherOwnCode">…</div>
+      </div>
+      <div class="table-card" style="margin-bottom:18px;">
+        <div class="table-title">Школа / бренд</div>
+        <p style="margin:0 0 10px;">Если у вас есть своя школа или бренд, под которым вы работаете — можете указать название здесь, и ваши ученики/ученицы увидят его у себя на странице. Поле необязательное.</p>
+        <div style="display:flex;gap:10px;max-width:420px;">
+          <input id="teacherSchoolNameInput" type="text" placeholder="Например: Школа нумерологии Айгерим" class="material-manager-input" style="margin-bottom:0;">
+          <button class="material-manager-button" style="width:auto;" onclick="saveTeacherSchoolName()">Сохранить</button>
+        </div>
+        <div id="teacherSchoolNameMessage" style="margin-top:10px;"></div>
       </div>` : ""}
 
       <div class="table-card" style="margin-bottom:18px;">
@@ -3514,9 +3524,44 @@ async function renderAccess() {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (session) codeEl.textContent = session.user.id.slice(0, 8).toUpperCase();
     }
+    // Подтягиваем уже сохранённое название школы, если оно было задано раньше.
+    const { data: mySchool } = await supabaseClient.from("schools").select("id, name").eq("owner_id", session.user.id).maybeSingle();
+    const schoolInput = document.getElementById("teacherSchoolNameInput");
+    if (schoolInput && mySchool?.name) schoolInput.value = mySchool.name;
   }
 
   await loadAdminUsers();
+}
+
+async function saveTeacherSchoolName() {
+  const input = document.getElementById("teacherSchoolNameInput");
+  const msg = document.getElementById("teacherSchoolNameMessage");
+  const name = (input?.value || "").trim();
+  const setMsg = (text, ok) => { if (msg) { msg.textContent = text; msg.style.color = ok ? "#8fe3a1" : "#ff9d9d"; } };
+
+  if (!name) { setMsg("Введите название школы.", false); return; }
+  setMsg("Сохраняю...", true);
+
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const { data: existing } = await supabaseClient.from("schools").select("id").eq("owner_id", session.user.id).maybeSingle();
+
+    let schoolId = existing?.id;
+    if (existing) {
+      const { error } = await supabaseClient.from("schools").update({ name }).eq("id", existing.id);
+      if (error) throw error;
+    } else {
+      const { data: created, error } = await supabaseClient.from("schools").insert({ owner_id: session.user.id, name }).select("id").single();
+      if (error) throw error;
+      schoolId = created.id;
+    }
+
+    await supabaseClient.from("profiles").update({ school_id: schoolId }).eq("id", session.user.id);
+    setMsg("Сохранено.", true);
+  } catch (error) {
+    console.error("Ошибка сохранения школы:", error);
+    setMsg("Не удалось сохранить: " + (error.message || error), false);
+  }
 }
 
 let adminUsersFilterTeacher = null; // { id, name } — admin drilled into one numerologist's students
@@ -3640,8 +3685,22 @@ function viewNumerologistStudents(id, name) {
   loadAdminUsers();
 }
 
-async function deleteUserAccount(userId, name) {
-  if (!confirm(`Удалить аккаунт «${name}» полностью? Данные о регистрации и удалении останутся в архиве, но сам аккаунт и вход по нему исчезнут навсегда.`)) return;
+function deleteUserAccount(userId, name) {
+  showModal(`
+    <h3 style="margin-top:0;color:#f6d66c;font-family:Georgia,serif;">Удалить аккаунт?</h3>
+    <p>Удалить аккаунт «${escapeHtml(name)}» полностью? Данные о регистрации и удалении останутся в архиве, но сам аккаунт и вход по нему исчезнут навсегда.</p>
+    <div id="deleteModalMessage" style="margin:10px 0;"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+      <button type="button" class="material-manager-button" style="width:auto;background:transparent;border:1px solid rgba(225,180,52,.4);" onclick="closeModal()">Отмена</button>
+      <button type="button" id="confirmDeleteBtn" class="material-manager-button" style="width:auto;background:#a33;" onclick='confirmDeleteUser(${JSON.stringify(userId)})'>Удалить</button>
+    </div>
+  `);
+}
+
+async function confirmDeleteUser(userId) {
+  const btn = document.getElementById("confirmDeleteBtn");
+  const msg = document.getElementById("deleteModalMessage");
+  if (btn) { btn.disabled = true; btn.textContent = "Удаляю..."; }
   try {
     const { data: { session } } = await supabaseClient.auth.getSession();
     const resp = await fetch("https://skvprhqsxnlacshucncq.supabase.co/functions/v1/delete-user", {
@@ -3651,12 +3710,70 @@ async function deleteUserAccount(userId, name) {
     });
     const result = await resp.json();
     if (!resp.ok || result.error) throw new Error(result.error || ("Сервер вернул ошибку " + resp.status));
-    alert("Аккаунт удалён.");
+    closeModal();
     loadAdminUsers();
   } catch (error) {
     console.error("Ошибка удаления пользователя:", error);
-    alert("Не удалось удалить аккаунт: " + (error.message || error));
+    if (msg) { msg.textContent = "Не удалось удалить аккаунт: " + (error.message || error); msg.style.color = "#ff9d9d"; }
+    if (btn) { btn.disabled = false; btn.textContent = "Удалить"; }
   }
+}
+
+async function showUserDetailModal(userId) {
+  showModal(`<div id="userDetailModalBody">Загрузка...</div>`);
+  try {
+    const { data: profile, error } = await supabaseClient
+      .from("profiles")
+      .select("first_name, last_name, middle_name, email, phone, role, teacher_id, created_at")
+      .eq("id", userId)
+      .single();
+    if (error || !profile) throw error || new Error("Не найдено");
+
+    let teacherLabel = "—";
+    if (profile.teacher_id) {
+      const { data: t } = await supabaseClient.from("profiles").select("first_name, last_name, email").eq("id", profile.teacher_id).single();
+      if (t) teacherLabel = [t.last_name, t.first_name].filter(Boolean).join(" ") + (t.email ? " (" + t.email + ")" : "");
+    }
+
+    // Школа: своя (если это учитель) либо школа его учителя (если это ученик/ученица).
+    let schoolLabel = "—";
+    const schoolOwnerId = profile.role === "numerologist" ? userId : profile.teacher_id;
+    if (schoolOwnerId) {
+      const { data: school } = await supabaseClient.from("schools").select("name").eq("owner_id", schoolOwnerId).maybeSingle();
+      if (school?.name) schoolLabel = school.name;
+    }
+    document.getElementById("userDetailModalBody").innerHTML = `
+      <h3 style="margin-top:0;color:#f6d66c;font-family:Georgia,serif;">Данные пользователя</h3>
+      <table style="width:100%;border-collapse:collapse;">
+        <tr><td style="padding:6px 0;color:#8a8098;">ФИО</td><td style="padding:6px 0;">${escapeHtml([profile.last_name, profile.first_name, profile.middle_name].filter(Boolean).join(" ") || "—")}</td></tr>
+        <tr><td style="padding:6px 0;color:#8a8098;">Email</td><td style="padding:6px 0;">${escapeHtml(profile.email || "—")}</td></tr>
+        <tr><td style="padding:6px 0;color:#8a8098;">Телефон</td><td style="padding:6px 0;">${escapeHtml(profile.phone || "—")}</td></tr>
+        <tr><td style="padding:6px 0;color:#8a8098;">Роль</td><td style="padding:6px 0;">${escapeHtml(roleLabel(profile.role))}</td></tr>
+        <tr><td style="padding:6px 0;color:#8a8098;">Teacher</td><td style="padding:6px 0;">${escapeHtml(teacherLabel)}</td></tr>
+        <tr><td style="padding:6px 0;color:#8a8098;">Школа</td><td style="padding:6px 0;">${escapeHtml(schoolLabel)}</td></tr>
+        <tr><td style="padding:6px 0;color:#8a8098;">Зарегистрирован</td><td style="padding:6px 0;">${profile.created_at ? new Date(profile.created_at).toLocaleDateString("ru-RU") : "—"}</td></tr>
+      </table>
+      <div style="text-align:right;margin-top:16px;">
+        <button type="button" class="material-manager-button" style="width:auto;" onclick="closeModal()">Закрыть</button>
+      </div>`;
+  } catch (error) {
+    console.error("Ошибка загрузки данных пользователя:", error);
+    document.getElementById("userDetailModalBody").innerHTML = `<div class="empty-table">Не удалось загрузить данные.</div>`;
+  }
+}
+
+function showModal(innerHtml) {
+  closeModal();
+  const overlay = document.createElement("div");
+  overlay.id = "customModalOverlay";
+  overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;";
+  overlay.onclick = (e) => { if (e.target === overlay) closeModal(); };
+  overlay.innerHTML = `<div style="background:#241a3e;border:1px solid rgba(225,180,52,.5);border-radius:14px;padding:24px;max-width:440px;width:100%;color:#f5f0df;">${innerHtml}</div>`;
+  document.body.appendChild(overlay);
+}
+
+function closeModal() {
+  document.getElementById("customModalOverlay")?.remove();
 }
 
 async function loadDeletedUsersLog() {
@@ -3986,8 +4103,8 @@ function showRegister(message = "") {
         <div class="auth-grid">
           <input id="registerLastName" type="text" placeholder="Фамилия *">
           <input id="registerFirstName" type="text" placeholder="Имя *">
-          <input id="registerMiddleName" type="text" placeholder="Отчество">
-          <input id="registerPhone" type="tel" placeholder="Телефон">
+          <input id="registerMiddleName" type="text" placeholder="Отчество *">
+          <input id="registerPhone" type="tel" placeholder="Телефон * (например, +7 700 123 45 67)">
           <input id="registerEmail" type="email" placeholder="Email *">
           <input id="registerPassword" type="password" placeholder="Пароль *">
           <input id="registerPassword2" type="password" placeholder="Повторите пароль *">
@@ -4034,10 +4151,19 @@ async function registerUser() {
     message.className = "auth-message " + (ok ? "success" : "error");
   };
 
-  if (!lastName || !firstName || !email || !password || !password2) {
-    setMessage("Заполните обязательные поля: фамилия, имя, email и пароль.");
+  const nameRe = /^[A-Za-zА-Яа-яЁёӘәҒғҚқҮүҰұІіЖжҮүҺһ' -]{2,}$/;
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  const phoneRe = /^\+?\d[\d\s()-]{9,14}\d$/;
+
+  if (!lastName || !firstName || !middleName || !phone || !email || !password || !password2) {
+    setMessage("Заполните все обязательные поля: фамилия, имя, отчество, телефон, email и пароль.");
     return;
   }
+  if (!nameRe.test(lastName)) { setMessage("Проверьте фамилию — только буквы, не менее 2 символов."); return; }
+  if (!nameRe.test(firstName)) { setMessage("Проверьте имя — только буквы, не менее 2 символов."); return; }
+  if (!nameRe.test(middleName)) { setMessage("Проверьте отчество — только буквы, не менее 2 символов."); return; }
+  if (!phoneRe.test(phone)) { setMessage("Проверьте номер телефона — укажите его в правильном формате, например +7 700 123 45 67."); return; }
+  if (!emailRe.test(email)) { setMessage("Проверьте email — укажите его в правильном формате."); return; }
   if (password.length < 6) { setMessage("Пароль должен содержать минимум 6 символов."); return; }
   if (password !== password2) { setMessage("Пароли не совпадают."); return; }
 
@@ -4269,9 +4395,7 @@ async function checkAuth() {
     window.currentUserHasAccess = hasAccess;
     window.currentUserGrant = currentGrant;
 
-    const displayName = isManager
-      ? "Центр Нумера"
-      : (profile?.first_name || profile?.last_name || user.user_metadata?.first_name || userEmail.split("@")[0] || "Пользователь");
+    const displayName = profile?.first_name || profile?.last_name || user.user_metadata?.first_name || (isManager ? "Центр Нумера" : userEmail.split("@")[0]) || "Пользователь";
 
     const nameNode = document.getElementById("clientName");
     const emailNode = document.getElementById("clientEmail");
@@ -4280,6 +4404,17 @@ async function checkAuth() {
 
     const navStats = document.getElementById("navStatistics");
     if (navStats) navStats.style.display = window.currentUserIsManager ? "" : "none";
+
+    // Показываем название школы ученику/ученице, если её задал их учитель.
+    if (!isManager && profile?.teacher_id) {
+      supabaseClient.from("schools").select("name").eq("owner_id", profile.teacher_id).maybeSingle().then(({ data: school }) => {
+        const line = document.getElementById("studentSchoolLine");
+        if (line && school?.name) {
+          line.textContent = "Школа/бренд: " + school.name;
+          line.style.display = "block";
+        }
+      });
+    }
 
     document.body.style.visibility = "visible";
     startInactivityTimer();
