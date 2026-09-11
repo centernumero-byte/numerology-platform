@@ -497,6 +497,7 @@ body {
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="adult-matrix-engine.js"></script>
 <script src="forecast-data.js"></script>
 <script src="child-matrix-engine.js"></script>
@@ -1825,27 +1826,75 @@ async function downloadAdultMatrixMobile(name, birthDate) {
       });
     }
 
-    const payload = {
-      filename: "Взрослая матрица - " + name + " - " + birthDate + ".pdf",
-      title: "Взрослая матрица — " + name + " (" + birthDate + ")",
-      diagramPng, healthRows, purposeItems,
-      rasshifrovka: blocksToPayload(res.rasshifrovka),
-      health: blocksToPayload(res.health),
-      programs, forecast,
-    };
+    const filename = "Взрослая матрица - " + name + " - " + birthDate + ".pdf";
+    const title = "Взрослая матрица — " + name + " (" + birthDate + ")";
+    const fullRasshifrovka = blocksToPayload(res.rasshifrovka);
+    const fullHealth = blocksToPayload(res.health);
+
+    // Делим все записи на порции — так каждый запрос к серверу остаётся
+    // лёгким и укладывается в его лимиты, даже если весь расчёт очень длинный.
+    const CHUNK_SIZE = 20;
+    function chunkBlocks(blocks) {
+      const chunks = [];
+      let current = [];
+      let count = 0;
+      blocks.forEach(function (block) {
+        let entriesLeft = block.entries;
+        while (entriesLeft.length) {
+          const room = CHUNK_SIZE - count;
+          const take = entriesLeft.slice(0, room);
+          entriesLeft = entriesLeft.slice(room);
+          current.push({ title: block.title, entries: take });
+          count += take.length;
+          if (count >= CHUNK_SIZE) { chunks.push(current); current = []; count = 0; }
+        }
+      });
+      if (current.length) chunks.push(current);
+      return chunks;
+    }
+
+    const rasshChunks = chunkBlocks(fullRasshifrovka);
+    const healthChunks = chunkBlocks(fullHealth);
+
+    const requests = [];
+    // Первый запрос — титул, диаграмма, карта здоровья (таблица), числа предназначения + первая порция текста.
+    requests.push({
+      title, diagramPng, healthRows, purposeItems,
+      rasshifrovka: rasshChunks[0] || [],
+    });
+    for (let i = 1; i < rasshChunks.length; i++) {
+      requests.push({ rasshifrovka: rasshChunks[i] });
+    }
+    healthChunks.forEach(function (chunk) { requests.push({ health: chunk }); });
+    if (programs.length || forecast.length) {
+      requests.push({ programs, forecast });
+    }
 
     const { data: { session } } = await supabaseClient.auth.getSession();
-    const resp = await fetch("https://skvprhqsxnlacshucncq.supabase.co/functions/v1/generate-pdf", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + (session ? session.access_token : SUPABASE_KEY),
-      },
-      body: JSON.stringify(payload),
-    });
-    if (!resp.ok) throw new Error("Сервер вернул ошибку: " + resp.status);
-    const blob = await resp.blob();
-    const file = new File([blob], payload.filename, { type: "application/pdf" });
+    const authToken = session ? session.access_token : SUPABASE_KEY;
+
+    const pdfBlobs = [];
+    for (let i = 0; i < requests.length; i++) {
+      if (btn) btn.textContent = "Готовлю файл... (" + (i + 1) + "/" + requests.length + ")";
+      const resp = await fetch("https://skvprhqsxnlacshucncq.supabase.co/functions/v1/generate-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + authToken },
+        body: JSON.stringify(requests[i]),
+      });
+      if (!resp.ok) throw new Error("Сервер вернул ошибку на части " + (i + 1) + ": " + resp.status);
+      pdfBlobs.push(await resp.arrayBuffer());
+    }
+
+    if (btn) btn.textContent = "Склеиваю файл...";
+    const merged = await PDFLib.PDFDocument.create();
+    for (const bytes of pdfBlobs) {
+      const src = await PDFLib.PDFDocument.load(bytes);
+      const copiedPages = await merged.copyPages(src, src.getPageIndices());
+      copiedPages.forEach(function (p) { merged.addPage(p); });
+    }
+    const mergedBytes = await merged.save();
+    const blob = new Blob([mergedBytes], { type: "application/pdf" });
+    const file = new File([blob], filename, { type: "application/pdf" });
 
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       try { await navigator.share({ files: [file] }); }
@@ -1853,7 +1902,7 @@ async function downloadAdultMatrixMobile(name, birthDate) {
     } else {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url; a.download = payload.filename;
+      a.href = url; a.download = filename;
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 4000);
     }
