@@ -1175,6 +1175,7 @@ function renderMatrixDiamondDiagram(engine, container, includeHealthMap, purpose
   const result = buildDiagramSvgMarkup(engine, "Диаграмма", 0, "large");
   if (!result) return;
   const { svg, values } = result;
+  window._lastDiagramValues = values;
 
   const box = document.createElement("div");
   box.style.cssText = "max-width:380px;margin:0 auto 20px;text-align:center;";
@@ -1591,7 +1592,7 @@ function renderAdultMatrixResult(name, birthDate, container) {
       ${healthHtml}
       <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;">
         <button type="button" id="editToggleBtn" class="material-manager-button" style="width:auto;" onclick="toggleResultEditing(this)">✏️ Изменить</button>
-        <button type="button" class="material-manager-button" style="width:auto;" onclick='downloadAdultMatrixText(${JSON.stringify(name)}, ${JSON.stringify(birthDate)})'>Скачать (диаграмма + текст)</button>
+        <button type="button" class="material-manager-button" style="width:auto;" onclick='downloadAdultMatrixAuto(${JSON.stringify(name)}, ${JSON.stringify(birthDate)})'>Скачать (диаграмма + текст)</button>
         <button type="button" class="material-manager-button" style="width:auto;background:rgba(0,0,0,.15);" onclick="openCalculator('adult')">Новый расчёт</button>
       </div>
     </div>`;
@@ -1735,6 +1736,134 @@ function downloadHtmlFallback(filename, htmlBody) {
   a.click();
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+function downloadAdultMatrixAuto(name, birthDate) {
+  const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isMobileDevice) downloadAdultMatrixMobile(name, birthDate);
+  else downloadAdultMatrixText(name, birthDate);
+}
+
+async function downloadAdultMatrixMobile(name, birthDate) {
+  const res = window._lastAdultMatrixResult;
+  const v = window._lastDiagramValues;
+  if (!res || !v) { downloadAdultMatrixText(name, birthDate); return; }
+
+  const statusEl = document.getElementById("editToggleBtn");
+  const btn = event && event.target;
+  const oldLabel = btn ? btn.textContent : null;
+  if (btn) { btn.textContent = "Готовлю файл..."; btn.disabled = true; }
+
+  try {
+    // Подтягиваем возможные правки текста прямо со страницы, как и в обычном скачивании.
+    const editedTexts = [];
+    document.querySelectorAll(".editable-text").forEach(function (el) { editedTexts.push(el.innerText); });
+    let cursor = 0;
+
+    function reduceTo22(n) {
+      while (n > 22) { n = String(n).split("").reduce((s, d) => s + Number(d), 0); }
+      return n;
+    }
+
+    const CHAKRA_NAMES = ["Сахасрара", "Аджна", "Вишудха", "Анахата", "Манипура", "Свадхистана", "Муладхара"];
+    const l = reduceTo22(v.a + v.b), l1 = reduceTo22(v.a2 + v.b2), l2 = reduceTo22(v.a1 + v.b1),
+      l3 = reduceTo22(v.a3 + v.b3), l4 = reduceTo22(v.e + v.e), l5 = reduceTo22(v.d1 + v.c1), l6 = reduceTo22(v.d + v.c);
+    const chakras = [
+      { phys: v.a, energy: v.b, emo: l }, { phys: v.a2, energy: v.b2, emo: l1 },
+      { phys: v.a1, energy: v.b1, emo: l2 }, { phys: v.a3, energy: v.b3, emo: l3 },
+      { phys: v.e, energy: v.e, emo: l4 }, { phys: v.c1, energy: v.d1, emo: l5 }, { phys: v.c, energy: v.d, emo: l6 },
+    ];
+    const healthRows = chakras.map((ch, i) => ({ title: CHAKRA_NAMES[i], physics: ch.phys, energy: ch.energy, emotion: ch.emo }));
+    healthRows.push({
+      title: "Итог",
+      physics: reduceTo22(chakras.reduce((s, c) => s + c.phys, 0)),
+      energy: reduceTo22(chakras.reduce((s, c) => s + c.energy, 0)),
+      emotion: reduceTo22(chakras.reduce((s, c) => s + c.emo, 0)),
+    });
+
+    const nebo = reduceTo22(v.b + v.d), zemlya = reduceTo22(v.a + v.c), pred1 = reduceTo22(nebo + zemlya);
+    const muzh = v.f != null ? reduceTo22(v.f + v.y) : null;
+    const zhen = v.g != null ? reduceTo22(v.g + v.k) : null;
+    const pred2 = (muzh != null && zhen != null) ? reduceTo22(muzh + zhen) : null;
+    const pred3 = pred2 != null ? reduceTo22(pred1 + pred2) : null;
+    const pred4 = pred3 != null ? reduceTo22(pred2 + pred3) : null;
+    const purposeItems = [{ title: "Личное предназначение", formula: `Небо ${nebo} + Земля ${zemlya}`, result: pred1 }];
+    if (pred2 != null) purposeItems.push({ title: "Социальное предназначение", formula: `Муж. линия ${muzh} + Жен. линия ${zhen}`, result: pred2 });
+    if (pred3 != null) purposeItems.push({ title: "Духовное предназначение", formula: `Личное ${pred1} + Социальное ${pred2}`, result: pred3 });
+    if (pred4 != null) purposeItems.push({ title: "Планетарное предназначение", formula: `Социальное ${pred2} + Духовное ${pred3}`, result: pred4 });
+
+    const svgEl = document.querySelector("#result svg");
+    const diagramPng = svgEl ? await svgElementToPngDataUrl(svgEl) : null;
+
+    function blocksToPayload(blocks) {
+      return (blocks || []).map(function (block) {
+        return {
+          title: block.title,
+          entries: (block.entries || []).map(function (e) {
+            return { number: e.number ?? e.axis, text: editedTexts[cursor++] ?? e.text };
+          }),
+        };
+      });
+    }
+
+    const programs = (res.programs || []).map(function (p) {
+      return { title: p.title, text: stripDuplicateTitle(editedTexts[cursor++] ?? p.fullText, p.title) };
+    });
+
+    const forecastTable = window._forecastTable;
+    let forecast = [];
+    if (forecastTable && forecastTable.length) {
+      const centerIdx = window._forecastCurrentIdx || 0;
+      const idxs = [-2, -1, 0, 1, 2].map(o => Math.min(Math.max(centerIdx + o, 0), forecastTable.length - 1));
+      idxs.forEach(function (i) {
+        const row = forecastTable[i];
+        [row.energy1, row.energy2, row.energy3].forEach(function (num) {
+          const data = (window.ForecastData && window.ForecastData[String(num)]) || null;
+          if (!data) return;
+          forecast.push({ label: row.label + " — Энергия " + num, text: data.main });
+        });
+      });
+    }
+
+    const payload = {
+      filename: "Взрослая матрица - " + name + " - " + birthDate + ".pdf",
+      title: "Взрослая матрица — " + name + " (" + birthDate + ")",
+      diagramPng, healthRows, purposeItems,
+      rasshifrovka: blocksToPayload(res.rasshifrovka),
+      health: blocksToPayload(res.health),
+      programs, forecast,
+    };
+
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const resp = await fetch("https://skvprhqsxnlacshucncq.supabase.co/functions/v1/generate-pdf", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + (session ? session.access_token : SUPABASE_KEY),
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!resp.ok) throw new Error("Сервер вернул ошибку: " + resp.status);
+    const blob = await resp.blob();
+    const file = new File([blob], payload.filename, { type: "application/pdf" });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file] }); }
+      catch (e) { if (!(e && e.name === "AbortError")) throw e; }
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = payload.filename;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+    }
+  } catch (error) {
+    console.error("Ошибка мобильного скачивания:", error);
+    alert("Не удалось сформировать файл на сервере (" + (error.message || error) + "). Пробую обычным способом.");
+    downloadAdultMatrixText(name, birthDate);
+  } finally {
+    if (btn) { btn.textContent = oldLabel; btn.disabled = false; }
+  }
 }
 
 function downloadAdultMatrixText(name, birthDate) {
