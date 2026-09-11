@@ -339,6 +339,11 @@ body {
   .material-row-body { flex-basis: 100%; order: 1; }
   .material-row-icon { order: 0; }
   .material-row-open { order: 2; margin-left: 0 !important; }
+  .data-table { font-size: 12px; }
+  .data-table th, .data-table td { padding: 8px 6px; word-break: break-word; }
+  .data-table td a { word-break: break-word; }
+  .table-card { overflow-x: auto; }
+  .dashboard-head { flex-direction: column; align-items: flex-start; gap: 10px; }
 }
 
 /* ===================== АККОРДЕОН РЕЗУЛЬТАТА РАСЧЁТА ===================== */
@@ -468,7 +473,7 @@ body {
       <span class="nav-icon">🚪</span> Выйти
     </button>
 
-    <div style="text-align:center;margin-top:10px;font-size:11px;line-height:1.8;">
+    <div style="text-align:left;margin-top:10px;padding-left:16px;font-size:11px;line-height:1.8;">
       <a href="oferta.html" target="_blank" style="display:block;color:#8a8098;text-decoration:none;">Договор оферты</a>
       <a href="privacy-policy.html" target="_blank" style="display:block;color:#8a8098;text-decoration:none;">Политика конфиденциальности</a>
     </div>
@@ -2600,6 +2605,16 @@ async function openMaterialById(id) {
       // Показываем файл в собственной обёртке — тогда во вкладке видно нормальное
       // название материала, а не служебное имя файла в хранилище (там оно всегда
       // с случайным кодом впереди, чтобы файлы с одинаковыми именами не перезаписывали друг друга).
+      // На телефоне эту рамку не используем — там она мешает нормально листать
+      // многостраничный PDF (виден только первый лист), поэтому там просто
+      // открываем файл напрямую — родной просмотрщик телефона листает его правильно.
+      const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isMobileDevice) {
+        if (newTab) newTab.location.href = data.signedUrl;
+        else window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+        return;
+      }
+
       const niceTitle = (item.title || "Материал").replace(/[<>]/g, "");
       const wrapperHtml = `<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8">
 <title>${niceTitle}</title>

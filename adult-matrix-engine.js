@@ -65,6 +65,14 @@ function fn_VLOOKUP(lookupValue, table, colIndex) {
       return row[colIndex - 1];
     }
   }
+  // Числовые таблицы в этой методике пронумерованы от 1 до 22 (арканы);
+  // 0 в них не встречается, но по правилам нумерологии 0 читается как 22
+  // (частый случай при сведении суммы цифр даты к однозначному диапазону).
+  if (lookupValue === 0) {
+    for (const row of table) {
+      if (row[0] === 22) return row[colIndex - 1];
+    }
+  }
   throw new Error("N/A: VLOOKUP not found for " + JSON.stringify(lookupValue));
 }
 
@@ -4511,9 +4519,9 @@ SHEET_DATA["Карта здоровья"].literals["B25"] = "Кровеносн�
 SHEET_DATA["Карта здоровья"].formulas["C25"] = function(SHEET, cell, rangeVals) { return cell("Диаграмма", "D27"); };
 SHEET_DATA["Карта здоровья"].formulas["D25"] = function(SHEET, cell, rangeVals) { return cell("Диаграмма", "C27"); };
 SHEET_DATA["Карта здоровья"].formulas["E25"] = function(SHEET, cell, rangeVals) { return cell("Диаграмма", "E27"); };
-SHEET_DATA["Карта здоровья"].formulas["C26"] = function(SHEET, cell, rangeVals) { return fn_VLOOKUP(cell(SHEET, "C25"), rangeVals("Данные взрослой матрицы", "E3", "F24"), 2, 0); };
-SHEET_DATA["Карта здоровья"].formulas["D26"] = function(SHEET, cell, rangeVals) { return fn_VLOOKUP(cell(SHEET, "D25"), rangeVals("Данные взрослой матрицы", "E3", "F24"), 2, 0); };
-SHEET_DATA["Карта здоровья"].formulas["E26"] = function(SHEET, cell, rangeVals) { return fn_VLOOKUP(cell(SHEET, "E25"), rangeVals("Данные взрослой матрицы", "E3", "F24"), 2, 0); };
+SHEET_DATA["Карта здоровья"].formulas["C26"] = function(SHEET, cell, rangeVals) { const v = cell(SHEET, "C25"); return fn_VLOOKUP((v === 0 ? 22 : v), rangeVals("Данные взрослой матрицы", "E3", "F24"), 2, 0); };
+SHEET_DATA["Карта здоровья"].formulas["D26"] = function(SHEET, cell, rangeVals) { const v = cell(SHEET, "D25"); return fn_VLOOKUP((v === 0 ? 22 : v), rangeVals("Данные взрослой матрицы", "E3", "F24"), 2, 0); };
+SHEET_DATA["Карта здоровья"].formulas["E26"] = function(SHEET, cell, rangeVals) { const v = cell(SHEET, "E25"); return fn_VLOOKUP((v === 0 ? 22 : v), rangeVals("Данные взрослой матрицы", "E3", "F24"), 2, 0); };
 SHEET_DATA["Прогностика"].literals["B2"] = "Прогностика по периодам";
 SHEET_DATA["Прогностика"].literals["B3"] = "Периоды";
 SHEET_DATA["Прогностика"].literals["C3"] = "1-я энергия";
