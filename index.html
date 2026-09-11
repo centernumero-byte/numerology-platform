@@ -1896,10 +1896,18 @@ async function downloadAdultMatrixMobile(name, birthDate) {
     const blob = new Blob([mergedBytes], { type: "application/pdf" });
     const file = new File([blob], filename, { type: "application/pdf" });
 
+    let shared = false;
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try { await navigator.share({ files: [file] }); }
-      catch (e) { if (!(e && e.name === "AbortError")) throw e; }
-    } else {
+      try {
+        await navigator.share({ files: [file] });
+        shared = true;
+      } catch (e) {
+        if (e && e.name === "AbortError") shared = true; // сам закрыл окно — это не ошибка
+        // В остальных случаях (например, слишком много времени прошло с момента нажатия
+        // кнопки) — просто скачиваем файл обычным способом ниже, а не считаем это сбоем.
+      }
+    }
+    if (!shared) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url; a.download = filename;
