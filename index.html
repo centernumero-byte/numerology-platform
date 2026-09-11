@@ -1666,16 +1666,30 @@ function downloadHtmlFile(filename, htmlBody) {
   iframe.style.cssText = "position:absolute;left:-10000px;top:0;width:800px;height:1200px;border:0;";
   document.body.appendChild(iframe);
 
+  const originalTitle = document.title;
+  let cleaned = false;
   function cleanup() {
-    setTimeout(function () {
-      if (iframe.parentNode) document.body.removeChild(iframe);
-    }, 1000);
+    if (cleaned) return;
+    cleaned = true;
+    document.title = originalTitle;
+    if (iframe.parentNode) document.body.removeChild(iframe);
   }
+  // Убираем окно печати только когда человек реально закрыл диалог печати
+  // (событие afterprint), а не по таймеру — на больших расчётах старый таймер
+  // срабатывал раньше, чем браузер успевал всё подготовить, и файл получался пустым.
+  // На всякий случай оставляем и запасной таймер, вдруг событие не сработает.
+  setTimeout(cleanup, 60000);
 
   iframe.onload = function () {
     try {
       iframe.contentDocument.title = title;
     } catch (e) { /* игнорируем — не критично */ }
+    // Имя файла в диалоге печати браузер берёт с заголовка ОСНОВНОЙ вкладки,
+    // а не со скрытого окошка — поэтому временно переименовываем и её тоже.
+    document.title = title;
+    try {
+      iframe.contentWindow.onafterprint = cleanup;
+    } catch (e) { /* игнорируем */ }
     setTimeout(function () {
       try {
         iframe.contentWindow.focus();
@@ -1684,7 +1698,6 @@ function downloadHtmlFile(filename, htmlBody) {
         console.error("Ошибка печати:", error);
         downloadHtmlFallback(filename, htmlBody);
       }
-      cleanup();
     }, 700);
   };
 
