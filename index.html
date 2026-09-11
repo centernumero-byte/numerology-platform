@@ -3665,7 +3665,7 @@ async function loadAdminUsers() {
             ? `<td><a href="javascript:void(0)" onclick='viewNumerologistStudents(${JSON.stringify(user.id)},${JSON.stringify(nameOf(user))})' style="color:#d7aa31;">Teacher ${teacherNumber[user.id]} — посмотреть →</a></td>`
             : `<td>—</td>`;
           return `<tr>
-            <td>${escapeHtml(nameOf(user))}</td>
+            <td>${isRealAdmin ? `<a href="javascript:void(0)" style="color:#f5f0df;text-decoration:underline;" onclick='showUserDetailModal(${JSON.stringify(user.id)})'>${escapeHtml(nameOf(user))}</a>` : escapeHtml(nameOf(user))}</td>
             <td>${escapeHtml(user.email || "—")}</td>
             <td>${escapeHtml(user.phone || "—")}</td>
             <td>${escapeHtml(roleLabel(user.role))}</td>
@@ -3751,6 +3751,7 @@ async function showUserDetailModal(userId) {
         <tr><td style="padding:6px 0;color:#8a8098;">Роль</td><td style="padding:6px 0;">${escapeHtml(roleLabel(profile.role))}</td></tr>
         <tr><td style="padding:6px 0;color:#8a8098;">Teacher</td><td style="padding:6px 0;">${escapeHtml(teacherLabel)}</td></tr>
         <tr><td style="padding:6px 0;color:#8a8098;">Школа</td><td style="padding:6px 0;">${escapeHtml(schoolLabel)}</td></tr>
+        ${profile.role === "numerologist" ? `<tr><td style="padding:6px 0;color:#8a8098;">Код учителя</td><td style="padding:6px 0;font-family:Georgia,serif;letter-spacing:2px;color:#f6d66c;">${escapeHtml(userId.slice(0, 8).toUpperCase())}</td></tr>` : ""}
         <tr><td style="padding:6px 0;color:#8a8098;">Зарегистрирован</td><td style="padding:6px 0;">${profile.created_at ? new Date(profile.created_at).toLocaleDateString("ru-RU") : "—"}</td></tr>
       </table>
       <div style="text-align:right;margin-top:16px;">
