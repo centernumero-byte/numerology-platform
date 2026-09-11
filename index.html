@@ -1740,9 +1740,11 @@ function downloadHtmlFallback(filename, htmlBody) {
 }
 
 function downloadAdultMatrixAuto(name, birthDate) {
-  const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if (isMobileDevice) downloadAdultMatrixMobile(name, birthDate);
-  else downloadAdultMatrixText(name, birthDate);
+  // Временно вернули печать браузера и на телефоне тоже — серверный вариант
+  // пока даёт кривую таблицу и лишние пустые страницы. Сама функция
+  // downloadAdultMatrixMobile ниже осталась нетронутой — если решите
+  // вернуться к ней после доработки, достаточно поменять эту строку обратно.
+  downloadAdultMatrixText(name, birthDate);
 }
 
 async function downloadAdultMatrixMobile(name, birthDate) {
@@ -1774,7 +1776,8 @@ async function downloadAdultMatrixMobile(name, birthDate) {
       { phys: v.a1, energy: v.b1, emo: l2 }, { phys: v.a3, energy: v.b3, emo: l3 },
       { phys: v.e, energy: v.e, emo: l4 }, { phys: v.c1, energy: v.d1, emo: l5 }, { phys: v.c, energy: v.d, emo: l6 },
     ];
-    const healthRows = chakras.map((ch, i) => ({ title: CHAKRA_NAMES[i], physics: ch.phys, energy: ch.energy, emotion: ch.emo }));
+    const CHAKRA_HEX = ["#9b6bd6", "#5b8ef2", "#4fc3c0", "#6fbf5e", "#e0c23e", "#e0913e", "#d1483e"];
+    const healthRows = chakras.map((ch, i) => ({ title: CHAKRA_NAMES[i], physics: ch.phys, energy: ch.energy, emotion: ch.emo, color: CHAKRA_HEX[i] }));
     healthRows.push({
       title: "Итог",
       physics: reduceTo22(chakras.reduce((s, c) => s + c.phys, 0)),
