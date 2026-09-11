@@ -572,10 +572,11 @@ function itemGrantActive(item) {
 }
 
 function hasGrant(section, direction) {
-  if (window.currentUserIsManager) return true;
+  if (window.currentUserRole === "admin") return true;
   const scope = window.currentUserGrant || {};
   if (section === "library") return itemGrantActive(scope.library);
   if (section === "my-calculations") return itemGrantActive(scope.my_calculations);
+  if (section === "access") return itemGrantActive(scope.access);
   if (!direction) return false;
   return itemGrantActive(scope[direction] && scope[direction][section]);
 }
@@ -679,7 +680,7 @@ async function showSection(section) {
   setActiveSection(section);
 
   // Центр Нумера всегда администратор, независимо от того, что успело подгрузиться.
-  let isAdmin = window.currentUserIsManager === true;
+  let isAdmin = window.currentUserRole === "admin";
   try {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (isAdminEmail(session?.user?.email)) {
@@ -707,7 +708,14 @@ async function showSection(section) {
   if (section === "tests") { await loadTestsHub(); return; }
   if (section === "library") { loadLibrary(); return; }
   if (section === "my-calculations") { renderMyCalculations(); return; }
-  if (section === "access") { await renderAccess(); return; }
+  if (section === "access") {
+    if (window.currentUserIsManager && window.currentUserRole !== "admin" && !hasGrant("access")) {
+      showNoAccessMessage();
+      return;
+    }
+    await renderAccess();
+    return;
+  }
   if (section === "statistics") {
     if (!isAdmin && !window.currentUserIsManager) { renderLockedSection(section); return; }
     await renderStatistics();
@@ -727,7 +735,7 @@ function renderCalculators() {
 }
 
 async function openCalculator(type) {
-  if (!window.currentUserIsManager && !hasGrant("calculators", type)) {
+  if (window.currentUserRole !== "admin" && !hasGrant("calculators", type)) {
     showNoAccessMessage();
     return;
   }
@@ -851,6 +859,27 @@ function isValidBirthDate(value) {
   return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
 }
 
+async function saveCalculationHistory(fields) {
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) return;
+    await supabaseClient.from("calculation_history").insert({
+      user_id: session.user.id,
+      direction: fields.direction,
+      title: fields.title,
+      person_name: fields.personName || null,
+      birth_date: fields.birthDate || null,
+      birth_date2: fields.birthDate2 || null,
+      last_name: fields.lastName || null,
+      first_name: fields.firstName || null,
+      patronymic: fields.patronymic || null,
+      alphabet: fields.alphabet || null,
+    });
+  } catch (error) {
+    console.error("Не удалось сохранить расчёт в историю:", error);
+  }
+}
+
 function calculate(type) {
   const name = document.getElementById("name")?.value.trim();
   const birthDate = document.getElementById("birthDate")?.value.trim();
@@ -884,14 +913,17 @@ function calculate(type) {
 
   if (type === "adult" && window.AdultMatrixEngine) {
     renderAdultMatrixResult(name, birthDate, result);
+    saveCalculationHistory({ direction: "adult", title: "Взрослая матрица - " + name + " - " + birthDate, personName: name, birthDate });
     return;
   }
   if (type === "child" && window.ChildMatrixEngine) {
     renderChildMatrixResult(name, birthDate, result);
+    saveCalculationHistory({ direction: "child", title: "Детская матрица - " + name + " - " + birthDate, personName: name, birthDate });
     return;
   }
   if (type === "vedic" && window.VedicEngine) {
     renderVedicResult(name, birthDate, result);
+    saveCalculationHistory({ direction: "vedic", title: "Ведическая нумерология - " + name + " - " + birthDate, personName: name, birthDate });
     return;
   }
 
@@ -1835,6 +1867,12 @@ function calculatePythagoras() {
   renderEditableResult(res.blocks, result, "Нумерология по Пифагору - " + lastName + " " + firstName, birthDate, "pythagoras");
   renderPythDigitSquare(res.psychomatrix, result);
   window._lastPythagorasResult = res;
+  saveCalculationHistory({
+    direction: "pythagoras",
+    title: "Нумерология по Пифагору - " + lastName + " " + firstName + " - " + birthDate,
+    personName: lastName + " " + firstName,
+    birthDate, lastName, firstName, patronymic, alphabet,
+  });
 }
 
 function renderPythDigitSquare(psychomatrix, container) {
@@ -2031,6 +2069,11 @@ function calculateCompatibility() {
 
   renderEditableResult(res.blocks, result, "Совместимость - " + birthDate1 + " и " + birthDate2, "", "compatibility");
   renderCompatibilityDiagrams(d1, m1, y1, d2, m2, y2, result);
+  saveCalculationHistory({
+    direction: "compatibility",
+    title: "Совместимость - " + birthDate1 + " и " + birthDate2,
+    birthDate: birthDate1, birthDate2,
+  });
 }
 
 function computeDiamondPoints(day, month, year) {
@@ -2186,6 +2229,10 @@ function testPageShell(innerHtml) {
 }
 
 async function openTestDirection(direction, title) {
+  if (window.currentUserRole !== "admin" && !hasGrant("tests", direction)) {
+    showNoAccessMessage();
+    return;
+  }
   testPageShell(`
     <button onclick="location.reload()" style="background:none;border:none;color:#d7aa31;cursor:pointer;font-size:14px;margin-bottom:16px;">← Назад</button>
     <h1 style="color:#f6d66c;font-family:Georgia,serif;font-weight:500;">${escapeHtml(title)} — тест</h1>
@@ -2429,7 +2476,7 @@ async function openDirectionMaterials(section, direction, title) {
   if (!contentCards) return;
   contentCards.className = "";
 
-  if (!window.currentUserIsManager && !hasGrant(section, direction)) {
+  if (window.currentUserRole !== "admin" && !hasGrant(section, direction)) {
     contentCards.innerHTML = `
       <div class="materials-page">
         <button class="back-link" onclick='showSection(${JSON.stringify(section)})'>← Назад</button>
@@ -2849,7 +2896,7 @@ async function saveLibraryLink(id) {
    МОИ РАСЧЁТЫ
    ============================================================ */
 
-function renderMyCalculations() {
+async function renderMyCalculations() {
   const contentCards = document.getElementById("contentCards");
   if (!contentCards) return;
   contentCards.className = "";
@@ -2858,24 +2905,126 @@ function renderMyCalculations() {
       <div class="dashboard-head">
         <div>
           <h2>Мои расчёты</h2>
-          <p>История ваших расчётов будет отображаться здесь.</p>
+          <p>История ваших расчётов.</p>
         </div>
       </div>
-      <div class="stats-grid">
-        <div class="stat-card"><span>Всего расчётов</span><strong>0</strong></div>
-        <div class="stat-card"><span>За этот месяц</span><strong>0</strong></div>
+      <div class="stats-grid" id="myCalcStats">
+        <div class="stat-card"><span>Всего расчётов</span><strong>—</strong></div>
+        <div class="stat-card"><span>За этот месяц</span><strong>—</strong></div>
         <div class="stat-card"><span>Последний расчёт</span><strong>—</strong></div>
       </div>
       <div class="table-card">
         <div class="table-title">История расчётов</div>
-        <div class="empty-table">Пока нет сохранённых расчётов.</div>
+        <div id="myCalcTable">Загрузка...</div>
       </div>
     </div>`;
+
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) { document.getElementById("myCalcTable").innerHTML = `<div class="empty-table">Нужно войти в аккаунт.</div>`; return; }
+
+    const { data, error } = await supabaseClient
+      .from("calculation_history")
+      .select("id, direction, title, person_name, birth_date, birth_date2, last_name, first_name, patronymic, alphabet, created_at")
+      .eq("user_id", session.user.id)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+
+    const rows = data || [];
+    const statsBox = document.getElementById("myCalcStats");
+    const now = new Date();
+    const thisMonth = rows.filter(r => {
+      const d = new Date(r.created_at);
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    }).length;
+    const lastDate = rows.length ? new Date(rows[0].created_at).toLocaleDateString("ru-RU") : "—";
+    statsBox.innerHTML = `
+      <div class="stat-card"><span>Всего расчётов</span><strong>${rows.length}</strong></div>
+      <div class="stat-card"><span>За этот месяц</span><strong>${thisMonth}</strong></div>
+      <div class="stat-card"><span>Последний расчёт</span><strong>${lastDate}</strong></div>`;
+
+    const box = document.getElementById("myCalcTable");
+    if (!rows.length) { box.innerHTML = `<div class="empty-table">Пока нет сохранённых расчётов.</div>`; return; }
+
+    box.innerHTML = `
+      <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead><tr><th>Дата</th><th>Направление</th><th>Расчёт</th><th></th></tr></thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <td>${new Date(r.created_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}</td>
+              <td>${escapeHtml(DIRECTION_NAMES[r.direction] || r.direction)}</td>
+              <td>${escapeHtml(r.title)}</td>
+              <td><a href="javascript:void(0)" style="color:#d7aa31;" onclick='reopenCalculation(${JSON.stringify(r)})'>Открыть →</a></td>
+            </tr>`).join("")}
+        </tbody>
+      </table>
+      </div>`;
+  } catch (error) {
+    console.error("Ошибка загрузки истории расчётов:", error);
+    document.getElementById("myCalcTable").innerHTML = `<div class="empty-table">Не удалось загрузить историю.</div>`;
+  }
+}
+
+async function reopenCalculation(r) {
+  await openCalculator(r.direction);
+  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+  if (r.direction === "pythagoras") {
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ""; };
+    set("pythLastName", r.last_name);
+    set("pythFirstName", r.first_name);
+    set("pythPatronymic", r.patronymic);
+    set("pythAlphabet", r.alphabet || "russian");
+    set("birthDate", r.birth_date);
+    calculatePythagoras();
+  } else if (r.direction === "compatibility") {
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ""; };
+    set("birthDate1", r.birth_date);
+    set("birthDate2", r.birth_date2);
+    calculateCompatibility();
+  } else {
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ""; };
+    set("name", r.person_name);
+    set("birthDate", r.birth_date);
+    calculate(r.direction);
+  }
 }
 
 /* ============================================================
    ДОСТУПЫ
    ============================================================ */
+
+async function applyTeacherCode() {
+  const input = document.getElementById("studentTeacherCodeInput");
+  const msg = document.getElementById("studentTeacherCodeMessage");
+  const code = (input?.value || "").trim().toUpperCase();
+  const setMsg = (text, ok) => { if (msg) { msg.textContent = text; msg.style.color = ok ? "#8fe3a1" : "#ff9d9d"; } };
+
+  if (!code) { setMsg("Введите код.", false); return; }
+  setMsg("Проверяю код...", true);
+
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) { setMsg("Нужно войти в аккаунт.", false); return; }
+
+    const { data: teachers, error: teachersError } = await supabaseClient.from("profiles").select("id").eq("role", "numerologist");
+    if (teachersError) throw teachersError;
+    const match = (teachers || []).find(t => t.id.slice(0, 8).toUpperCase() === code);
+    if (!match) { setMsg("Учитель с таким кодом не найден. Проверьте код.", false); return; }
+
+    const { error: updateError } = await supabaseClient.from("profiles").update({ teacher_id: match.id }).eq("id", session.user.id);
+    if (updateError) throw updateError;
+
+    setMsg("Готово, вы прикреплены к учителю.", true);
+    const box = document.getElementById("studentTeacherCodeBox");
+    if (box) setTimeout(() => { box.style.display = "none"; }, 1200);
+  } catch (error) {
+    console.error("Ошибка применения кода учителя:", error);
+    setMsg("Не удалось применить код: " + (error.message || "ошибка Supabase"), false);
+  }
+}
 
 async function renderAccess() {
   const contentCards = document.getElementById("contentCards");
@@ -2887,6 +3036,15 @@ async function renderAccess() {
       <div class="dashboard-wrap">
         <div class="dashboard-head">
           <div><h2>Доступы</h2><p>Что вам открыто и до какого срока.</p></div>
+        </div>
+        <div class="table-card" id="studentTeacherCodeBox" style="margin-bottom:18px;">
+          <div class="table-title">Код учителя</div>
+          <p style="margin:0 0 10px;">Если вы получили код от учителя — введите его здесь, и вас прикрепят к нему:</p>
+          <div style="display:flex;gap:10px;max-width:400px;">
+            <input id="studentTeacherCodeInput" type="text" placeholder="Например: A1B2C3D4" class="material-manager-input" style="margin-bottom:0;">
+            <button class="material-manager-button" style="width:auto;" onclick="applyTeacherCode()">Применить</button>
+          </div>
+          <div id="studentTeacherCodeMessage" style="margin-top:10px;"></div>
         </div>
         <div class="table-card" id="accessTable">Загрузка...</div>
       </div>`;
@@ -2935,6 +3093,7 @@ async function renderAccess() {
           <tbody>
             <tr><td>Библиотека нумеролога</td><td>${itemStatus(scope.library)}</td></tr>
             <tr><td>Мои расчёты</td><td>${itemStatus(scope.my_calculations)}</td></tr>
+            <tr><td>Доступы</td><td>${itemStatus(scope.access)}</td></tr>
           </tbody>
         </table>
         </div>`;
@@ -2942,6 +3101,12 @@ async function renderAccess() {
       document.getElementById("accessTable").innerHTML = activePeriods.length
         ? table
         : `<div class="empty-table">Доступ пока не выдан.<br><br>Обратитесь к администратору или учителю.</div>`;
+
+      const teacherCodeBox = document.getElementById("studentTeacherCodeBox");
+      if (teacherCodeBox) {
+        const { data: profile } = await supabaseClient.from("profiles").select("teacher_id").eq("id", session.user.id).single();
+        if (profile?.teacher_id) teacherCodeBox.style.display = "none";
+      }
     } catch (error) {
       console.error("Ошибка загрузки доступа:", error);
       document.getElementById("accessTable").innerHTML = `<div class="empty-table">Не удалось загрузить статус доступа.</div>`;
@@ -2960,6 +3125,11 @@ async function renderAccess() {
         </div>
         <div class="dashboard-badge">${isRealAdmin ? "Администратор" : "Учитель"}</div>
       </div>
+      ${!isRealAdmin ? `<div class="table-card" style="margin-bottom:18px;">
+        <div class="table-title">Ваш код для учениц</div>
+        <p style="margin:0;">Дайте этот код ученице — при регистрации она введёт его и сразу окажется прикреплена к вам, без вашего участия:</p>
+        <div style="font-size:28px;font-family:Georgia,serif;color:#f6d66c;letter-spacing:3px;margin-top:8px;" id="teacherOwnCode">…</div>
+      </div>` : ""}
 
       <div class="table-card" style="margin-bottom:18px;">
         <div class="table-title">Выдать доступ</div>
@@ -3002,6 +3172,12 @@ async function renderAccess() {
               <input type="checkbox" id="scopeMyCalc" class="scope-flag"> Мои расчёты
             </label>
             ${termSelectHtml("", 'id="scopeMyCalcTerm"')}
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;min-width:220px;">
+              <input type="checkbox" id="scopeAccess" class="scope-flag"> Доступы
+            </label>
+            ${termSelectHtml("", 'id="scopeAccessTerm"')}
           </div>
         </div>
 
@@ -3051,10 +3227,23 @@ async function renderAccess() {
       </div>
     </div>`;
 
+  if (!isRealAdmin) {
+    const codeEl = document.getElementById("teacherOwnCode");
+    if (codeEl) {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session) codeEl.textContent = session.user.id.slice(0, 8).toUpperCase();
+    }
+  }
+
   await loadAdminUsers();
 }
 
 let adminUsersFilterTeacher = null; // { id, name } — admin drilled into one numerologist's students
+
+function roleLabel(role) {
+  const labels = { student: "Ученица", numerologist: "Учитель", admin: "Администратор" };
+  return labels[String(role || "student").trim().toLowerCase()] || (role || "Ученица");
+}
 
 async function loadAdminUsers() {
   const box = document.getElementById("adminUsersTable");
@@ -3142,22 +3331,19 @@ async function loadAdminUsers() {
   box.innerHTML = backLink + `
     <div style="overflow-x:auto;">
     <table class="data-table">
-      <thead><tr><th>Пользователь</th><th>Email</th><th>Телефон</th><th>Роль</th>${isRealAdmin ? "<th>Учитель</th>" : ""}<th>Статус</th></tr></thead>
+      <thead><tr><th>Пользователь</th><th>Email</th><th>Телефон</th><th>Роль</th>${isRealAdmin ? "<th>Ученики</th><th>Учитель</th>" : ""}<th>Статус</th></tr></thead>
       <tbody>
         ${users.map(function (user) {
           const isClickableNumerologist = isRealAdmin && user.role === "numerologist" && !adminUsersFilterTeacher;
-          const rowAttrs = isClickableNumerologist
-            ? `style="cursor:pointer;" onclick='viewNumerologistStudents(${JSON.stringify(user.id)},${JSON.stringify(nameOf(user))})'`
-            : "";
-          const displayName = isClickableNumerologist
-            ? `Учитель ${teacherNumber[user.id]} — ${escapeHtml(nameOf(user))} →`
-            : escapeHtml(nameOf(user));
-          return `<tr ${rowAttrs}>
-            <td>${displayName}</td>
+          const studentsLinkCell = isClickableNumerologist
+            ? `<td><a href="javascript:void(0)" onclick='viewNumerologistStudents(${JSON.stringify(user.id)},${JSON.stringify(nameOf(user))})' style="color:#d7aa31;">Учитель ${teacherNumber[user.id]} — посмотреть →</a></td>`
+            : `<td>—</td>`;
+          return `<tr>
+            <td>${escapeHtml(nameOf(user))}</td>
             <td>${escapeHtml(user.email || "—")}</td>
             <td>${escapeHtml(user.phone || "—")}</td>
-            <td>${escapeHtml(user.role || "student")}</td>
-            ${isRealAdmin ? `<td>${escapeHtml(teacherName(user.teacher_id))}</td>` : ""}
+            <td>${escapeHtml(roleLabel(user.role))}</td>
+            ${isRealAdmin ? `${studentsLinkCell}<td>${escapeHtml(teacherName(user.teacher_id))}</td>` : ""}
             <td>${escapeHtml(user.status || "—")}</td>
           </tr>`;
         }).join("")}
@@ -3259,12 +3445,16 @@ function collectScope() {
   const calcTerm = document.getElementById("scopeMyCalcTerm")?.value || "unlimited";
   scope.my_calculations = calcChecked ? Object.assign({ granted: true }, computeEndsAt(calcTerm)) : { granted: false };
 
+  const accessChecked = document.getElementById("scopeAccess")?.checked;
+  const accessTerm = document.getElementById("scopeAccessTerm")?.value || "unlimited";
+  scope.access = accessChecked ? Object.assign({ granted: true }, computeEndsAt(accessTerm)) : { granted: false };
+
   return scope;
 }
 
 function scopeHasAnything(scope) {
   return Object.keys(scope).some(function (key) {
-    if (key === "library" || key === "my_calculations") return !!scope[key]?.granted;
+    if (key === "library" || key === "my_calculations" || key === "access") return !!scope[key]?.granted;
     return Object.values(scope[key] || {}).some(function (item) { return item && item.granted; });
   });
 }
@@ -3419,6 +3609,7 @@ function showRegister(message = "") {
           <input id="registerEmail" type="email" placeholder="Email *">
           <input id="registerPassword" type="password" placeholder="Пароль *">
           <input id="registerPassword2" type="password" placeholder="Повторите пароль *">
+          <input id="registerTeacherCode" type="text" placeholder="Код учителя (если есть)">
         </div>
         <button type="button" onclick="registerUser()">Создать аккаунт</button>
         <div id="registerMessage" class="auth-message ${message ? "error" : ""}">${escapeHtml(message)}</div>
@@ -3452,6 +3643,7 @@ async function registerUser() {
   const email = document.getElementById("registerEmail")?.value.trim().toLowerCase() || "";
   const password = document.getElementById("registerPassword")?.value || "";
   const password2 = document.getElementById("registerPassword2")?.value || "";
+  const teacherCode = document.getElementById("registerTeacherCode")?.value.trim().toUpperCase() || "";
   const message = document.getElementById("registerMessage");
 
   const setMessage = (text, ok = false) => {
@@ -3479,10 +3671,20 @@ async function registerUser() {
 
   if (error) { setMessage(error.message || "Не удалось зарегистрировать пользователя."); return; }
 
+  let teacherIdFound = null;
+  if (data?.user && teacherCode) {
+    try {
+      const { data: teachers } = await supabaseClient.from("profiles").select("id").eq("role", "numerologist");
+      const match = (teachers || []).find(t => t.id.slice(0, 8).toUpperCase() === teacherCode);
+      if (match) teacherIdFound = match.id;
+    } catch (e) { console.warn("Не удалось проверить код учителя:", e); }
+  }
+
   if (data?.user) {
     const { error: profileError } = await supabaseClient.from("profiles").upsert({
       id: data.user.id, first_name: firstName, last_name: lastName, middle_name: middleName,
-      email, phone, role: "student", status: "pending"
+      email, phone, role: "student", status: "pending",
+      ...(teacherIdFound ? { teacher_id: teacherIdFound } : {})
     }, { onConflict: "id" });
     if (profileError) console.warn("Профиль не обновлён из браузера:", profileError);
   }
@@ -3598,8 +3800,48 @@ async function logoutUser() {
    ПРОВЕРКА АВТОРИЗАЦИИ ПРИ ЗАГРУЗКЕ
    ============================================================ */
 
+function showSetNewPasswordForm() {
+  document.body.style.visibility = "visible";
+  document.body.innerHTML = `
+    <div class="auth-shell">
+      <div class="auth-card">
+        <div class="auth-symbol">✧</div>
+        <div class="auth-title">NUMEROLOGY</div>
+        <div class="auth-subtitle">Platform</div>
+        <h2>Новый пароль</h2>
+        <p class="auth-description">Придумайте новый пароль для входа.</p>
+        <input id="newPassword1" type="password" placeholder="Новый пароль">
+        <input id="newPassword2" type="password" placeholder="Повторите новый пароль">
+        <button type="button" onclick="submitNewPassword()">Сохранить пароль</button>
+        <div id="newPasswordMessage" class="auth-message error"></div>
+      </div>
+    </div>`;
+}
+
+async function submitNewPassword() {
+  const p1 = document.getElementById("newPassword1")?.value || "";
+  const p2 = document.getElementById("newPassword2")?.value || "";
+  const msg = document.getElementById("newPasswordMessage");
+  const setMsg = (text, ok) => { if (msg) { msg.textContent = text; msg.className = "auth-message " + (ok ? "success" : "error"); } };
+
+  if (p1.length < 6) { setMsg("Пароль должен содержать минимум 6 символов.", false); return; }
+  if (p1 !== p2) { setMsg("Пароли не совпадают.", false); return; }
+
+  setMsg("Сохраняю новый пароль...", true);
+  const { error } = await supabaseClient.auth.updateUser({ password: p1 });
+  if (error) { setMsg("Не удалось сохранить пароль: " + (error.message || "ошибка Supabase"), false); return; }
+
+  setMsg("Пароль изменён. Сейчас откроется платформа.", true);
+  history.replaceState(null, "", window.location.pathname);
+  setTimeout(() => location.reload(), 1000);
+}
+
 async function checkAuth() {
   try {
+    if (window.location.hash.includes("type=recovery")) {
+      showSetNewPasswordForm();
+      return;
+    }
     const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
     if (sessionError) { console.error("Ошибка получения сессии:", sessionError); showLogin("Не удалось проверить авторизацию."); return; }
     if (!session) { showLogin(); return; }
