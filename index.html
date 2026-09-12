@@ -2797,6 +2797,7 @@ async function deleteMaterialById(id) {
 async function openMaterialById(id) {
   const item = currentDirectionMaterials.find(m => String(m.id) === String(id));
   if (!item) return;
+  const isVideoFile = currentMaterialsView?.section === "videos" && item.material_type === "file";
   try {
     if (item.url) { window.open(item.url, "_blank", "noopener,noreferrer"); return; }
     if (item.file_path) {
@@ -2808,6 +2809,20 @@ async function openMaterialById(id) {
         .createSignedUrl(item.file_path, 60 * 60);
       if (error) throw error;
       if (!data?.signedUrl) throw new Error("Не удалось получить ссылку на файл.");
+
+      if (isVideoFile) {
+        // Видео показываем во встроенном плеере без стандартной кнопки "Скачать" в меню плеера
+        // и без контекстного меню — это не абсолютная защита от копирования (её не даёт ни один
+        // сайт в браузере), но убирает очевидный способ скачать файл в один клик.
+        const niceTitleV = (item.title || "Видео").replace(/[<>]/g, "");
+        const videoWrapperHtml = `<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${niceTitleV}</title>
+<style>html,body{margin:0;padding:0;height:100%;background:#000;display:flex;align-items:center;justify-content:center;}video{max-width:100%;max-height:100%;}</style>
+</head><body><video src="${data.signedUrl}" controls controlsList="nodownload noremoteplayback" disablePictureInPicture oncontextmenu="return false;" autoplay></video></body></html>`;
+        if (newTab) { newTab.document.open(); newTab.document.write(videoWrapperHtml); newTab.document.close(); }
+        else window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+        return;
+      }
 
       // Показываем файл в собственной обёртке — тогда во вкладке видно нормальное
       // название материала, а не служебное имя файла в хранилище (там оно всегда
@@ -3524,14 +3539,11 @@ async function renderAccess() {
         <div class="table-title">${isRealAdmin ? "Зарегистрированные пользователи" : "My Students"}</div>
         <div id="adminUsersTable">Загрузка...</div>
       </div>
-      ${isRealAdmin ? `
       <div class="table-card" style="margin-top:18px;">
-        <div class="table-title">Журнал удалённых аккаунтов</div>
+        <div class="table-title">${isRealAdmin ? "Журнал удалённых аккаунтов" : "Удалённые ученики"}</div>
         <div id="deletedUsersTable">Загрузка...</div>
-      </div>` : ""}
+      </div>
     </div>`;
-
-  if (isRealAdmin) loadDeletedUsersLog();
 
   if (!isRealAdmin) {
     const codeEl = document.getElementById("teacherOwnCode");
@@ -3586,6 +3598,11 @@ function roleLabel(role) {
   return labels[String(role || "student").trim().toLowerCase()] || (role || "Student");
 }
 
+function statusLabel(status) {
+  const labels = { active: "Активен", deleted: "Удалён" };
+  return labels[String(status || "active").trim().toLowerCase()] || (status || "Активен");
+}
+
 async function loadAdminUsers() {
   const box = document.getElementById("adminUsersTable");
   const accessSelect = document.getElementById("accessUserSelect");
@@ -3600,7 +3617,8 @@ async function loadAdminUsers() {
 
   let query = supabaseClient
     .from("profiles")
-    .select("id, first_name, last_name, middle_name, email, phone, role, status, teacher_id, created_at")
+    .select("id, first_name, last_name, middle_name, email, phone, role, status, teacher_id, created_at, restored_at")
+    .or("status.neq.deleted,status.is.null")
     .order("last_name", { ascending: true });
 
   if (!isRealAdmin) query = query.eq("teacher_id", session.user.id);
@@ -3616,6 +3634,26 @@ async function loadAdminUsers() {
 
   const users = data || [];
   const nameOf = (u) => [u.last_name, u.first_name, u.middle_name].filter(Boolean).join(" ") || u.email || "Пользователь";
+
+  // Проверяем реальный статус доступа (истёк / активен / вообще не выдавался) для каждого пользователя одним запросом.
+  const accessByUser = {};
+  if (users.length) {
+    const { data: periods } = await supabaseClient
+      .from("access_periods")
+      .select("profile_id, status, ends_at, is_unlimited, payment_status, starts_at")
+      .in("profile_id", users.map(u => u.id))
+      .order("starts_at", { ascending: false });
+    (periods || []).forEach(function (p) {
+      if (!accessByUser[p.profile_id]) accessByUser[p.profile_id] = p; // первый попавшийся — самый свежий, т.к. отсортировано по starts_at desc
+    });
+  }
+  function accessBadge(user) {
+    if (user.role !== "student" && user.role !== "numerologist") return "";
+    const latest = accessByUser[user.id];
+    if (!latest) return `<div style="font-size:11px;color:#8a8098;margin-top:3px;">Доступ не выдавался</div>`;
+    if (hasActivePlatformAccess(latest)) return `<div style="font-size:11px;color:#8fd18f;margin-top:3px;">Доступ активен${latest.is_unlimited ? "" : (latest.ends_at ? " до " + new Date(latest.ends_at).toLocaleDateString("ru-RU") : "")}</div>`;
+    return `<div style="font-size:11px;color:#e8a94e;margin-top:3px;">Доступ истёк <button type="button" onclick='scrollToGrantAccess(${JSON.stringify(user.id)})' style="margin-left:4px;padding:2px 8px;font-size:11px;border-radius:8px;border:1px solid #d7aa31;background:linear-gradient(90deg,#713199,#5d2789);color:#f8d96d;cursor:pointer;">Возобновить</button></div>`;
+  }
 
   // Селекты доступа/ролей всегда строятся из ПОЛНОГО списка, не из отфильтрованного вида.
   if (isRealAdmin && adminUsersFilterTeacher) {
@@ -3675,7 +3713,7 @@ async function loadAdminUsers() {
   box.innerHTML = backLink + `
     <div style="overflow-x:auto;">
     <table class="data-table">
-      <thead><tr><th>Пользователь</th><th>Email</th><th>Телефон</th><th>Роль</th><th>Зарегистрирован</th>${isRealAdmin ? "<th>Код учителя</th><th>Прикреплён к учителю</th>" : ""}<th>Статус</th>${isRealAdmin ? "<th></th>" : ""}</tr></thead>
+      <thead><tr><th>Пользователь</th><th>Email</th><th>Телефон</th><th>Роль</th><th>Зарегистрирован</th>${isRealAdmin ? "<th>Код учителя</th><th>Прикреплён к учителю</th>" : ""}<th>Статус</th><th></th></tr></thead>
       <tbody>
         ${users.map(function (user) {
           const codeCell = user.role === "numerologist" ? `<td style="font-family:'Courier New',monospace;letter-spacing:1px;color:#f6d66c;font-weight:bold;">${escapeHtml(user.id.slice(0, 8).toUpperCase())}</td>` : (user.role === "admin" ? `<td style="color:#f6d66c;font-weight:bold;">Admin</td>` : `<td>—</td>`);
@@ -3685,14 +3723,27 @@ async function loadAdminUsers() {
             <td>${escapeHtml(user.phone || "—")}</td>
             <td>${escapeHtml(roleLabel(user.role))}</td>
             <td>${user.created_at ? new Date(user.created_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}</td>
-            ${isRealAdmin ? `${codeCell}<td>${escapeHtml(teacherName(user.teacher_id))}</td>` : ""}
-            <td>${escapeHtml(user.status || "—")}</td>
-            ${isRealAdmin ? (user.role === "admin" ? `<td>—</td>` : `<td><button type="button" class="material-manager-button" style="width:auto;padding:6px 10px;font-size:12px;" onclick='deleteUserAccount(${JSON.stringify(user.id)}, ${JSON.stringify(nameOf(user))})'>Удалить</button></td>`) : ""}
+            ${isRealAdmin ? `${codeCell}<td>${user.role === "student" ? escapeHtml(teacherName(user.teacher_id)) : "—"}</td>` : ""}
+            <td>${statusLabel(user.status)}${user.restored_at ? ` <span style="color:#8fd18f;font-size:11px;">(восстановлен ${new Date(user.restored_at).toLocaleDateString("ru-RU")})</span>` : ""}${accessBadge(user)}</td>
+            ${user.role === "admin" ? (isRealAdmin ? "<td>—</td>" : "") : `<td><button type="button" class="material-manager-button" style="width:auto;padding:6px 10px;font-size:12px;" onclick='deleteUserAccount(${JSON.stringify(user.id)}, ${JSON.stringify(nameOf(user))})'>Удалить</button></td>`}
           </tr>`;
         }).join("")}
       </tbody>
     </table>
     </div>`;
+
+  loadDeletedUsersLog();
+}
+
+function scrollToGrantAccess(userId) {
+  const select = document.getElementById("accessUserSelect");
+  if (select) {
+    select.value = userId;
+    loadScopeForSelectedUser();
+    select.closest(".table-card")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    select.style.outline = "2px solid #f6d66c";
+    setTimeout(function () { select.style.outline = ""; }, 1500);
+  }
 }
 
 function viewNumerologistStudents(id, name) {
@@ -3707,7 +3758,7 @@ function deleteUserAccount(userId, name) {
   }
   showModal(`
     <h3 style="margin-top:0;color:#f6d66c;font-family:Georgia,serif;">Удалить аккаунт?</h3>
-    <p>Удалить аккаунт «${escapeHtml(name)}» полностью? Данные о регистрации и удалении останутся в архиве, но сам аккаунт и вход по нему исчезнут навсегда.</p>
+    <p>Удалить аккаунт «${escapeHtml(name)}»? Человек потеряет доступ и не сможет войти, но данные сохранятся — при необходимости аккаунт можно будет восстановить в разделе «${window.currentUserRole === "admin" ? "Журнал удалённых аккаунтов" : "Удалённые ученики"}».</p>
     <div id="deleteModalMessage" style="margin:10px 0;"></div>
     <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
       <button type="button" class="material-manager-button" style="width:auto;background:transparent;border:1px solid rgba(225,180,52,.4);" onclick="closeModal()">Отмена</button>
@@ -3725,7 +3776,7 @@ async function confirmDeleteUser(userId) {
     const resp = await fetch("https://skvprhqsxnlacshucncq.supabase.co/functions/v1/delete-user", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + session.access_token },
-      body: JSON.stringify({ userId }),
+      body: JSON.stringify({ userId, action: "delete" }),
     });
     const result = await resp.json();
     if (!resp.ok || result.error) throw new Error(result.error || ("Сервер вернул ошибку " + resp.status));
@@ -3800,30 +3851,71 @@ function closeModal() {
 async function loadDeletedUsersLog() {
   const box = document.getElementById("deletedUsersTable");
   if (!box) return;
-  const { data, error } = await supabaseClient
-    .from("deleted_users_log")
-    .select("email, first_name, last_name, role, registered_at, had_any_calculations, deleted_at")
+  const isRealAdmin = window.currentUserRole === "admin";
+  const { data: { session } } = await supabaseClient.auth.getSession();
+
+  let query = supabaseClient
+    .from("profiles")
+    .select("id, first_name, last_name, email, role, created_at, deleted_at, teacher_id")
+    .eq("status", "deleted")
     .order("deleted_at", { ascending: false });
+  if (!isRealAdmin) query = query.eq("teacher_id", session.user.id);
+
+  const { data, error } = await query;
   if (error) { box.innerHTML = `<div class="empty-table">Не удалось загрузить журнал.</div>`; return; }
   const rows = data || [];
   if (!rows.length) { box.innerHTML = `<div class="empty-table">Пока никто не удалялся.</div>`; return; }
   box.innerHTML = `
     <div style="overflow-x:auto;">
     <table class="data-table">
-      <thead><tr><th>Email</th><th>Имя</th><th>Роль</th><th>Зарегистрирован</th><th>Делал расчёты</th><th>Удалён</th></tr></thead>
+      <thead><tr><th>Email</th><th>Имя</th><th>Роль</th><th>Зарегистрирован</th><th>Удалён</th><th></th></tr></thead>
       <tbody>
         ${rows.map(r => `
           <tr>
             <td>${escapeHtml(r.email || "—")}</td>
             <td>${escapeHtml([r.last_name, r.first_name].filter(Boolean).join(" ") || "—")}</td>
             <td>${escapeHtml(roleLabel(r.role))}</td>
-            <td>${r.registered_at ? new Date(r.registered_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}</td>
-            <td>${r.had_any_calculations ? "Да" : "Нет"}</td>
-            <td>${new Date(r.deleted_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}</td>
+            <td>${r.created_at ? new Date(r.created_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}</td>
+            <td>${r.deleted_at ? new Date(r.deleted_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}</td>
+            <td><button type="button" class="material-manager-button" style="width:auto;padding:6px 10px;font-size:12px;" onclick='restoreUserAccount(${JSON.stringify(r.id)}, ${JSON.stringify([r.last_name, r.first_name].filter(Boolean).join(" ") || r.email)})'>Восстановить</button></td>
           </tr>`).join("")}
       </tbody>
     </table>
     </div>`;
+}
+
+async function restoreUserAccount(userId, name) {
+  showModal(`
+    <h3 style="margin-top:0;color:#f6d66c;font-family:Georgia,serif;">Восстановить аккаунт?</h3>
+    <p>Восстановить доступ для «${escapeHtml(name)}»? Человек снова сможет войти под своим email и паролем, дата будет отмечена как «дата восстановления».</p>
+    <div id="restoreModalMessage" style="margin:10px 0;"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+      <button type="button" class="material-manager-button" style="width:auto;background:transparent;border:1px solid rgba(225,180,52,.4);" onclick="closeModal()">Отмена</button>
+      <button type="button" id="confirmRestoreBtn" class="material-manager-button" style="width:auto;" onclick='confirmRestoreUser(${JSON.stringify(userId)})'>Восстановить</button>
+    </div>
+  `);
+}
+
+async function confirmRestoreUser(userId) {
+  const btn = document.getElementById("confirmRestoreBtn");
+  const msg = document.getElementById("restoreModalMessage");
+  if (btn) { btn.disabled = true; btn.textContent = "Восстанавливаю..."; }
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const resp = await fetch("https://skvprhqsxnlacshucncq.supabase.co/functions/v1/delete-user", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + session.access_token },
+      body: JSON.stringify({ userId, action: "restore" }),
+    });
+    const result = await resp.json();
+    if (!resp.ok || result.error) throw new Error(result.error || ("Сервер вернул ошибку " + resp.status));
+    closeModal();
+    loadAdminUsers();
+  } catch (error) {
+    console.error("Ошибка восстановления пользователя:", error);
+    if (msg) { msg.textContent = "Не удалось восстановить аккаунт: " + (error.message || error); msg.style.color = "#ff9d9d"; }
+    if (btn) { btn.disabled = false; btn.textContent = "Восстановить"; }
+  }
 }
 
 function closeNumerologistDrilldown() {
