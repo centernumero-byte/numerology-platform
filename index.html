@@ -4133,7 +4133,7 @@ function showRegister(message = "") {
           <input id="registerLastName" type="text" placeholder="Фамилия *">
           <input id="registerFirstName" type="text" placeholder="Имя *">
           <input id="registerMiddleName" type="text" placeholder="Отчество *">
-          <input id="registerPhone" type="tel" placeholder="Телефон * (например, +7 700 123 45 67)">
+          <input id="registerPhone" type="tel" placeholder="Телефон * (например, +7 700 123 45 67)" maxlength="17" oninput="formatPhoneInput(this)">
           <input id="registerEmail" type="email" placeholder="Email *">
           <input id="registerPassword" type="password" placeholder="Пароль *">
           <input id="registerPassword2" type="password" placeholder="Повторите пароль *">
@@ -4163,6 +4163,12 @@ async function loginUser() {
   location.reload();
 }
 
+function formatPhoneInput(el) {
+  let digits = el.value.replace(/\D/g, "");
+  digits = digits.slice(0, 15);
+  el.value = digits ? "+" + digits : "";
+}
+
 async function registerUser() {
   const lastName = document.getElementById("registerLastName")?.value.trim() || "";
   const firstName = document.getElementById("registerFirstName")?.value.trim() || "";
@@ -4182,7 +4188,7 @@ async function registerUser() {
 
   const nameRe = /^[A-Za-zА-Яа-яЁёӘәҒғҚқҮүҰұІіЖжҮүҺһ' -]{2,}$/;
   const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-  const phoneRe = /^\+?\d[\d\s()-]{9,14}\d$/;
+  const phoneRe = /^\+\d{8,15}$/;
 
   if (!lastName || !firstName || !middleName || !phone || !email || !password || !password2) {
     setMessage("Заполните все обязательные поля: фамилия, имя, отчество, телефон, email и пароль.");
@@ -4191,7 +4197,7 @@ async function registerUser() {
   if (!nameRe.test(lastName)) { setMessage("Проверьте фамилию — только буквы, не менее 2 символов."); return; }
   if (!nameRe.test(firstName)) { setMessage("Проверьте имя — только буквы, не менее 2 символов."); return; }
   if (!nameRe.test(middleName)) { setMessage("Проверьте отчество — только буквы, не менее 2 символов."); return; }
-  if (!phoneRe.test(phone)) { setMessage("Проверьте номер телефона — укажите его в правильном формате, например +7 700 123 45 67."); return; }
+  if (!phoneRe.test(phone)) { setMessage("Проверьте номер телефона — начните с + и введите код страны и номер полностью, без пробелов и лишних символов, например +77001234567."); return; }
   if (!emailRe.test(email)) { setMessage("Проверьте email — укажите его в правильном формате."); return; }
   if (password.length < 6) { setMessage("Пароль должен содержать минимум 6 символов."); return; }
   if (password !== password2) { setMessage("Пароли не совпадают."); return; }
