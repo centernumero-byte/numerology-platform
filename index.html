@@ -546,7 +546,7 @@ function escapeHtml(value) {
     .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 function showNoAccessMessage() {
-  alert("У вас нет доступа к этому разделу. Обратитесь к администратору или учителю.");
+  customAlert("У вас нет доступа к этому разделу. Обратитесь к администратору или учителю.");
 }
 
 /* ============================================================
@@ -1922,7 +1922,7 @@ async function downloadAdultMatrixMobile(name, birthDate) {
     }
   } catch (error) {
     console.error("Ошибка мобильного скачивания:", error);
-    alert("Не удалось сформировать файл на сервере (" + (error.message || error) + "). Пробую обычным способом.");
+    customAlert("Не удалось сформировать файл на сервере (" + (error.message || error) + "). Пробую обычным способом.");
     downloadAdultMatrixText(name, birthDate);
   } finally {
     if (btn) { btn.textContent = oldLabel; btn.disabled = false; }
@@ -2034,6 +2034,21 @@ function customConfirm(message) {
     document.body.appendChild(box);
     box.querySelector("#customConfirmOk").onclick = function () { box.remove(); resolve(true); };
     box.querySelector("#customConfirmCancel").onclick = function () { box.remove(); resolve(false); };
+  });
+}
+
+function customAlert(message) {
+  return new Promise(function (resolve) {
+    const box = document.createElement("div");
+    box.innerHTML = `
+      <div style="position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;">
+        <div style="background:linear-gradient(145deg,#302052,#21163d);border:1px solid #d7aa31;border-radius:16px;padding:26px 22px;max-width:340px;width:100%;text-align:center;">
+          <p style="color:#f8e7a8;margin:0 0 22px;font-size:15px;line-height:1.4;">${escapeHtml(message)}</p>
+          <button id="customAlertOk" style="width:100%;padding:11px;border-radius:10px;border:1px solid #d7aa31;background:linear-gradient(90deg,#713199,#5d2789);color:#f8d96d;cursor:pointer;font-size:14px;">Понятно</button>
+        </div>
+      </div>`;
+    document.body.appendChild(box);
+    box.querySelector("#customAlertOk").onclick = function () { box.remove(); resolve(true); };
   });
 }
 
@@ -2775,7 +2790,7 @@ async function deleteMaterialById(id) {
     await loadDirectionMaterialsList();
   } catch (error) {
     console.error("Ошибка удаления материала:", error);
-    alert("Не удалось удалить материал.\n\n" + (error.message || error));
+    customAlert("Не удалось удалить материал. " + (error.message || error));
   }
 }
 
@@ -2823,7 +2838,7 @@ async function openMaterialById(id) {
     }
   } catch (error) {
     console.error("Ошибка открытия материала:", error);
-    alert("Не удалось открыть материал.\n\n" + (error.message || error));
+    customAlert("Не удалось открыть материал. " + (error.message || error));
   }
 }
 
@@ -3414,7 +3429,7 @@ async function renderAccess() {
         <div style="margin-bottom:18px;max-width:500px;">
           <label>
             <span style="display:block;margin-bottom:7px;">Пользователь (email)</span>
-            <select id="accessUserSelect" class="material-manager-input" style="margin-bottom:0;"></select>
+            <select id="accessUserSelect" class="material-manager-input" style="margin-bottom:0;" onchange="loadScopeForSelectedUser()"></select>
           </label>
         </div>
 
@@ -3616,16 +3631,19 @@ async function loadAdminUsers() {
   function fillAccessSelects(list, nameFn) {
     const fillSelect = (el, opts, emptyLabel) => {
       if (!el) return;
+      const prevValue = el.value;
       el.innerHTML = opts.length
         ? opts.map(u => `<option value="${escapeHtml(u.id)}">${escapeHtml(nameFn(u))}${u.email ? " — " + escapeHtml(u.email) : ""}</option>`).join("")
         : `<option value="">${emptyLabel}</option>`;
+      if (prevValue && opts.some(u => u.id === prevValue)) el.value = prevValue;
     };
-    fillSelect(accessSelect, list, "Нет пользователей");
+    fillSelect(accessSelect, list.filter(u => u.role !== "admin"), "Нет пользователей");
     if (isRealAdmin) {
       fillSelect(roleSelect, list, "Нет пользователей");
       fillSelect(attachStudentSelect, list.filter(u => (u.role || "student") !== "numerologist" && (u.role || "student") !== "admin"), "Нет учеников/учениц");
       fillSelect(attachTeacherSelect, list.filter(u => u.role === "numerologist"), "Нет учителей");
     }
+    loadScopeForSelectedUser();
   }
 
   const backLink = (isRealAdmin && adminUsersFilterTeacher)
@@ -3660,7 +3678,7 @@ async function loadAdminUsers() {
       <thead><tr><th>Пользователь</th><th>Email</th><th>Телефон</th><th>Роль</th><th>Зарегистрирован</th>${isRealAdmin ? "<th>Код учителя</th><th>Прикреплён к учителю</th>" : ""}<th>Статус</th>${isRealAdmin ? "<th></th>" : ""}</tr></thead>
       <tbody>
         ${users.map(function (user) {
-          const codeCell = user.role === "numerologist" ? `<td style="font-family:'Courier New',monospace;letter-spacing:1px;color:#f6d66c;font-weight:bold;">${escapeHtml(user.id.slice(0, 8).toUpperCase())}</td>` : `<td>—</td>`;
+          const codeCell = user.role === "numerologist" ? `<td style="font-family:'Courier New',monospace;letter-spacing:1px;color:#f6d66c;font-weight:bold;">${escapeHtml(user.id.slice(0, 8).toUpperCase())}</td>` : (user.role === "admin" ? `<td style="color:#f6d66c;font-weight:bold;">Admin</td>` : `<td>—</td>`);
           return `<tr>
             <td>${isRealAdmin ? `<a href="javascript:void(0)" style="color:#f5f0df;text-decoration:underline;" onclick='showUserDetailModal(${JSON.stringify(user.id)})'>${escapeHtml(nameOf(user))}</a>` : escapeHtml(nameOf(user))}</td>
             <td>${escapeHtml(user.email || "—")}</td>
@@ -3870,6 +3888,44 @@ function computeEndsAt(termValue) {
 
 function toggleScopeAll(checked) {
   document.querySelectorAll(".scope-cell, .scope-flag").forEach(function (el) { el.checked = checked; });
+}
+
+function fillScopeCheckboxes(scope) {
+  scope = scope || {};
+  document.querySelectorAll(".scope-cell").forEach(function (el) {
+    const dir = el.dataset.direction, type = el.dataset.type;
+    const item = (scope[dir] || {})[type];
+    el.checked = !!(item && item.granted);
+    const termSelect = document.querySelector(`.scope-term-row[data-direction="${dir}"]`);
+    if (termSelect && item && item.granted) termSelect.value = item.unlimited ? "unlimited" : (item.ends_at ? String(Math.max(1, Math.round((new Date(item.ends_at) - new Date()) / 86400000))) : "unlimited");
+  });
+  const setFlag = function (checkboxId, termId, item) {
+    const cb = document.getElementById(checkboxId);
+    const term = document.getElementById(termId);
+    if (cb) cb.checked = !!(item && item.granted);
+    if (term && item && item.granted) term.value = item.unlimited ? "unlimited" : (item.ends_at ? String(Math.max(1, Math.round((new Date(item.ends_at) - new Date()) / 86400000))) : "unlimited");
+  };
+  setFlag("scopeLibrary", "scopeLibraryTerm", scope.library);
+  setFlag("scopeMyCalc", "scopeMyCalcTerm", scope.my_calculations);
+  setFlag("scopeAccess", "scopeAccessTerm", scope.access);
+  setFlag("scopeStatistics", "scopeStatisticsTerm", scope.statistics);
+  const allBox = document.getElementById("scopeSelectAll");
+  if (allBox) allBox.checked = Array.from(document.querySelectorAll(".scope-cell, .scope-flag")).every(el => el.checked);
+}
+
+async function loadScopeForSelectedUser() {
+  const userId = document.getElementById("accessUserSelect")?.value || "";
+  document.querySelectorAll(".scope-cell, .scope-flag").forEach(function (el) { el.checked = false; });
+  if (!userId) return;
+  const { data, error } = await supabaseClient
+    .from("access_periods")
+    .select("status, payment_status, starts_at, ends_at, is_unlimited, granted_scope")
+    .eq("profile_id", userId)
+    .order("starts_at", { ascending: false })
+    .limit(10);
+  if (error) { console.error("Ошибка загрузки текущего доступа:", error); return; }
+  const activePeriods = (data || []).filter(hasActivePlatformAccess);
+  fillScopeCheckboxes(activePeriods[0]?.granted_scope || {});
 }
 
 function collectScope() {
@@ -4407,9 +4463,7 @@ async function checkAuth() {
 
     let hasAccess = false;
     let currentGrant = {};
-    if (isManager) {
-      hasAccess = true;
-    } else {
+    {
       const { data: access, error: accessError } = await supabaseClient
         .from("access_periods")
         .select("id, status, starts_at, ends_at, is_unlimited, payment_status, granted_scope")
@@ -4423,6 +4477,7 @@ async function checkAuth() {
         currentGrant = activePeriods[0]?.granted_scope || {};
       }
     }
+    if (isManager) hasAccess = true;
 
     window.currentUserRole = isAdminEmail(userEmail) ? "admin" : role;
     window.currentUserId = user.id;
