@@ -3687,7 +3687,7 @@ async function loadAdminUsers() {
             <td>${user.created_at ? new Date(user.created_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}</td>
             ${isRealAdmin ? `${codeCell}<td>${escapeHtml(teacherName(user.teacher_id))}</td>` : ""}
             <td>${escapeHtml(user.status || "—")}</td>
-            ${isRealAdmin ? `<td><button type="button" class="material-manager-button" style="width:auto;padding:6px 10px;font-size:12px;" onclick='deleteUserAccount(${JSON.stringify(user.id)}, ${JSON.stringify(nameOf(user))})'>Удалить</button></td>` : ""}
+            ${isRealAdmin ? (user.role === "admin" ? `<td>—</td>` : `<td><button type="button" class="material-manager-button" style="width:auto;padding:6px 10px;font-size:12px;" onclick='deleteUserAccount(${JSON.stringify(user.id)}, ${JSON.stringify(nameOf(user))})'>Удалить</button></td>`) : ""}
           </tr>`;
         }).join("")}
       </tbody>
@@ -3701,6 +3701,10 @@ function viewNumerologistStudents(id, name) {
 }
 
 function deleteUserAccount(userId, name) {
+  if (userId === window.currentUserId) {
+    customAlert("Удалить аккаунт администратора отсюда нельзя.");
+    return;
+  }
   showModal(`
     <h3 style="margin-top:0;color:#f6d66c;font-family:Georgia,serif;">Удалить аккаунт?</h3>
     <p>Удалить аккаунт «${escapeHtml(name)}» полностью? Данные о регистрации и удалении останутся в архиве, но сам аккаунт и вход по нему исчезнут навсегда.</p>
