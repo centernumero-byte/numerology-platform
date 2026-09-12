@@ -339,10 +339,10 @@ body {
   .material-row-body { flex-basis: 100%; order: 1; }
   .material-row-icon { order: 0; }
   .material-row-open { order: 2; margin-left: 0 !important; }
-  .data-table { font-size: 12px; }
-  .data-table th, .data-table td { padding: 8px 6px; word-break: break-word; }
-  .data-table td a { word-break: break-word; }
-  .table-card { overflow-x: auto; }
+  .data-table { font-size: 12px; width: max-content; min-width: 100%; }
+  .data-table th, .data-table td { padding: 8px 9px; white-space: nowrap; }
+  .data-table td a { white-space: nowrap; }
+  .table-card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .dashboard-head { flex-direction: column; align-items: flex-start; gap: 10px; }
 }
 
