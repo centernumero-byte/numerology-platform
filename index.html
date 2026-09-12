@@ -3639,7 +3639,7 @@ async function loadAdminUsers() {
     };
     fillSelect(accessSelect, list.filter(u => u.role !== "admin"), "Нет пользователей");
     if (isRealAdmin) {
-      fillSelect(roleSelect, list, "Нет пользователей");
+      fillSelect(roleSelect, list.filter(u => u.role !== "admin"), "Нет пользователей");
       fillSelect(attachStudentSelect, list.filter(u => (u.role || "student") !== "numerologist" && (u.role || "student") !== "admin"), "Нет учеников/учениц");
       fillSelect(attachTeacherSelect, list.filter(u => u.role === "numerologist"), "Нет учителей");
     }
