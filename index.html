@@ -3362,7 +3362,7 @@ async function renderAccess() {
             <tr><td>Библиотека нумеролога</td><td>${itemStatus(scope.library)}</td></tr>
             <tr><td>Мои расчёты</td><td>${itemStatus(scope.my_calculations)}</td></tr>
             <tr><td>Доступы</td><td>${itemStatus(scope.access)}</td></tr>
-            <tr><td>Статистика</td><td>${itemStatus(scope.statistics)}</td></tr>
+            <tr><td>Отчёты и статистика</td><td>${itemStatus(scope.statistics)}</td></tr>
           </tbody>
         </table>
         </div>`;
@@ -3459,7 +3459,7 @@ async function renderAccess() {
           </div>
           <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;min-width:220px;">
-              <input type="checkbox" id="scopeStatistics" class="scope-flag"> Статистика
+              <input type="checkbox" id="scopeStatistics" class="scope-flag"> Отчёты и статистика
             </label>
             ${termSelectHtml("", 'id="scopeStatisticsTerm"')}
           </div>
@@ -3657,20 +3657,17 @@ async function loadAdminUsers() {
   box.innerHTML = backLink + `
     <div style="overflow-x:auto;">
     <table class="data-table">
-      <thead><tr><th>Пользователь</th><th>Email</th><th>Телефон</th><th>Роль</th><th>Зарегистрирован</th>${isRealAdmin ? "<th>Students</th><th>Teacher</th>" : ""}<th>Статус</th>${isRealAdmin ? "<th></th>" : ""}</tr></thead>
+      <thead><tr><th>Пользователь</th><th>Email</th><th>Телефон</th><th>Роль</th><th>Зарегистрирован</th>${isRealAdmin ? "<th>Код учителя</th><th>Прикреплён к учителю</th>" : ""}<th>Статус</th>${isRealAdmin ? "<th></th>" : ""}</tr></thead>
       <tbody>
         ${users.map(function (user) {
-          const isClickableNumerologist = isRealAdmin && user.role === "numerologist" && !adminUsersFilterTeacher;
-          const studentsLinkCell = isClickableNumerologist
-            ? `<td><a href="javascript:void(0)" onclick='viewNumerologistStudents(${JSON.stringify(user.id)},${JSON.stringify(nameOf(user))})' style="color:#d7aa31;">Teacher ${teacherNumber[user.id]} — посмотреть →</a></td>`
-            : `<td>—</td>`;
+          const codeCell = user.role === "numerologist" ? `<td style="font-family:Georgia,serif;letter-spacing:1px;color:#f6d66c;">${escapeHtml(user.id.slice(0, 8).toUpperCase())}</td>` : `<td>—</td>`;
           return `<tr>
             <td>${isRealAdmin ? `<a href="javascript:void(0)" style="color:#f5f0df;text-decoration:underline;" onclick='showUserDetailModal(${JSON.stringify(user.id)})'>${escapeHtml(nameOf(user))}</a>` : escapeHtml(nameOf(user))}</td>
             <td>${escapeHtml(user.email || "—")}</td>
             <td>${escapeHtml(user.phone || "—")}</td>
             <td>${escapeHtml(roleLabel(user.role))}</td>
             <td>${user.created_at ? new Date(user.created_at).toLocaleDateString("ru-RU") : "—"}</td>
-            ${isRealAdmin ? `${studentsLinkCell}<td>${escapeHtml(teacherName(user.teacher_id))}</td>` : ""}
+            ${isRealAdmin ? `${codeCell}<td>${escapeHtml(teacherName(user.teacher_id))}</td>` : ""}
             <td>${escapeHtml(user.status || "—")}</td>
             ${isRealAdmin ? `<td><button type="button" class="material-manager-button" style="width:auto;padding:6px 10px;font-size:12px;" onclick='deleteUserAccount(${JSON.stringify(user.id)}, ${JSON.stringify(nameOf(user))})'>Удалить</button></td>` : ""}
           </tr>`;
@@ -3754,7 +3751,8 @@ async function showUserDetailModal(userId) {
         ${profile.role === "numerologist" ? `<tr><td style="padding:6px 0;color:#8a8098;">Код учителя</td><td style="padding:6px 0;font-family:Georgia,serif;letter-spacing:2px;color:#f6d66c;">${escapeHtml(userId.slice(0, 8).toUpperCase())}</td></tr>` : ""}
         <tr><td style="padding:6px 0;color:#8a8098;">Зарегистрирован</td><td style="padding:6px 0;">${profile.created_at ? new Date(profile.created_at).toLocaleDateString("ru-RU") : "—"}</td></tr>
       </table>
-      <div style="text-align:right;margin-top:16px;">
+      <div style="text-align:right;margin-top:16px;display:flex;justify-content:${profile.role === "numerologist" ? "space-between" : "flex-end"};">
+        ${profile.role === "numerologist" ? `<button type="button" class="material-manager-button" style="width:auto;" onclick='closeModal();viewNumerologistStudents(${JSON.stringify(userId)},${JSON.stringify([profile.last_name, profile.first_name].filter(Boolean).join(" "))})'>Посмотреть учеников</button>` : ""}
         <button type="button" class="material-manager-button" style="width:auto;" onclick="closeModal()">Закрыть</button>
       </div>`;
   } catch (error) {
@@ -3988,20 +3986,17 @@ async function renderStatistics() {
         <div class="stats-grid" id="calcByDirectionStats">Загрузка...</div>
       </div>
       ${isRealAdmin ? `
-      <div class="stats-grid" id="platformStats">
-        <div class="stat-card"><span>Материалы</span><strong>…</strong></div>
-        <div class="stat-card"><span>Пособия</span><strong>…</strong></div>
-        <div class="stat-card"><span>Видео</span><strong>…</strong></div>
-        <div class="stat-card"><span>Тесты</span><strong>…</strong></div>
+      <div class="table-card" style="margin-bottom:18px;">
+        <div class="table-title">У кого скоро заканчивается доступ (7 дней)</div>
+        <div id="expiringSoonTable">Загрузка...</div>
+      </div>
+      <div class="table-card" style="margin-bottom:18px;">
+        <div class="table-title">Рейтинг учителей по количеству учеников/учениц</div>
+        <div id="teacherLeaderboardTable">Загрузка...</div>
       </div>
       <div class="table-card">
-        <div class="table-title">Разделы платформы</div>
-        <div style="overflow-x:auto;">
-        <table class="data-table">
-          <thead><tr><th>Раздел</th><th>Количество материалов</th><th>Состояние</th></tr></thead>
-          <tbody id="sectionStats"><tr><td colspan="3">Загрузка...</td></tr></tbody>
-        </table>
-        </div>
+        <div class="table-title">Статистика по тестам</div>
+        <div id="testStatsTable">Загрузка...</div>
       </div>` : ""}
     </div>`;
 
@@ -4039,26 +4034,59 @@ async function renderStatistics() {
 
     if (!isRealAdmin) return;
 
-    // ---- Материалы платформы (только у администратора) ----
-    const { data, error } = await supabaseClient.from(PLATFORM_MATERIALS_TABLE).select("section");
-    if (error) throw error;
+    // ---- У кого скоро заканчивается доступ ----
+    const { data: periods } = await supabaseClient.from("access_periods").select("profile_id, granted_scope");
+    const { data: allProfilesForNames } = await supabaseClient.from("profiles").select("id, first_name, last_name, email");
+    const nameById = Object.fromEntries((allProfilesForNames || []).map((p) => [p.id, [p.last_name, p.first_name].filter(Boolean).join(" ") || p.email]));
 
-    const counts = { manuals: 0, videos: 0, tests: 0 };
-    (data || []).forEach(function (item) {
-      if (Object.prototype.hasOwnProperty.call(counts, item.section)) counts[item.section]++;
-    });
-    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+    const in7days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const expiringRows = [];
+    function scanScopeForExpiry(scope, profileId, path) {
+      if (!scope || typeof scope !== "object") return;
+      if (scope.granted && scope.ends_at) {
+        const endDate = new Date(scope.ends_at);
+        if (endDate >= now && endDate <= in7days) {
+          expiringRows.push({ profileId, label: path, endsAt: scope.ends_at });
+        }
+        return;
+      }
+      Object.keys(scope).forEach((key) => scanScopeForExpiry(scope[key], profileId, path ? path + " / " + key : key));
+    }
+    (periods || []).forEach((p) => scanScopeForExpiry(p.granted_scope, p.profile_id, ""));
+    expiringRows.sort((a, b) => new Date(a.endsAt) - new Date(b.endsAt));
 
-    document.getElementById("platformStats").innerHTML = `
-      <div class="stat-card"><span>Материалы</span><strong>${total}</strong></div>
-      <div class="stat-card"><span>Пособия</span><strong>${counts.manuals}</strong></div>
-      <div class="stat-card"><span>Видео</span><strong>${counts.videos}</strong></div>
-      <div class="stat-card"><span>Тесты</span><strong>${counts.tests}</strong></div>`;
+    document.getElementById("expiringSoonTable").innerHTML = expiringRows.length
+      ? `<div style="overflow-x:auto;"><table class="data-table"><thead><tr><th>Пользователь</th><th>Что заканчивается</th><th>Дата окончания</th></tr></thead><tbody>
+          ${expiringRows.map(r => `<tr><td><a href="javascript:void(0)" style="color:#d7aa31;" onclick='showUserDetailModal(${JSON.stringify(r.profileId)})'>${escapeHtml(nameById[r.profileId] || r.profileId)}</a></td><td>${escapeHtml(r.label)}</td><td>${new Date(r.endsAt).toLocaleDateString("ru-RU")}</td></tr>`).join("")}
+        </tbody></table></div>`
+      : `<div class="empty-table">В ближайшие 7 дней ничего не заканчивается.</div>`;
 
-    document.getElementById("sectionStats").innerHTML = `
-      <tr><td>Методические пособия</td><td>${counts.manuals}</td><td>${counts.manuals ? "Есть материалы" : "Пока пусто"}</td></tr>
-      <tr><td>Видео</td><td>${counts.videos}</td><td>${counts.videos ? "Есть материалы" : "Пока пусто"}</td></tr>
-      <tr><td>Тесты</td><td>${counts.tests}</td><td>${counts.tests ? "Есть материалы" : "Пока пусто"}</td></tr>`;
+    // ---- Рейтинг учителей ----
+    const { data: allProfilesFull } = await supabaseClient.from("profiles").select("id, first_name, last_name, email, role, teacher_id");
+    const teachers = (allProfilesFull || []).filter((p) => p.role === "numerologist");
+    const teacherCounts = teachers.map((t) => ({
+      id: t.id,
+      name: [t.last_name, t.first_name].filter(Boolean).join(" ") || t.email,
+      count: (allProfilesFull || []).filter((p) => p.teacher_id === t.id).length,
+    })).sort((a, b) => b.count - a.count);
+
+    document.getElementById("teacherLeaderboardTable").innerHTML = teacherCounts.length
+      ? `<div style="overflow-x:auto;"><table class="data-table"><thead><tr><th>Учитель</th><th>Учеников/учениц</th></tr></thead><tbody>
+          ${teacherCounts.map(t => `<tr><td><a href="javascript:void(0)" style="color:#d7aa31;" onclick='showUserDetailModal(${JSON.stringify(t.id)})'>${escapeHtml(t.name)}</a></td><td>${t.count}</td></tr>`).join("")}
+        </tbody></table></div>`
+      : `<div class="empty-table">Пока нет учителей.</div>`;
+
+    // ---- Статистика по тестам ----
+    const { data: attempts } = await supabaseClient
+      .from("test_attempts")
+      .select("user_id, direction, score, total_questions, completed_at")
+      .order("completed_at", { ascending: false });
+
+    document.getElementById("testStatsTable").innerHTML = (attempts && attempts.length)
+      ? `<div style="overflow-x:auto;"><table class="data-table"><thead><tr><th>Пользователь</th><th>Направление</th><th>Результат</th><th>Дата</th></tr></thead><tbody>
+          ${attempts.map(a => `<tr><td><a href="javascript:void(0)" style="color:#d7aa31;" onclick='showUserDetailModal(${JSON.stringify(a.user_id)})'>${escapeHtml(nameById[a.user_id] || a.user_id)}</a></td><td>${escapeHtml(DIRECTION_NAMES[a.direction] || a.direction)}</td><td>${a.score} из ${a.total_questions}</td><td>${new Date(a.completed_at).toLocaleDateString("ru-RU")}</td></tr>`).join("")}
+        </tbody></table></div>`
+      : `<div class="empty-table">Пока никто не проходил тесты.</div>`;
   } catch (error) {
     console.error("Ошибка статистики:", error);
   }
