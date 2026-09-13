@@ -3148,6 +3148,30 @@ async function saveLibraryLink(id) {
 
 const DIRECTION_ORDER = ["adult", "child", "compatibility", "vedic", "pythagoras"];
 
+function paginatedTableHtml(containerId, headerHtml, rowsHtmlArray, pageSize) {
+  pageSize = pageSize || 15;
+  window["__paginatedRows_" + containerId] = rowsHtmlArray;
+  return renderPaginatedPage(containerId, headerHtml, 1, pageSize);
+}
+
+function renderPaginatedPage(containerId, headerHtml, page, pageSize) {
+  const rows = window["__paginatedRows_" + containerId] || [];
+  if (!rows.length) return `<div class="empty-table">Пока пусто.</div>`;
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+  page = Math.min(Math.max(1, page), totalPages);
+  const start = (page - 1) * pageSize;
+  const pageRows = rows.slice(start, start + pageSize);
+  const pagerHtml = totalPages > 1 ? `<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:14px;">
+    ${Array.from({ length: totalPages }, (_, i) => i + 1).map(p => `<button type="button" onclick='setPaginatedPage(${JSON.stringify(containerId)}, ${JSON.stringify(headerHtml)}, ${p}, ${pageSize})' style="padding:6px 12px;border-radius:8px;border:1px solid ${p === page ? "#f6d66c" : "rgba(225,180,52,.4)"};background:${p === page ? "linear-gradient(90deg,#713199,#5d2789)" : "transparent"};color:#f5d46b;cursor:pointer;font-size:13px;">${p}</button>`).join("")}
+  </div>` : "";
+  return `<div style="overflow-x:auto;"><table class="data-table">${headerHtml}<tbody>${pageRows.join("")}</tbody></table></div>${pagerHtml}`;
+}
+
+function setPaginatedPage(containerId, headerHtml, page, pageSize) {
+  const el = document.getElementById(containerId);
+  if (el) el.innerHTML = renderPaginatedPage(containerId, headerHtml, page, pageSize);
+}
+
 function calcStatsByDirection(rows) {
   const counts = Object.fromEntries(DIRECTION_ORDER.map((d) => [d, 0]));
   rows.forEach((r) => { if (counts[r.direction] !== undefined) counts[r.direction]++; });
@@ -3159,12 +3183,8 @@ function calcStatsByDirection(rows) {
 
 function calcHistoryTable(rows, showEmail) {
   if (!rows.length) return `<div class="empty-table">Пока нет сохранённых расчётов.</div>`;
-  return `
-    <div style="overflow-x:auto;">
-    <table class="data-table">
-      <thead><tr>${showEmail ? "<th>Email</th>" : ""}<th>Дата и время</th><th>Направление</th><th>Клиент</th><th>Дата рождения</th><th></th></tr></thead>
-      <tbody>
-        ${rows.map(r => `
+  const headerHtml = `<thead><tr>${showEmail ? "<th>Email</th>" : ""}<th>Дата и время</th><th>Направление</th><th>Клиент</th><th>Дата рождения</th><th></th></tr></thead>`;
+  const rowsHtml = rows.map(r => `
           <tr>
             ${showEmail ? `<td><a href="javascript:void(0)" style="color:#8a8098;text-decoration:underline;" onclick='showUserDetailModal(${JSON.stringify(r.user_id)})'>${escapeHtml(r._email || "—")}</a></td>` : ""}
             <td>${new Date(r.created_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}</td>
@@ -3172,10 +3192,8 @@ function calcHistoryTable(rows, showEmail) {
             <td>${escapeHtml(r.person_name || (r.last_name ? r.last_name + " " + (r.first_name || "") : "—"))}</td>
             <td>${escapeHtml(r.birth_date || "—")}${r.birth_date2 ? " / " + escapeHtml(r.birth_date2) : ""}</td>
             <td><a href="javascript:void(0)" style="color:#d7aa31;" onclick='reopenCalculation(${JSON.stringify(r).replace(/'/g, "&#39;")})'>Скачать →</a></td>
-          </tr>`).join("")}
-      </tbody>
-    </table>
-    </div>`;
+          </tr>`);
+  return paginatedTableHtml("myCalcTable", headerHtml, rowsHtml, 15);
 }
 
 async function renderMyCalculations() {
@@ -3863,25 +3881,44 @@ async function loadDeletedUsersLog() {
 
   const { data, error } = await query;
   if (error) { box.innerHTML = `<div class="empty-table">Не удалось загрузить журнал.</div>`; return; }
-  const rows = data || [];
+
+  const restorable = (data || []).map(r => ({
+    email: r.email, name: [r.last_name, r.first_name].filter(Boolean).join(" "),
+    role: r.role, registered_at: r.created_at, deleted_at: r.deleted_at,
+    restoreId: r.id, canRestore: true,
+  }));
+
+  let legacy = [];
+  if (isRealAdmin) {
+    // Старые аккаунты, удалённые ещё до того, как удаление стало обратимым — они удалены
+    // окончательно и восстановлению не подлежат, но остаются в журнале как история.
+    const { data: legacyData } = await supabaseClient
+      .from("deleted_users_log")
+      .select("email, first_name, last_name, role, registered_at, deleted_at")
+      .order("deleted_at", { ascending: false });
+    legacy = (legacyData || []).map(r => ({
+      email: r.email, name: [r.last_name, r.first_name].filter(Boolean).join(" "),
+      role: r.role, registered_at: r.registered_at, deleted_at: r.deleted_at,
+      restoreId: null, canRestore: false,
+    }));
+  }
+
+  const rows = [...restorable, ...legacy].sort((a, b) => new Date(b.deleted_at) - new Date(a.deleted_at));
   if (!rows.length) { box.innerHTML = `<div class="empty-table">Пока никто не удалялся.</div>`; return; }
-  box.innerHTML = `
-    <div style="overflow-x:auto;">
-    <table class="data-table">
-      <thead><tr><th>Email</th><th>Имя</th><th>Роль</th><th>Зарегистрирован</th><th>Удалён</th><th></th></tr></thead>
-      <tbody>
-        ${rows.map(r => `
+
+  const headerHtml = `<thead><tr><th>Email</th><th>Имя</th><th>Роль</th><th>Зарегистрирован</th><th>Удалён</th><th></th></tr></thead>`;
+  const rowsHtml = rows.map(r => `
           <tr>
             <td>${escapeHtml(r.email || "—")}</td>
-            <td>${escapeHtml([r.last_name, r.first_name].filter(Boolean).join(" ") || "—")}</td>
+            <td>${escapeHtml(r.name || "—")}</td>
             <td>${escapeHtml(roleLabel(r.role))}</td>
-            <td>${r.created_at ? new Date(r.created_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}</td>
+            <td>${r.registered_at ? new Date(r.registered_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}</td>
             <td>${r.deleted_at ? new Date(r.deleted_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}</td>
-            <td><button type="button" class="material-manager-button" style="width:auto;padding:6px 10px;font-size:12px;" onclick='restoreUserAccount(${JSON.stringify(r.id)}, ${JSON.stringify([r.last_name, r.first_name].filter(Boolean).join(" ") || r.email)})'>Восстановить</button></td>
-          </tr>`).join("")}
-      </tbody>
-    </table>
-    </div>`;
+            <td>${r.canRestore
+              ? `<button type="button" class="material-manager-button" style="width:auto;padding:6px 10px;font-size:12px;" onclick='restoreUserAccount(${JSON.stringify(r.restoreId)}, ${JSON.stringify(r.name || r.email)})'>Восстановить</button>`
+              : `<span style="color:#8a8098;font-size:12px;">Удалён навсегда</span>`}</td>
+          </tr>`);
+  box.innerHTML = paginatedTableHtml("deletedUsersTable", headerHtml, rowsHtml, 15);
 }
 
 async function restoreUserAccount(userId, name) {
