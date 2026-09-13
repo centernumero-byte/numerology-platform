@@ -3360,6 +3360,12 @@ async function renderAccess() {
         <div class="dashboard-head">
           <div><h2>Доступы</h2><p>Что вам открыто и до какого срока.</p></div>
         </div>
+        <div class="table-card" style="margin-bottom:18px;">
+          <table style="width:100%;border-collapse:collapse;">
+            <tr><td style="padding:6px 0;color:#8a8098;">Дата регистрации</td><td style="padding:6px 0;" id="studentRegisteredAt">…</td></tr>
+            <tr><td style="padding:6px 0;color:#8a8098;">Доступ открыт до</td><td style="padding:6px 0;" id="studentAccessUntil">…</td></tr>
+          </table>
+        </div>
         <div class="table-card" id="studentTeacherCodeBox" style="margin-bottom:18px;">
           <div class="table-title">Код учителя</div>
           <p style="margin:0 0 10px;">Если вы получили код от учителя — введите его здесь, и вас прикрепят к нему:</p>
@@ -3376,16 +3382,29 @@ async function renderAccess() {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session) return;
 
+      const { data: myProfile } = await supabaseClient.from("profiles").select("created_at").eq("id", session.user.id).single();
+      const registeredLabel = document.getElementById("studentRegisteredAt");
+      if (registeredLabel) registeredLabel.textContent = myProfile?.created_at ? new Date(myProfile.created_at).toLocaleDateString("ru-RU") : "—";
+
       const { data, error } = await supabaseClient
         .from("access_periods")
-        .select("status, payment_status, starts_at, ends_at, is_unlimited, granted_scope")
+        .select("status, payment_status, starts_at, ends_at, is_unlimited, granted_scope, created_at")
         .eq("profile_id", session.user.id)
-        .order("starts_at", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(10);
       if (error) throw error;
 
       const activePeriods = (data || []).filter(hasActivePlatformAccess);
       const scope = activePeriods[0]?.granted_scope || {};
+
+      const untilLabel = document.getElementById("studentAccessUntil");
+      if (untilLabel) {
+        const latest = activePeriods[0];
+        if (!latest) untilLabel.innerHTML = `<span style="color:#c9baa0;">доступ не выдан</span>`;
+        else if (latest.is_unlimited) untilLabel.innerHTML = `<span style="color:#8fe3a1;">бессрочно</span>`;
+        else if (latest.ends_at) untilLabel.innerHTML = `<span style="color:#8fe3a1;">${new Date(latest.ends_at).toLocaleDateString("ru-RU")}</span>`;
+        else untilLabel.textContent = "—";
+      }
 
       const itemStatus = (item) => {
         if (!item || !item.granted) return `<span style="color:#c9baa0;">закрыто</span>`;
@@ -3665,9 +3684,9 @@ async function loadAdminUsers() {
   if (users.length) {
     const { data: periods } = await supabaseClient
       .from("access_periods")
-      .select("profile_id, status, ends_at, is_unlimited, payment_status, starts_at")
+      .select("profile_id, status, ends_at, is_unlimited, payment_status, starts_at, created_at")
       .in("profile_id", users.map(u => u.id))
-      .order("starts_at", { ascending: false });
+      .order("created_at", { ascending: false });
     (periods || []).forEach(function (p) {
       if (!accessByUser[p.profile_id]) accessByUser[p.profile_id] = p; // первый попавшийся — самый свежий, т.к. отсортировано по starts_at desc
     });
@@ -3916,9 +3935,9 @@ async function loadDeletedUsersLog() {
   if (activeCandidates.length) {
     const { data: periods } = await supabaseClient
       .from("access_periods")
-      .select("profile_id, status, ends_at, starts_at, is_unlimited, payment_status")
+      .select("profile_id, status, ends_at, starts_at, is_unlimited, payment_status, created_at")
       .in("profile_id", activeCandidates.map(p => p.id))
-      .order("starts_at", { ascending: false });
+      .order("created_at", { ascending: false });
     const latestByUser = {};
     (periods || []).forEach(p => { if (!latestByUser[p.profile_id]) latestByUser[p.profile_id] = p; });
     expired = activeCandidates
@@ -4107,9 +4126,9 @@ async function loadScopeForSelectedUser() {
   if (!userId) return;
   const { data, error } = await supabaseClient
     .from("access_periods")
-    .select("status, payment_status, starts_at, ends_at, is_unlimited, granted_scope")
+    .select("status, payment_status, starts_at, ends_at, is_unlimited, granted_scope, created_at")
     .eq("profile_id", userId)
-    .order("starts_at", { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(10);
   if (error) { console.error("Ошибка загрузки текущего доступа:", error); return; }
   const activePeriods = (data || []).filter(hasActivePlatformAccess);
@@ -4180,15 +4199,33 @@ async function grantPlatformAccess() {
     .eq("status", "active");
   if (closeError) console.warn("Не удалось закрыть старый доступ:", closeError);
 
+  // Общий срок записи считаем по факту выбранных галочек: если ХОТЯ БЫ ОДНА не бессрочная —
+  // запись целиком считается срочной, и её датой окончания берём САМУЮ ПОЗДНЮЮ из выбранных сроков
+  // (чтобы «Доступ истёк» в общей таблице срабатывал только когда реально закончились ВСЕ пункты).
+  let overallUnlimited = true;
+  let overallEndsAt = null;
+  Object.keys(scope).forEach(function (key) {
+    const val = scope[key];
+    const items = (val && typeof val.granted === "boolean") ? [val] : Object.values(val || {});
+    items.forEach(function (item) {
+      if (!item || !item.granted) return;
+      if (item.unlimited) return;
+      overallUnlimited = false;
+      if (item.ends_at && (!overallEndsAt || new Date(item.ends_at) > new Date(overallEndsAt))) {
+        overallEndsAt = item.ends_at;
+      }
+    });
+  });
+
   // Срок хранится по каждому пункту внутри granted_scope,
-  // поэтому сама запись access_periods — просто контейнер без общего срока.
+  // общая запись access_periods дублирует самый долгий срок — для показа в общей таблице пользователей.
   const { error } = await supabaseClient.from("access_periods").insert({
     profile_id: userId,
     status: "active",
     payment_status: "paid",
     starts_at: startsAt.toISOString(),
-    ends_at: null,
-    is_unlimited: true,
+    ends_at: overallUnlimited ? null : overallEndsAt,
+    is_unlimited: overallUnlimited,
     granted_scope: scope
   });
 
@@ -4655,9 +4692,9 @@ async function checkAuth() {
     {
       const { data: access, error: accessError } = await supabaseClient
         .from("access_periods")
-        .select("id, status, starts_at, ends_at, is_unlimited, payment_status, granted_scope")
+        .select("id, status, starts_at, ends_at, is_unlimited, payment_status, granted_scope, created_at")
         .eq("profile_id", user.id)
-        .order("starts_at", { ascending: false });
+        .order("created_at", { ascending: false });
       if (accessError) {
         console.error("Ошибка проверки доступа:", accessError);
       } else {
