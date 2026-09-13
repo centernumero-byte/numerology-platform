@@ -546,6 +546,13 @@ function escapeHtml(value) {
     .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 function showNoAccessMessage() {
+  const meta = window.currentUserAccessMeta || {};
+  if (meta.isExpired && meta.endsAt) {
+    const startedLabel = meta.startsAt ? new Date(meta.startsAt).toLocaleDateString("ru-RU") : null;
+    const endedLabel = new Date(meta.endsAt).toLocaleDateString("ru-RU");
+    customAlert(`Истёк срок доступа.${startedLabel ? " Доступ был открыт с " + startedLabel + "," : ""} истёк ${endedLabel}. Чтобы продлить, обратитесь к администратору или своему учителю.`);
+    return;
+  }
   customAlert("У вас нет доступа к этому разделу. Обратитесь к администратору или учителю.");
 }
 
@@ -3874,30 +3881,61 @@ async function loadDeletedUsersLog() {
 
   let query = supabaseClient
     .from("profiles")
-    .select("id, first_name, last_name, email, role, created_at, deleted_at, deleted_by, teacher_id")
-    .eq("status", "deleted")
+    .select("id, first_name, last_name, email, role, created_at, deleted_at, deleted_by, teacher_id, status")
+    .in("status", ["deleted", "active"])
     .order("deleted_at", { ascending: false });
   if (!isRealAdmin) query = query.eq("teacher_id", session.user.id);
 
   const { data, error } = await query;
   if (error) { box.innerHTML = `<div class="empty-table">Не удалось загрузить журнал.</div>`; return; }
 
+  const allProfiles = data || [];
+  const deletedProfiles = allProfiles.filter(p => p.status === "deleted");
+  const activeCandidates = allProfiles.filter(p => p.status !== "deleted" && (p.role === "student" || p.role === "numerologist"));
+
   // Подтягиваем имена тех, кто удалял (админ или конкретный учитель), одним запросом.
-  const deleterIds = [...new Set((data || []).map(r => r.deleted_by).filter(Boolean))];
+  const deleterIds = [...new Set(deletedProfiles.map(r => r.deleted_by).filter(Boolean))];
   const deleterNameById = {};
   if (deleterIds.length) {
     const { data: deleters } = await supabaseClient.from("profiles").select("id, role, first_name, last_name, email").in("id", deleterIds);
     (deleters || []).forEach(d => {
-      deleterNameById[d.id] = d.role === "admin" ? "Админ" : ("Учитель: " + ([d.last_name, d.first_name].filter(Boolean).join(" ") || d.email));
+      deleterNameById[d.id] = d.role === "admin" ? "Admin" : ("Teacher: " + ([d.last_name, d.first_name].filter(Boolean).join(" ") || d.email));
     });
   }
 
-  const restorable = (data || []).map(r => ({
+  const restorable = deletedProfiles.map(r => ({
     id: r.id, email: r.email, name: [r.last_name, r.first_name].filter(Boolean).join(" "),
-    role: r.role, registered_at: r.created_at, deleted_at: r.deleted_at,
-    deletedByLabel: deleterNameById[r.deleted_by] || "—",
-    restoreId: r.id, canRestore: true,
+    role: r.role, registered_at: r.created_at, sortDate: r.deleted_at,
+    statusLabel: "Удалён " + (r.deleted_at ? new Date(r.deleted_at).toLocaleDateString("ru-RU") : ""),
+    accessLabel: deleterNameById[r.deleted_by] || "—",
+    action: `<button type="button" class="material-manager-button" style="width:auto;padding:6px 10px;font-size:12px;" onclick='restoreUserAccount(${JSON.stringify(r.id)}, ${JSON.stringify([r.last_name, r.first_name].filter(Boolean).join(" ") || r.email)})'>Восстановить</button>`,
   }));
+
+  // Истёкший срок доступа — не удаление, но тоже требует внимания: показываем в том же журнале отдельной пометкой.
+  let expired = [];
+  if (activeCandidates.length) {
+    const { data: periods } = await supabaseClient
+      .from("access_periods")
+      .select("profile_id, status, ends_at, starts_at, is_unlimited, payment_status")
+      .in("profile_id", activeCandidates.map(p => p.id))
+      .order("starts_at", { ascending: false });
+    const latestByUser = {};
+    (periods || []).forEach(p => { if (!latestByUser[p.profile_id]) latestByUser[p.profile_id] = p; });
+    expired = activeCandidates
+      .map(p => ({ profile: p, period: latestByUser[p.id] }))
+      .filter(x => x.period && !x.period.is_unlimited && !hasActivePlatformAccess(x.period))
+      .map(({ profile: r, period }) => {
+        const days = Math.max(1, Math.round((new Date(period.ends_at) - new Date(period.starts_at)) / 86400000));
+        const durationLabel = days >= 28 ? Math.round(days / 30) + " мес." : days + " дн.";
+        return {
+          id: r.id, email: r.email, name: [r.last_name, r.first_name].filter(Boolean).join(" "),
+          role: r.role, registered_at: r.created_at, sortDate: period.ends_at,
+          statusLabel: "Истёк срок " + new Date(period.ends_at).toLocaleDateString("ru-RU"),
+          accessLabel: `Истёк срок (${durationLabel})`,
+          action: `<button type="button" class="material-manager-button" style="width:auto;padding:6px 10px;font-size:12px;" onclick='scrollToGrantAccess(${JSON.stringify(r.id)})'>Возобновить</button>`,
+        };
+      });
+  }
 
   let legacy = [];
   if (isRealAdmin) {
@@ -3910,31 +3948,30 @@ async function loadDeletedUsersLog() {
     const legacyDeleterIds = [...new Set((legacyData || []).map(r => r.deleted_by).filter(Boolean).filter(id => !deleterNameById[id]))];
     if (legacyDeleterIds.length) {
       const { data: moreDeleters } = await supabaseClient.from("profiles").select("id, role, first_name, last_name, email").in("id", legacyDeleterIds);
-      (moreDeleters || []).forEach(d => { deleterNameById[d.id] = d.role === "admin" ? "Админ" : ("Учитель: " + ([d.last_name, d.first_name].filter(Boolean).join(" ") || d.email)); });
+      (moreDeleters || []).forEach(d => { deleterNameById[d.id] = d.role === "admin" ? "Admin" : ("Teacher: " + ([d.last_name, d.first_name].filter(Boolean).join(" ") || d.email)); });
     }
     legacy = (legacyData || []).map(r => ({
       id: null, email: r.email, name: [r.last_name, r.first_name].filter(Boolean).join(" "),
-      role: r.role, registered_at: r.registered_at, deleted_at: r.deleted_at,
-      deletedByLabel: deleterNameById[r.deleted_by] || "—",
-      restoreId: null, canRestore: false,
+      role: r.role, registered_at: r.registered_at, sortDate: r.deleted_at,
+      statusLabel: "Удалён " + (r.deleted_at ? new Date(r.deleted_at).toLocaleDateString("ru-RU") : ""),
+      accessLabel: deleterNameById[r.deleted_by] || "—",
+      action: `<span style="color:#8a8098;font-size:12px;">Удалён навсегда</span>`,
     }));
   }
 
-  const rows = [...restorable, ...legacy].sort((a, b) => new Date(b.deleted_at) - new Date(a.deleted_at));
-  if (!rows.length) { box.innerHTML = `<div class="empty-table">Пока никто не удалялся.</div>`; return; }
+  const rows = [...restorable, ...expired, ...legacy].sort((a, b) => new Date(b.sortDate) - new Date(a.sortDate));
+  if (!rows.length) { box.innerHTML = `<div class="empty-table">Пока никто не удалялся и ни у кого не истёк срок.</div>`; return; }
 
-  const headerHtml = `<thead><tr><th>Email</th><th>Имя</th><th>Роль</th><th>Зарегистрирован</th><th>Удалён</th><th>Кем удалён</th><th></th></tr></thead>`;
+  const headerHtml = `<thead><tr><th>Email</th><th>Имя</th><th>Роль</th><th>Зарегистрирован</th><th>Статус</th><th>Доступ</th><th>Действие</th></tr></thead>`;
   const rowsHtml = rows.map(r => `
           <tr>
-            <td>${r.canRestore ? `<a href="javascript:void(0)" style="color:#8a8098;text-decoration:underline;" onclick='showUserDetailModal(${JSON.stringify(r.id)})'>${escapeHtml(r.email || "—")}</a>` : escapeHtml(r.email || "—")}</td>
+            <td>${r.id ? `<a href="javascript:void(0)" style="color:#8a8098;text-decoration:underline;" onclick='showUserDetailModal(${JSON.stringify(r.id)})'>${escapeHtml(r.email || "—")}</a>` : escapeHtml(r.email || "—")}</td>
             <td>${escapeHtml(r.name || "—")}</td>
             <td>${escapeHtml(roleLabel(r.role))}</td>
             <td>${r.registered_at ? new Date(r.registered_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}</td>
-            <td>${r.deleted_at ? new Date(r.deleted_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}</td>
-            <td>${escapeHtml(r.deletedByLabel)}</td>
-            <td>${r.canRestore
-              ? `<button type="button" class="material-manager-button" style="width:auto;padding:6px 10px;font-size:12px;" onclick='restoreUserAccount(${JSON.stringify(r.restoreId)}, ${JSON.stringify(r.name || r.email)})'>Восстановить</button>`
-              : `<span style="color:#8a8098;font-size:12px;">Удалён навсегда</span>`}</td>
+            <td>${escapeHtml(r.statusLabel)}</td>
+            <td>${escapeHtml(r.accessLabel)}</td>
+            <td>${r.action}</td>
           </tr>`);
   box.innerHTML = paginatedTableHtml("deletedUsersTable", headerHtml, rowsHtml, 15);
 }
@@ -4614,6 +4651,7 @@ async function checkAuth() {
 
     let hasAccess = false;
     let currentGrant = {};
+    let latestPeriod = null;
     {
       const { data: access, error: accessError } = await supabaseClient
         .from("access_periods")
@@ -4623,6 +4661,7 @@ async function checkAuth() {
       if (accessError) {
         console.error("Ошибка проверки доступа:", accessError);
       } else {
+        latestPeriod = (access || [])[0] || null;
         const activePeriods = (access || []).filter(hasActivePlatformAccess);
         hasAccess = activePeriods.length > 0;
         currentGrant = activePeriods[0]?.granted_scope || {};
@@ -4635,6 +4674,12 @@ async function checkAuth() {
     window.currentUserIsManager = isManager;
     window.currentUserHasAccess = hasAccess;
     window.currentUserGrant = currentGrant;
+    window.currentUserAccessMeta = {
+      hasAnyPeriod: !!latestPeriod,
+      isExpired: !!latestPeriod && !latestPeriod.is_unlimited && !hasActivePlatformAccess(latestPeriod),
+      startsAt: latestPeriod?.starts_at || null,
+      endsAt: latestPeriod?.ends_at || null,
+    };
 
     const displayName = profile?.first_name || profile?.last_name || user.user_metadata?.first_name || (isManager ? "Центр Нумера" : userEmail.split("@")[0]) || "Пользователь";
 
