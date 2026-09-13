@@ -184,8 +184,8 @@ body {
   background: linear-gradient(145deg, rgba(48,32,82,.92), rgba(33,22,61,.92));
   box-shadow: inset 0 0 25px rgba(126,65,167,.08);
 }
-.stat-card { padding: 18px; }
-.stat-card span { display: block; color: #eee5d0; font-size: 14px; margin-bottom: 8px; min-height: 34px; }
+.stat-card { padding: 18px; overflow: hidden; }
+.stat-card span { display: block; color: #eee5d0; font-size: 14px; margin-bottom: 8px; min-height: 34px; overflow-wrap: break-word; word-break: break-word; hyphens: auto; }
 .stat-card strong { display: block; color: #f6d66c; font-family: Georgia, serif; font-size: 30px; }
 .table-card { padding: 18px; overflow-x: auto; }
 .table-title { color: #f6d66c; font-family: Georgia, serif; font-size: 22px; margin-bottom: 14px; }
@@ -4274,11 +4274,15 @@ async function renderStatistics() {
       <div class="table-card" style="margin-bottom:18px;">
         <div class="table-title">Рейтинг учителей по количеству учеников/учениц</div>
         <div id="teacherLeaderboardTable">Загрузка...</div>
-      </div>
+      </div>` : ""}
       <div class="table-card">
         <div class="table-title">Статистика по тестам</div>
+        <div style="max-width:340px;margin-bottom:14px;">
+          <label style="display:block;color:#8a8098;font-size:13px;margin-bottom:6px;">Показать по ученику</label>
+          <select id="testStatsUserFilter" class="material-manager-input" style="margin-bottom:0;" onchange="renderTestStatsTable()"><option value="">Все</option></select>
+        </div>
         <div id="testStatsTable">Загрузка...</div>
-      </div>` : ""}
+      </div>
     </div>`;
 
   try {
@@ -4312,6 +4316,36 @@ async function renderStatistics() {
       <div class="stat-card"><span>Активных за месяц</span><strong>${activeThisMonth}</strong></div>`;
 
     document.getElementById("calcByDirectionStats").innerHTML = calcStatsByDirection(relevantHistory);
+
+    // ---- Статистика по тестам (админ — все, учитель — только свои ученики) ----
+    let attemptsQuery = supabaseClient
+      .from("test_attempts")
+      .select("id, user_id, direction, score, total_questions, answers, completed_at")
+      .order("completed_at", { ascending: false });
+    if (!isRealAdmin) attemptsQuery = attemptsQuery.in("user_id", [...clientIds]);
+    const { data: attempts } = await attemptsQuery;
+
+    const attemptUserIds = [...new Set((attempts || []).map(a => a.user_id))];
+    let testNameById = {};
+    if (attemptUserIds.length) {
+      const { data: attemptProfiles } = await supabaseClient.from("profiles").select("id, first_name, last_name, email").in("id", attemptUserIds);
+      testNameById = Object.fromEntries((attemptProfiles || []).map((p) => [p.id, [p.last_name, p.first_name].filter(Boolean).join(" ") || p.email]));
+    }
+    window.__testAttempts = attempts || [];
+    window.__testStatsNameById = testNameById;
+
+    const filterSelect = document.getElementById("testStatsUserFilter");
+    if (filterSelect) {
+      const seen = new Set();
+      const options = ["<option value=\"\">Все</option>"];
+      (attempts || []).forEach(a => {
+        if (seen.has(a.user_id)) return;
+        seen.add(a.user_id);
+        options.push(`<option value="${escapeHtml(a.user_id)}">${escapeHtml(testNameById[a.user_id] || a.user_id)}</option>`);
+      });
+      filterSelect.innerHTML = options.join("");
+    }
+    renderTestStatsTable();
 
     if (!isRealAdmin) return;
 
@@ -4357,20 +4391,61 @@ async function renderStatistics() {
         </tbody></table></div>`
       : `<div class="empty-table">Пока нет учителей.</div>`;
 
-    // ---- Статистика по тестам ----
-    const { data: attempts } = await supabaseClient
-      .from("test_attempts")
-      .select("user_id, direction, score, total_questions, completed_at")
-      .order("completed_at", { ascending: false });
-
-    document.getElementById("testStatsTable").innerHTML = (attempts && attempts.length)
-      ? `<div style="overflow-x:auto;"><table class="data-table"><thead><tr><th>Пользователь</th><th>Направление</th><th>Результат</th><th>Дата</th></tr></thead><tbody>
-          ${attempts.map(a => `<tr><td><a href="javascript:void(0)" style="color:#d7aa31;" onclick='showUserDetailModal(${JSON.stringify(a.user_id)})'>${escapeHtml(nameById[a.user_id] || a.user_id)}</a></td><td>${escapeHtml(DIRECTION_NAMES[a.direction] || a.direction)}</td><td>${a.score} из ${a.total_questions}</td><td>${new Date(a.completed_at).toLocaleDateString("ru-RU")}</td></tr>`).join("")}
-        </tbody></table></div>`
-      : `<div class="empty-table">Пока никто не проходил тесты.</div>`;
   } catch (error) {
     console.error("Ошибка статистики:", error);
   }
+}
+
+function renderTestStatsTable() {
+  const box = document.getElementById("testStatsTable");
+  if (!box) return;
+  const attempts = window.__testAttempts || [];
+  const nameById = window.__testStatsNameById || {};
+  const filterValue = document.getElementById("testStatsUserFilter")?.value || "";
+  const rows = filterValue ? attempts.filter(a => a.user_id === filterValue) : attempts;
+
+  box.innerHTML = rows.length
+    ? `<div style="overflow-x:auto;"><table class="data-table"><thead><tr><th>Пользователь</th><th>Направление</th><th>Результат</th><th>Дата</th><th></th></tr></thead><tbody>
+        ${rows.map(a => `<tr>
+          <td><a href="javascript:void(0)" style="color:#d7aa31;" onclick='showUserDetailModal(${JSON.stringify(a.user_id)})'>${escapeHtml(nameById[a.user_id] || a.user_id)}</a></td>
+          <td>${escapeHtml(DIRECTION_NAMES[a.direction] || a.direction)}</td>
+          <td>${a.score} из ${a.total_questions}</td>
+          <td>${new Date(a.completed_at).toLocaleDateString("ru-RU")}</td>
+          <td><button type="button" class="material-manager-button" style="width:auto;padding:6px 10px;font-size:12px;" onclick='showTestAttemptDetail(${JSON.stringify(a.id)})'>Разбор ответов</button></td>
+        </tr>`).join("")}
+      </tbody></table></div>`
+    : `<div class="empty-table">Пока никто не проходил тесты.</div>`;
+}
+
+async function showTestAttemptDetail(attemptId) {
+  const attempt = (window.__testAttempts || []).find(a => a.id === attemptId);
+  if (!attempt) return;
+
+  showModal(`<h3 style="margin-top:0;color:#f6d66c;font-family:Georgia,serif;">Разбор ответов</h3><div id="testDetailBody">Загрузка...</div>`);
+
+  const { data: questions, error } = await supabaseClient
+    .from("test_questions")
+    .select("id, question_order, question_text, option_a, option_b, option_c, option_d, correct_option")
+    .eq("direction", attempt.direction)
+    .order("question_order", { ascending: true });
+
+  const body = document.getElementById("testDetailBody");
+  if (!body) return;
+  if (error || !questions) { body.innerHTML = `<div class="empty-table">Не удалось загрузить вопросы.</div>`; return; }
+
+  const optionLabel = (q, letter) => ({ a: q.option_a, b: q.option_b, c: q.option_c, d: q.option_d }[letter] || letter);
+
+  body.innerHTML = `<div style="max-height:60vh;overflow-y:auto;">` + questions.map((q, i) => {
+    const given = attempt.answers ? attempt.answers[q.id] : null;
+    const isCorrect = given === q.correct_option;
+    return `<div style="padding:10px 0;border-bottom:1px solid rgba(225,180,52,.18);">
+      <div style="color:#f8e7a8;margin-bottom:6px;">${i + 1}. ${escapeHtml(q.question_text)}</div>
+      <div style="font-size:13px;color:${isCorrect ? "#8fe3a1" : "#ff9d9d"};">
+        ${isCorrect ? "✓ Ответил(а) верно" : "✗ Ответил(а): " + escapeHtml(given ? optionLabel(q, given) : "—")}
+      </div>
+      ${!isCorrect ? `<div style="font-size:13px;color:#8a8098;">Правильный ответ: ${escapeHtml(optionLabel(q, q.correct_option))}</div>` : ""}
+    </div>`;
+  }).join("") + `</div>`;
 }
 
 /* ============================================================
