@@ -1660,8 +1660,8 @@ function downloadHtmlFile(filename, htmlBody) {
       .diagram-wrap { text-align:center; margin-bottom:16px; break-inside: avoid; break-after: page; }
       .diagram-wrap, .diagram-wrap * { color: #3a3245 !important; }
       .accordion-item { border: 1px solid #d7aa31; border-radius: 8px; margin-bottom: 8px; }
-      .accordion-header { background: #f5eee0; color: #5d2789; border: none; padding: 10px 12px; font-family: Georgia, serif; font-size: 16px; display:block; line-height:1.3; }
-      .accordion-body { color: #221733; padding: 10px 12px; line-height: 1.5; white-space: normal; display: block; }
+      .accordion-header { background: #f5eee0; color: #5d2789; border: none; padding: 10px 12px; font-family: Georgia, serif; font-size: 16px; display:block !important; line-height:1.3; }
+      .accordion-body { color: #221733; padding: 10px 12px; line-height: 1.5; white-space: normal; display: block !important; height:auto !important; max-height:none !important; overflow:visible !important; }
       .editable-text { color: #221733 !important; }
       tr, td, img { break-inside: avoid; }
       svg { max-width: 100%; height: auto; }`;
@@ -1734,6 +1734,9 @@ function downloadHtmlFallback(filename, htmlBody) {
   table { border-collapse:collapse; width:100%; margin:8px 0; }
   td { padding:5px 4px; font-size:13px; }
   .diagram-wrap { text-align:center; margin-bottom:16px; }
+  .accordion-item { border: 1px solid #d7aa31; border-radius: 8px; margin-bottom: 8px; }
+  .accordion-header { background: #f5eee0; color: #5d2789; border: none; padding: 10px 12px; font-family: Georgia, serif; font-size: 16px; display:block !important; }
+  .accordion-body { color: #221733; padding: 10px 12px; line-height: 1.5; white-space: normal; display: block !important; height:auto !important; max-height:none !important; overflow:visible !important; }
 </style></head><body>${htmlBody}</body></html>`;
 
   const blob = new Blob([fullHtml], { type: "text/html;charset=utf-8" });
@@ -4824,6 +4827,12 @@ async function checkAuth() {
 }
 
 document.addEventListener("DOMContentLoaded", checkAuth);
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch((error) => console.error("Ошибка регистрации Service Worker:", error));
+  });
+}
 </script>
 </body>
 </html>
