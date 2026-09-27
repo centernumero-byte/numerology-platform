@@ -1157,25 +1157,25 @@ function buildForecastRingSvg(engine, positions, mid) {
     const cx = (p1.x + p2.x) / 2 - mid, cy = (p1.y + p2.y) / 2 - mid;
     if (nx * cx + ny * cy < 0) { nx = -nx; ny = -ny; }
     const r0 = 0.07;
-    lines += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="${lineColor}" stroke-width="1"/>`;
+    lines += `<line class="fr-line" x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="${lineColor}" stroke-width="1"/>`;
     for (let i = 1; i < 8; i++) {
       const row = table[d * 8 + i];
       const t = r0 + (1 - 2 * r0) * (i / 8);
       const x = p1.x + ex * t, y = p1.y + ey * t;
       const isFive = i === 4;
       lines += isFive
-        ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.6" fill="#241640" stroke="${lineColor}" stroke-width="1.1"/>`
-        : `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.6" fill="${lineColor}"/>`;
+        ? `<circle class="fr-five" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.6" fill="#241640" stroke="${lineColor}" stroke-width="1.1"/>`
+        : `<circle class="fr-dot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.6" fill="${lineColor}"/>`;
       const ox = x + nx * 7, oy = y + ny * 7 + (ny > 0.35 ? 6 : ny < -0.35 ? 0 : 3);
-      labels += `<text x="${ox.toFixed(1)}" y="${oy.toFixed(1)}" text-anchor="${anchorFor(nx)}" font-family="${font}" font-size="${isFive ? 10.5 : 9.5}" font-weight="${isFive ? 700 : 400}" fill="${isFive ? numStrong : numColor}">${row.energy1}</text>`;
+      labels += `<text class="${isFive ? "fr-num5" : "fr-num"}" x="${ox.toFixed(1)}" y="${oy.toFixed(1)}" text-anchor="${anchorFor(nx)}" font-family="${font}" font-size="${isFive ? 10.5 : 9.5}" font-weight="${isFive ? 700 : 400}" fill="${isFive ? numStrong : numColor}">${row.energy1}</text>`;
       const ageText = isFive ? `${d * 10 + 5} лет` : fmt(row.label.replace(" лет", ""));
       const ix = x - nx * 6, iy = y - ny * 6 + (-ny > 0.35 ? 5 : -ny < -0.35 ? 0 : 2);
-      labels += `<text x="${ix.toFixed(1)}" y="${iy.toFixed(1)}" text-anchor="${anchorFor(-nx)}" font-family="${font}" font-size="${isFive ? 6.4 : 5.4}" font-weight="${isFive ? 700 : 400}" fill="${isFive ? numColor : ageColor}">${ageText}</text>`;
+      labels += `<text class="${isFive ? "fr-age5" : "fr-age"}" x="${ix.toFixed(1)}" y="${iy.toFixed(1)}" text-anchor="${anchorFor(-nx)}" font-family="${font}" font-size="${isFive ? 6.4 : 5.4}" font-weight="${isFive ? 700 : 400}" fill="${isFive ? numColor : ageColor}">${ageText}</text>`;
     }
     // подпись десятилетия у вершины, снаружи
     const vx = p1.x - mid, vy = p1.y - mid, vl = Math.hypot(vx, vy);
-    lines += `<circle cx="${p1.x.toFixed(1)}" cy="${p1.y.toFixed(1)}" r="1.8" fill="${lineColor}"/>`;
-    labels += `<text x="${(p1.x + vx / vl * 14).toFixed(1)}" y="${(p1.y + vy / vl * 14 + 3).toFixed(1)}" text-anchor="middle" font-family="${font}" font-size="8" font-weight="700" fill="${numColor}">${d * 10} лет</text>`;
+    lines += `<circle class="fr-dot" cx="${p1.x.toFixed(1)}" cy="${p1.y.toFixed(1)}" r="1.8" fill="${lineColor}"/>`;
+    labels += `<text class="fr-dec" x="${(p1.x + vx / vl * 14).toFixed(1)}" y="${(p1.y + vy / vl * 14 + 3).toFixed(1)}" text-anchor="middle" font-family="${font}" font-size="8" font-weight="700" fill="${numColor}">${d * 10} лет</text>`;
   }
   return { lines, labels };
 }
@@ -1400,6 +1400,7 @@ function renderMatrixDiamondDiagram(engine, container, includeHealthMap, purpose
 
   const box = document.createElement("div");
   box.style.cssText = "max-width:" + (engine === window.AdultMatrixEngine ? 860 : 380) + "px;margin:0 auto 20px;text-align:center;";
+  box.className = "dl-matrix-box";
   box.innerHTML = `<div style="color:#c9bfa8;font-size:14px;margin-bottom:10px;">Диаграмма матрицы</div>${svg}`;
   container.insertBefore(box, container.firstChild);
   centerMatrixRingScroll(box);
@@ -1465,6 +1466,7 @@ function renderHealthMapDiagram(v, container, afterNode) {
 
   const box = document.createElement("div");
   box.style.cssText = "max-width:420px;margin:0 auto 30px;";
+  box.className = "dl-health-box";
   box.innerHTML = `
     <div style="color:#c9bfa8;font-size:14px;margin-bottom:10px;text-align:center;">Карта здоровья</div>
     <table style="width:100%;border-collapse:collapse;font-size:13px;color:#eee5d0;border:1px solid rgba(225,180,52,.25);">
@@ -1505,6 +1507,7 @@ function renderPurposeDiagram(diagramValues, container, afterNode, count) {
 
   const box = document.createElement("div");
   box.style.cssText = "max-width:420px;margin:0 auto 30px;";
+  box.className = "dl-purpose-box";
   box.innerHTML = rows.map(function (row) {
     return `<div style="display:flex;justify-content:center;gap:24px;margin-bottom:16px;">${row.join("")}</div>`;
   }).join("");
@@ -1887,7 +1890,29 @@ function downloadHtmlFile(filename, htmlBody) {
       .accordion-body { color: #221733; padding: 10px 12px; line-height: 1.5; white-space: normal; display: block !important; height:auto !important; max-height:none !important; overflow:visible !important; }
       .editable-text { color: #221733 !important; }
       tr, td, img { break-inside: avoid; }
-      svg { max-width: 100%; height: auto; }`;
+      svg { max-width: 100%; height: auto; }
+      /* Диаграмма матрицы с кольцом прогноза: без прокрутки, тёмные цвета на белом */
+      .matrix-ring-scroll { overflow: visible !important; }
+      .matrix-ring-scroll svg { min-width: 0 !important; width: 100% !important; max-width: 680px !important; }
+      .matrix-ring-hint { display: none !important; }
+      .fr-line { stroke: #5b516e !important; }
+      .fr-dot { fill: #5b516e !important; }
+      .fr-five { fill: #fff !important; stroke: #5b516e !important; }
+      .fr-num { fill: #2b2238 !important; }
+      .fr-num5 { fill: #9a6a00 !important; }
+      .fr-age { fill: #5b516e !important; }
+      .fr-age5, .fr-dec { fill: #2b2238 !important; }
+      [stroke^="rgba(225,180,52"] { stroke: #b58a22 !important; }
+      [stroke^="rgba(120,110,150"] { stroke: #6f6488 !important; }
+      [stroke^="rgba(210,70,70"], [stroke^="rgba(200,60,60"] { stroke: #c0392b !important; }
+      [stroke^="rgba(120,80,190"] { stroke: #6b4bb0 !important; }
+      [stroke^="rgba(140,200,90"] { stroke: #4f8f2f !important; }
+      [fill^="rgba(120,80,190"] { fill: #6b4bb0 !important; }
+      [fill^="rgba(200,60,60"] { fill: #c0392b !important; }
+      /* Страница 1 — диаграмма матрицы; страница 2 — карта здоровья и предназначение */
+      .diagram-wrap:has(.dl-matrix-box) { break-inside: auto; }
+      .dl-matrix-box { break-after: page; page-break-after: always; break-inside: avoid; margin-bottom: 0 !important; }
+      .dl-health-box, .dl-purpose-box { break-inside: avoid; page-break-inside: avoid; }`;
 
   const fullHtml = `<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8">
 <title>${title.replace(/[<>]/g, "")}</title>
