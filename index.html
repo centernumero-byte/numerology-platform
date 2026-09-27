@@ -5122,6 +5122,188 @@ async function showTestAttemptDetail(attemptId) {
    АВТОРИЗАЦИЯ
    ============================================================ */
 
+/* ============================================================
+   ПУБЛИЧНАЯ СТРАНИЦА (без регистрации) + ПРОБНЫЙ РАСЧЁТ
+   ============================================================ */
+function showLanding() {
+  document.body.style.visibility = "visible";
+  window.scrollTo(0, 0);
+  const directions = [
+    { icon: "✨", title: "Матрица судьбы", text: "Полная расшифровка по дате рождения: таланты, предназначение, кармические задачи, отношения, финансы, карта здоровья." },
+    { icon: "👶", title: "Детская матрица судьбы", text: "Расшифровка для родителей: характер ребёнка, его способности и то, как помочь ему раскрыться." },
+    { icon: "💞", title: "Совместимость", text: "Матрица пары: общие задачи, сильные стороны союза и точки роста в отношениях." },
+    { icon: "🕉️", title: "Ведическая нумерология", text: "Числа и планеты по дате рождения: характер, сильные стороны, благоприятные периоды." },
+    { icon: "🔢", title: "Квадрат Пифагора", text: "Психоматрица по дате рождения: качества характера, энергия, способности и их баланс." },
+  ];
+  const features = [
+    { icon: "⚡", title: "Расчёт за минуту", text: "Вводите имя и дату рождения — и сразу получаете готовую расшифровку с диаграммой." },
+    { icon: "📘", title: "Методические пособия", text: "Материалы по каждому направлению, чтобы разобраться в методе и считать самостоятельно." },
+    { icon: "📚", title: "Библиотека нумеролога", text: "Собранные в одном месте материалы для изучения и работы." },
+    { icon: "👤", title: "Личный кабинет", text: "Все ваши расчёты сохраняются, к ним можно вернуться в любой момент." },
+    { icon: "📱", title: "Версия для телефона", text: "Платформа удобно работает и на компьютере, и на смартфоне." },
+    { icon: "⬇️", title: "Скачивание расчётов", text: "Готовую расшифровку с диаграммой можно скачать и отправить клиенту." },
+  ];
+  document.body.innerHTML = `
+  <style>
+    .lp { min-height:100vh; background:linear-gradient(135deg,#17102f,#211443,#17102f); color:#f8e7a8; font-family:Arial,sans-serif; }
+    .lp-wrap { max-width:1080px; margin:0 auto; padding:0 20px; }
+    .lp-top { display:flex; justify-content:space-between; align-items:center; padding:22px 0; gap:12px; flex-wrap:wrap; }
+    .lp-logo { font-family:Georgia,serif; color:#f6d66c; font-size:22px; letter-spacing:2px; }
+    .lp-logo small { display:block; font-family:Arial,sans-serif; font-size:12px; letter-spacing:1px; color:#d7aa31; }
+    .lp-btn { display:inline-block; padding:12px 22px; border-radius:10px; font-size:15px; cursor:pointer; border:1px solid #d7aa31; background:linear-gradient(135deg,#6b2f9a,#562283); color:#f6d66c; }
+    .lp-btn.ghost { background:rgba(0,0,0,.2); }
+    .lp-hero { text-align:center; padding:50px 0 40px; }
+    .lp-hero h1 { font-family:Georgia,serif; font-weight:500; color:#f6d66c; font-size:clamp(28px,5vw,46px); margin:0 0 16px; line-height:1.2; }
+    .lp-hero p { font-size:18px; color:#e9dfc6; max-width:720px; margin:0 auto 28px; line-height:1.6; }
+    .lp-h2 { font-family:Georgia,serif; font-weight:500; color:#f6d66c; font-size:30px; text-align:center; margin:50px 0 24px; }
+    .lp-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; }
+    .lp-card { border:1px solid rgba(215,170,49,.45); border-radius:16px; padding:22px; background:linear-gradient(145deg,#302052,#21163d); }
+    .lp-card .ic { font-size:30px; margin-bottom:10px; }
+    .lp-card h3 { font-family:Georgia,serif; font-weight:500; color:#f6d66c; margin:0 0 8px; font-size:20px; }
+    .lp-card p { margin:0; color:#e9dfc6; line-height:1.55; font-size:15px; }
+    .lp-who { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; }
+    .lp-trial { border:1px solid #d7aa31; border-radius:20px; padding:30px; background:linear-gradient(145deg,#302052,#21163d); max-width:760px; margin:0 auto; }
+    .lp-trial label { display:block; color:#f8e7a8; margin-bottom:4px; }
+    .lp-trial input { display:block; width:100%; padding:13px; margin:6px 0 16px; box-sizing:border-box; border:1px solid rgba(225,180,52,.5); border-radius:10px; background:rgba(0,0,0,.2); color:#fff; font-size:16px; }
+    .lp-lock { display:flex; justify-content:space-between; align-items:center; gap:10px; width:100%; text-align:left; padding:16px 18px; margin-bottom:10px; border:1px solid rgba(215,170,49,.35); border-radius:12px; background:rgba(0,0,0,.18); color:#a99fb5; font-family:Georgia,serif; font-size:16px; cursor:pointer; }
+    .lp-lock:hover { border-color:#d7aa31; color:#e9dfc6; }
+    .lp-open { border:1px solid rgba(215,170,49,.6); border-radius:12px; padding:18px; margin-bottom:14px; background:rgba(0,0,0,.18); }
+    .lp-open h3 { font-family:Georgia,serif; font-weight:500; color:#f6d66c; margin:0 0 12px; }
+    .lp-open .num { color:#f6d66c; font-family:Georgia,serif; font-size:20px; margin:10px 0 4px; }
+    .lp-open .txt { white-space:pre-line; line-height:1.6; color:#f8e7a8; }
+    .lp-foot { text-align:center; padding:50px 0 60px; color:#a99fb5; }
+    .lp-modal { position:fixed; inset:0; background:rgba(10,6,24,.75); display:flex; align-items:center; justify-content:center; padding:20px; z-index:1000; }
+    .lp-modal > div { max-width:460px; width:100%; border:1px solid #d7aa31; border-radius:18px; padding:28px; background:linear-gradient(145deg,#302052,#21163d); text-align:center; }
+    @media (max-width:600px) { .lp-trial { padding:20px; } .lp-hero { padding:30px 0; } }
+  </style>
+  <div class="lp">
+    <div class="lp-wrap">
+      <div class="lp-top">
+        <div class="lp-logo">✧ NUMEROLOGY<small>Platform</small></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button type="button" class="lp-btn ghost" onclick="showLogin()">Войти</button>
+          <button type="button" class="lp-btn" onclick="showRegister()">Зарегистрироваться</button>
+        </div>
+      </div>
+
+      <div class="lp-hero">
+        <h1>Платформа для нумерологов<br>и тех, кто изучает нумерологию</h1>
+        <p>Готовые расчёты по дате рождения, методические пособия и библиотека в одном месте. Изучайте нумерологию самостоятельно или ускорьте работу с клиентами.</p>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+          <button type="button" class="lp-btn" onclick="document.getElementById('lpTrial').scrollIntoView({behavior:'smooth'})">Попробовать бесплатно</button>
+          <button type="button" class="lp-btn ghost" onclick="showRegister()">Зарегистрироваться</button>
+        </div>
+      </div>
+
+      <div class="lp-h2">Направления</div>
+      <div class="lp-grid" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr));">
+        ${directions.map(d => `<div class="lp-card"><div class="ic">${d.icon}</div><h3>${d.title}</h3><p>${d.text}</p></div>`).join("")}
+      </div>
+      <p style="text-align:center;color:#a99fb5;margin-top:16px;">Новые направления добавляются постоянно.</p>
+
+      <div class="lp-h2">Что есть на платформе</div>
+      <div class="lp-grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));">
+        ${features.map(d => `<div class="lp-card"><div class="ic">${d.icon}</div><h3>${d.title}</h3><p>${d.text}</p></div>`).join("")}
+      </div>
+
+      <div class="lp-h2">Для кого</div>
+      <div class="lp-who">
+        <div class="lp-card"><div class="ic">🌱</div><h3>Для тех, кто изучает нумерологию</h3><p>Считайте свою матрицу и матрицы близких, читайте готовые расшифровки и разбирайтесь в методе по методическим пособиям в своём темпе.</p></div>
+        <div class="lp-card"><div class="ic">💼</div><h3>Для практикующих нумерологов</h3><p>Расчёт за минуту вместо часов работы вручную: готовая расшифровка с диаграммой, которую можно дополнить своими словами и скачать для клиента.</p></div>
+      </div>
+
+      <div class="lp-h2" id="lpTrial">Попробуйте бесплатно</div>
+      <div class="lp-trial">
+        <p style="margin:0 0 20px;color:#e9dfc6;text-align:center;">Введите имя и дату рождения — получите диаграмму матрицы судьбы и визитную карточку.</p>
+        <label>Имя</label>
+        <input id="lpName" type="text">
+        <label>Дата рождения</label>
+        <input id="lpBirth" type="text" placeholder="ДД.ММ.ГГГГ" maxlength="10" inputmode="numeric" oninput="formatBirthDate(this)">
+        <button type="button" class="lp-btn" style="width:100%;" onclick="runTrialMatrix()">Рассчитать</button>
+        <div id="lpError" style="color:#ff9b9b;min-height:22px;margin-top:10px;text-align:center;"></div>
+        <div id="lpResult"></div>
+      </div>
+
+      <div class="lp-foot">
+        <div class="lp-h2" style="margin-top:0;">Готовы начать?</div>
+        <button type="button" class="lp-btn" onclick="showRegister()">Зарегистрироваться</button>
+        <div style="margin-top:14px;"><button type="button" onclick="showLogin()" style="background:none;border:none;color:#d7aa31;cursor:pointer;font-size:15px;">Уже есть аккаунт? Войти</button></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function showTrialPaywall() {
+  const m = document.createElement("div");
+  m.className = "lp-modal";
+  m.innerHTML = `
+    <div>
+      <div style="font-size:40px;margin-bottom:8px;">🔒</div>
+      <h3 style="font-family:Georgia,serif;font-weight:500;color:#f6d66c;margin:0 0 12px;font-size:22px;">Раздел доступен в полной версии</h3>
+      <p style="color:#e9dfc6;line-height:1.6;margin:0 0 22px;">Полная расшифровка матрицы, все калькуляторы, методические пособия и библиотека открываются на платной основе. Зарегистрируйтесь и приобретите доступ к платформе.</p>
+      <button type="button" class="lp-btn" style="width:100%;margin-bottom:10px;" onclick="showRegister()">Зарегистрироваться</button>
+      <button type="button" class="lp-btn ghost" style="width:100%;margin-bottom:10px;" onclick="showLogin()">Уже есть аккаунт — войти</button>
+      <button type="button" onclick="this.closest('.lp-modal').remove()" style="background:none;border:none;color:#a99fb5;cursor:pointer;font-size:14px;">Закрыть</button>
+    </div>`;
+  m.addEventListener("click", function (e) { if (e.target === m) m.remove(); });
+  document.body.appendChild(m);
+}
+
+function runTrialMatrix() {
+  const name = (document.getElementById("lpName").value || "").trim();
+  const birthDate = (document.getElementById("lpBirth").value || "").trim();
+  const err = document.getElementById("lpError");
+  const out = document.getElementById("lpResult");
+  err.textContent = "";
+  if (!name) { err.textContent = "Введите имя."; return; }
+  if (!isValidBirthDate(birthDate)) { err.textContent = "Введите дату рождения в формате ДД.ММ.ГГГГ."; return; }
+  if (!window.AdultMatrixEngine) { err.textContent = "Расчёт временно недоступен. Попробуйте обновить страницу."; return; }
+  const [day, month, year] = birthDate.split(".").map(Number);
+
+  let res, diagram;
+  try {
+    res = window.AdultMatrixEngine.getFullResult(day, month, year, name);
+    diagram = buildDiagramSvgMarkup(window.AdultMatrixEngine, "Диаграмма", 0, "large");
+  } catch (e) {
+    console.error("Ошибка пробного расчёта:", e);
+    err.textContent = "Не удалось выполнить расчёт.";
+    return;
+  }
+  const blocks = res.rasshifrovka || [];
+  const card = blocks.find(b => /визитн/i.test(b.title)) || blocks[0];
+  const locked = blocks.filter(b => b !== card).map(b => b.title)
+    .concat(["Программы", "Прогноз по годам", "Карта здоровья"]);
+
+  const cardHtml = card ? card.entries.map(function (e) {
+    const num = typeof e.number === "number" ? String(e.number) : String(e.number || "").trim();
+    return (num ? `<div class="num">${escapeHtml(num)}</div>` : "") + `<div class="txt">${escapeHtml(e.text)}</div>`;
+  }).join("") : "";
+  window._trialDownload = {
+    title: "Матрица судьбы - " + name + " (" + birthDate + ") - пробная версия",
+    body: `<h1>Матрица судьбы: ${escapeHtml(name)}, ${escapeHtml(birthDate)}</h1>
+      <div style="max-width:380px;margin:0 auto 20px;">${diagram ? diagram.svg : ""}</div>
+      ${card ? `<h2>${escapeHtml(card.title)}</h2>` + card.entries.map(function (e) {
+        const num = typeof e.number === "number" ? String(e.number) : String(e.number || "").trim();
+        return (num ? `<div class="num">${escapeHtml(num)}</div>` : "") + `<p>${escapeHtml(e.text).replace(/\n/g, "<br>")}</p>`;
+      }).join("") : ""}
+      <p style="margin-top:24px;font-size:12px;color:#777;">Пробная версия. Полная расшифровка доступна на платформе.</p>`
+  };
+
+  out.innerHTML = `
+    <div style="margin-top:24px;">
+      <div style="max-width:380px;margin:0 auto 20px;text-align:center;">
+        <div style="color:#c9bfa8;font-size:14px;margin-bottom:10px;">Диаграмма матрицы</div>${diagram ? diagram.svg : ""}
+      </div>
+      ${card ? `<div class="lp-open"><h3>${escapeHtml(card.title)}</h3>${cardHtml}</div>` : ""}
+      ${locked.map(t => `<button type="button" class="lp-lock" onclick="showTrialPaywall()"><span>${escapeHtml(t)}</span><span>🔒</span></button>`).join("")}
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:18px;">
+        <button type="button" class="lp-btn" onclick="downloadHtmlFile(window._trialDownload.title + '.html', window._trialDownload.body)">Скачать (диаграмма + визитная карточка)</button>
+        <button type="button" class="lp-btn ghost" onclick="showRegister()">Открыть полную версию</button>
+      </div>
+    </div>`;
+  out.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 function showLogin(message = "") {
   document.body.style.visibility = "visible";
   document.body.innerHTML = `
@@ -5138,6 +5320,7 @@ function showLogin(message = "") {
         <div class="auth-divider">или</div>
         <button class="auth-register" type="button" onclick="showRegister()">Зарегистрироваться</button>
         <div id="loginError" class="auth-message error">${escapeHtml(message)}</div>
+        <button class="auth-link" type="button" onclick="showLanding()">← На главную</button>
       </div>
     </div>`;
 }
@@ -5413,7 +5596,7 @@ async function checkAuth() {
     }
     const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
     if (sessionError) { console.error("Ошибка получения сессии:", sessionError); showLogin("Не удалось проверить авторизацию."); return; }
-    if (!session) { showLogin(); return; }
+    if (!session) { showLanding(); return; }
 
     const user = session.user;
     window.currentUser = user;
