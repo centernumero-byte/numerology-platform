@@ -864,7 +864,7 @@ async function openCalculator(type) {
 
   document.body.innerHTML = `
     <div style="min-height:100vh;padding:40px;background:linear-gradient(135deg,#17102f,#211443,#17102f);color:#f8e7a8;font-family:Arial,sans-serif;">
-      <div style="max-width:${type === "moonsun" ? "1100px" : "650px"};margin:0 auto;padding:35px;border:1px solid #d7aa31;border-radius:20px;background:linear-gradient(145deg,#302052,#21163d);">
+      <div style="max-width:${type === "moonsun" ? "1100px" : type === "adult" ? "900px" : "650px"};margin:0 auto;padding:35px;border:1px solid #d7aa31;border-radius:20px;background:linear-gradient(145deg,#302052,#21163d);">
         <h1 style="margin-top:0;color:#f6d66c;font-family:Georgia,serif;font-weight:500;">${title}</h1>
 
         <label>Имя</label>
@@ -1139,30 +1139,35 @@ function buildForecastRingSvg(engine, positions, mid) {
   const anchors = getForecastAnchors(engine);
   const table = buildForecastTable(anchors, 80);
   const order = ["a", "f", "b", "g", "c", "y", "d", "k"]; // 0, 10, 20 … 70 лет
-  const numColor = "#c9a13b", ageColor = "#9a90aa", lineColor = "rgba(154,144,170,.9)";
+  const numColor = "#d4ad45", ageColor = "#9a90aa", lineColor = "rgba(154,144,170,.9)";
+  const fmt = (s) => String(s).replace(/\./g, ",");
   let lines = "", labels = "";
-  const fmt = (n) => String(n).replace(".", ",");
   for (let d = 0; d < 8; d++) {
     const p1 = positions[order[d]], p2 = positions[order[(d + 1) % 8]];
+    const len = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+    const r0 = 24 / len; // отступ от больших кружков, чтобы точки их не касались
     lines += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="${lineColor}" stroke-width="1.2"/>`;
-    // внешняя нормаль к ребру
-    const mx = (p1.x + p2.x) / 2 - mid, my = (p1.y + p2.y) / 2 - mid, ml = Math.hypot(mx, my);
-    const nx = mx / ml, ny = my / ml;
     for (let i = 1; i < 8; i++) {
       const row = table[d * 8 + i];
-      const t = [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875][i];
+      const t = r0 + (1 - 2 * r0) * (i / 8);
       const x = p1.x + (p2.x - p1.x) * t, y = p1.y + (p2.y - p1.y) * t;
+      const dx = x - mid, dy = y - mid, dl = Math.hypot(dx, dy), ux = dx / dl, uy = dy / dl;
       const isFive = i === 4;
       lines += isFive
-        ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.6" fill="#1d1433" stroke="${lineColor}" stroke-width="1.4"/>`
-        : `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.2" fill="${lineColor}"/>`;
-      labels += `<text x="${(x + nx * 14).toFixed(1)}" y="${(y + ny * 14 + 4).toFixed(1)}" text-anchor="middle" font-family="Georgia,serif" font-size="${isFive ? 13 : 11}" font-weight="${isFive ? 700 : 400}" fill="${numColor}">${row.energy1}</text>`;
+        ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.4" fill="#241640" stroke="${lineColor}" stroke-width="1.4"/>`
+        : `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.1" fill="${lineColor}"/>`;
+      // число — сразу снаружи точки
+      labels += `<text x="${(x + ux * 13).toFixed(1)}" y="${(y + uy * 13 + 4).toFixed(1)}" text-anchor="middle" font-family="Georgia,serif" font-size="${isFive ? 13 : 11}" font-weight="${isFive ? 700 : 400}" fill="${numColor}">${row.energy1}</text>`;
+      // возраст — дальше, по лучу от центра (повёрнут, чтобы подписи не налезали друг на друга)
+      let ang = Math.atan2(dy, dx) * 180 / Math.PI, anchor = "start";
+      if (ux < -0.01) { ang += 180; anchor = "end"; }
+      const ax = x + ux * 24, ay = y + uy * 24;
       const ageText = isFive ? `${d * 10 + 5} лет` : fmt(row.label.replace(" лет", ""));
-      labels += `<text x="${(x + nx * 31).toFixed(1)}" y="${(y + ny * 31 + 3).toFixed(1)}" text-anchor="middle" font-family="Arial,sans-serif" font-size="${isFive ? 8.5 : 7}" font-weight="${isFive ? 700 : 400}" fill="${ageColor}">${ageText}</text>`;
+      labels += `<text x="${ax.toFixed(1)}" y="${ay.toFixed(1)}" dy="2.5" text-anchor="${anchor}" transform="rotate(${ang.toFixed(1)} ${ax.toFixed(1)} ${ay.toFixed(1)})" font-family="Arial,sans-serif" font-size="${isFive ? 8 : 7}" font-weight="${isFive ? 700 : 400}" fill="${isFive ? "#c9bfa8" : ageColor}">${ageText}</text>`;
     }
-    // подпись десятилетия у вершины (снаружи)
+    // подпись десятилетия у вершины
     const vx = p1.x - mid, vy = p1.y - mid, vl = Math.hypot(vx, vy);
-    labels += `<text x="${(p1.x + vx / vl * 34).toFixed(1)}" y="${(p1.y + vy / vl * 34 + 3).toFixed(1)}" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" font-weight="700" fill="${ageColor}">${d === 0 ? "0" : d * 10} лет</text>`;
+    labels += `<text x="${(p1.x + vx / vl * 32).toFixed(1)}" y="${(p1.y + vy / vl * 32 + 4).toFixed(1)}" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" font-weight="700" fill="#c9bfa8">${d * 10} лет</text>`;
   }
   return { lines, labels };
 }
@@ -1362,9 +1367,9 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   let svg;
   if (withForecast && svgSize !== "small" && !omitCorners) {
     // Кольцо прогноза по возрастам вокруг матрицы: восьмиугольник через 8 внешних точек (0, 10, 20 … 70 лет)
-    const pad = 92, full = viewSize + pad * 2;
+    const pad = 95, full = viewSize + pad * 2;
     const ring = buildForecastRingSvg(engine, positions, mid);
-    svg = `<svg viewBox="${-pad} ${-pad} ${full} ${full}" style="width:100%;max-width:640px;">
+    svg = `<svg viewBox="${-pad} ${-pad} ${full} ${full}" style="width:100%;max-width:800px;">
       ${ring.lines}${inner}${ring.labels}
     </svg>`;
   } else {
@@ -1383,7 +1388,7 @@ function renderMatrixDiamondDiagram(engine, container, includeHealthMap, purpose
   window._lastDiagramValues = values;
 
   const box = document.createElement("div");
-  box.style.cssText = "max-width:" + (engine === window.AdultMatrixEngine ? 640 : 380) + "px;margin:0 auto 20px;text-align:center;";
+  box.style.cssText = "max-width:" + (engine === window.AdultMatrixEngine ? 800 : 380) + "px;margin:0 auto 20px;text-align:center;";
   box.innerHTML = `<div style="color:#c9bfa8;font-size:14px;margin-bottom:10px;">Диаграмма матрицы</div>${svg}`;
   container.insertBefore(box, container.firstChild);
 
@@ -5325,7 +5330,7 @@ function runTrialMatrix() {
   window._trialDownload = {
     title: "Матрица судьбы - " + name + " (" + birthDate + ") - пробная версия",
     body: `<h1>Матрица судьбы: ${escapeHtml(name)}, ${escapeHtml(birthDate)}</h1>
-      <div style="max-width:640px;margin:0 auto 20px;">${diagram ? diagram.svg : ""}</div>
+      <div style="max-width:800px;margin:0 auto 20px;">${diagram ? diagram.svg : ""}</div>
       ${card ? `<h2>${escapeHtml(card.title)}</h2>` + card.entries.map(function (e) {
         const num = typeof e.number === "number" ? String(e.number) : String(e.number || "").trim();
         return (num ? `<div class="num">${escapeHtml(num)}</div>` : "") + `<p>${escapeHtml(e.text).replace(/\n/g, "<br>")}</p>`;
@@ -5335,7 +5340,7 @@ function runTrialMatrix() {
 
   out.innerHTML = `
     <div style="margin-top:24px;">
-      <div style="max-width:640px;margin:0 auto 20px;text-align:center;">
+      <div style="max-width:800px;margin:0 auto 20px;text-align:center;">
         <div style="color:#c9bfa8;font-size:14px;margin-bottom:10px;">Диаграмма матрицы</div>${diagram ? diagram.svg : ""}
       </div>
       ${card ? `<div class="lp-open"><h3>${escapeHtml(card.title)}</h3>${cardHtml}</div>` : ""}
