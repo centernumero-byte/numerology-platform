@@ -2651,27 +2651,30 @@ function moonSunResultColor(v, values) {
 
 function buildMoonSunTableHtml(rows, name, birthDate) {
   const fmt1 = (x) => (x === null || x === undefined) ? "—" : x.toFixed(1).replace(".", ",");
-  const th = "background:#cdbfe0;color:#221733;font-weight:700;padding:8px 6px;border:1px solid #9a8ab8;text-align:center;vertical-align:middle;";
-  const td = "background:#f2f0f5;color:#221733;font-weight:700;padding:10px 6px;border:1px solid #b9aecb;text-align:center;vertical-align:middle;font-size:12px;line-height:1.35;";
+  const values = rows.map(x => x.result);
+  const th = "background:rgba(225,180,52,.12);color:#f6d66c;font-family:Georgia,serif;font-weight:400;font-size:14px;padding:10px 8px;border:1px solid rgba(225,180,52,.3);text-align:center;vertical-align:middle;line-height:1.3;";
+  const sub = "display:block;color:#c9bfa8;font-family:Arial,sans-serif;font-size:11px;margin-top:3px;";
+  const td = "background:rgba(0,0,0,.15);color:#f8e7a8;padding:12px 8px;border:1px solid rgba(225,180,52,.2);text-align:center;vertical-align:middle;font-size:13px;line-height:1.4;";
   const body = rows.map(function (r) {
+    const badge = `<span style="display:inline-block;min-width:38px;padding:6px 10px;border-radius:14px;background:${moonSunResultColor(r.result, values)};color:#1d1433;font-weight:700;font-size:15px;">${r.result > 0 ? "+" : ""}${r.result}</span>`;
     return `<tr>
-      <td style="${td}">${r.year}</td>
-      <td style="${td}">${r.age}</td>
-      <td style="${td}font-size:18px;">${fmt1(r.energyTrend)}</td>
-      <td style="${td}">${fmt1(r.energyValue)}</td>
+      <td style="${td}color:#f6d66c;font-family:Georgia,serif;font-size:17px;">${r.year}</td>
+      <td style="${td}font-size:15px;">${r.age}</td>
+      <td style="${td}font-size:16px;font-weight:700;">${fmt1(r.energyTrend)}</td>
+      <td style="${td}color:#c9bfa8;">${fmt1(r.energyValue)}</td>
       <td style="${td}">${escapeHtml(r.personalYearText)}</td>
-      <td style="${td}font-size:18px;">${r.fateful}</td>
+      <td style="${td}font-size:18px;${r.fateful === "+" ? "color:#f6d66c;font-weight:700;" : "color:#8a8098;"}">${r.fateful}</td>
       <td style="${td}">${escapeHtml(r.cycleText)}</td>
       <td style="${td}">${escapeHtml(r.moonText)}</td>
       <td style="${td}">${escapeHtml(r.sunText)}</td>
       <td style="${td}">${escapeHtml(r.resultText || String(r.result))}</td>
-      <td style="${td}background:${moonSunResultColor(r.result, rows.map(x => x.result))};color:${r.result < 0 ? "#c00000" : "#221733"};font-size:14px;">${r.result}</td>
+      <td style="${td}">${badge}</td>
     </tr>`;
   }).join("");
   return `
     <div style="max-width:1000px;margin:10px auto 22px;">
-      <div style="color:#f6d66c;font-family:Georgia,serif;font-size:18px;margin-bottom:8px;text-align:center;">Прогноз на 5 лет</div>
-      <div style="overflow-x:auto;border-radius:8px;">
+      <div style="color:#f6d66c;font-family:Georgia,serif;font-size:20px;margin-bottom:10px;text-align:center;">Прогноз на 5 лет</div>
+      <div style="overflow-x:auto;border:1px solid rgba(225,180,52,.35);border-radius:12px;">
         <table style="border-collapse:collapse;width:100%;min-width:900px;font-family:Arial,sans-serif;">
           <thead><tr>
             <th style="${th}">Год</th>
@@ -2679,15 +2682,14 @@ function buildMoonSunTableHtml(rows, name, birthDate) {
             <th style="${th}" colspan="2">Энергетический потенциал</th>
             <th style="${th}">Персональное число года</th>
             <th style="${th}">Судьбоносные события</th>
-            <th style="${th}">12-летний цикл перерождения<br><span style="font-weight:400;">(позитивность или негативность чисел)</span></th>
-            <th style="${th}">Луна<br><span style="font-weight:400;">(энергия кармической программы)</span></th>
-            <th style="${th}">Солнце<br><span style="font-weight:400;">(энергия личной программы)</span></th>
-            <th style="${th}" colspan="2">Год на + или −<br><span style="font-weight:400;">(реализация планов)</span></th>
+            <th style="${th}">12-летний цикл перерождения<span style="${sub}">позитивность или негативность чисел</span></th>
+            <th style="${th}">Луна<span style="${sub}">энергия кармической программы</span></th>
+            <th style="${th}">Солнце<span style="${sub}">энергия личной программы</span></th>
+            <th style="${th}" colspan="2">Год на + или −<span style="${sub}">реализация планов</span></th>
           </tr></thead>
           <tbody>${body}</tbody>
         </table>
       </div>
-      <div style="color:#8a8098;font-size:12px;margin-top:6px;">Возраст указан на сегодняшнее число и месяц каждого года. 12-летний цикл показывается в годы судьбоносных событий («+»).</div>
     </div>`;
 }
 
