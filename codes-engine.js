@@ -114,27 +114,23 @@ function buildLoveHeartSvg(codes) {
   </svg>`;
 }
 
-// Код миллионера — пятиконечная звезда (как на листе «Код миллионера»):
-// вверху код активации, слева код души, справа код сердца, внизу слева левый корень, внизу справа правый корень
+// Код миллионера — пятиконечная звезда, нарисованная красным, числа у вершин
+// (вверху активация, справа сердце, внизу справа правый корень, внизу слева левый корень, слева душа)
 function buildMillionaireStarSvg(codes) {
-  const cx = 200, cy = 196, R = 150;
+  const cx = 200, cy = 200, R = 140;
   const points = [];
   for (let i = 0; i < 5; i++) {
     const angle = -Math.PI / 2 + i * (2 * Math.PI / 5);
     points.push([cx + R * Math.cos(angle), cy + R * Math.sin(angle)]);
   }
-  // вершины по часовой стрелке от верхней: верх, право, низ-право, низ-лево, лево
   const values = [codes.activationCode, codes.heartCode, codes.rightRootCode, codes.leftRootCode, codes.soulCode];
-  const order = [0, 2, 4, 1, 3, 0];
-  const pathD = order.map((idx, i) => (i === 0 ? "M" : "L") + points[idx][0].toFixed(1) + "," + points[idx][1].toFixed(1)).join(" ") + " Z";
-  const digitCircles = points.map((p, i) => circleAt(p[0], p[1], 24, values[i], "#f6d66c")).join("");
-  const dollarLabel = `<text x="${cx}" y="${cy + 14}" text-anchor="middle" font-size="42" fill="#8fd98f" font-family="Georgia,serif" font-weight="700">$</text>`;
-  return `<svg viewBox="0 0 400 380" style="width:100%;max-width:340px;">
-    <path d="${pathD}" fill="rgba(246,214,108,.12)" stroke="#d7aa31" stroke-width="2.5"/>
-    ${dollarLabel}
-    ${digitCircles}
-  </svg>
-  <div style="color:#c9bfa8;font-size:13px;margin-top:6px;text-align:center;line-height:1.5;">Вверху — код активации, слева — код души, справа — код сердца, внизу — левый и правый корень.<br>Единый код: <b>${codes.millionaireRaw}</b> → <b>${codes.millionaireCode}</b></div>`;
+  const off = [[0, -16], [30, 10], [18, 36], [-18, 36], [-30, 10]];
+  const pathD = [0, 2, 4, 1, 3, 0].map((idx, i) => (i === 0 ? "M" : "L") + points[idx][0].toFixed(1) + "," + points[idx][1].toFixed(1)).join(" ") + " Z";
+  const nums = points.map((p, i) => `<text x="${(p[0] + off[i][0]).toFixed(1)}" y="${(p[1] + off[i][1]).toFixed(1)}" text-anchor="middle" font-size="34" font-family="Arial,sans-serif" font-weight="700" fill="#e0182d">${values[i]}</text>`).join("");
+  return `<svg viewBox="0 0 400 400" style="width:100%;max-width:320px;">
+    <path d="${pathD}" fill="none" stroke="#e0182d" stroke-width="4" stroke-linejoin="round"/>
+    ${nums}
+  </svg>`;
 }
 
 // Техника погашения долгов — круг, разрезанный как пирог на 8 частей, цвета и порядок как в методичке:
@@ -164,9 +160,7 @@ function buildDebtCircleSvg(codes) {
       <path d="M${cx},${cy} L${x0.toFixed(1)},${y0.toFixed(1)} A${R},${R} 0 0,1 ${x1.toFixed(1)},${y1.toFixed(1)} Z" fill="${s.color}"/>
       <text x="${tx.toFixed(1)}" y="${(ty + 10).toFixed(1)}" text-anchor="middle" font-size="28" font-family="Arial,sans-serif" fill="${s.text}" font-weight="700">${s.value}</text>`;
   }).join("");
-  const legend = sectors.map((s) => `<div style="margin:3px 0;"><span style="display:inline-block;width:14px;height:14px;background:${s.color};border-radius:3px;vertical-align:middle;margin-right:8px;"></span>${s.name} — ${s.label}: <b>${s.value}</b></div>`).join("");
-  return `<svg viewBox="0 0 340 340" style="width:100%;max-width:340px;">${parts}</svg>
-  <div style="color:#e9dfc6;font-size:14px;margin:10px auto 0;display:inline-block;text-align:left;line-height:1.5;">${legend}</div>`;
+  return `<svg viewBox="0 0 340 340" style="width:100%;max-width:340px;">${parts}</svg>`;
 }
 
 // Купюра в один доллар (схематичный рисунок) с нарисованной звездой кода миллионера
@@ -208,7 +202,6 @@ function buildDollarStarSvg(codes) {
     <circle cx="138" cy="246" r="23" fill="none" stroke="#222" stroke-width="2" stroke-dasharray="3 3"/>
     <circle cx="602" cy="200" r="40" fill="${paper}" stroke="#2f7d4a" stroke-width="5"/>
     <circle cx="602" cy="200" r="28" fill="none" stroke="#2f7d4a" stroke-width="2" stroke-dasharray="3 3"/>
-    <text x="602" y="208" text-anchor="middle" font-size="22" font-family="Georgia,serif" font-weight="700" fill="#2f7d4a">$</text>
     <!-- номинал -->
     <rect x="${W / 2 - 120}" y="${H - 58}" width="240" height="34" rx="4" fill="${paper}" stroke="${ink}" stroke-width="2"/>
     <text x="${W / 2}" y="${H - 33}" text-anchor="middle" font-size="24" letter-spacing="6" font-family="Georgia,serif" font-weight="700" fill="${ink}">ONE DOLLAR</text>
