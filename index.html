@@ -2381,6 +2381,55 @@ function renderCompatibilityDiagrams(d1, m1, y1, d2, m2, y2, container) {
   renderPurposeDiagram(combined.values, container, box, 3);
 }
 
+function trendArrow(curr, prev) {
+  if (prev === null || prev === undefined) return "";
+  if (curr > prev) return "↗ ";
+  if (curr < prev) return "↘ ";
+  return "→ ";
+}
+
+function buildMoonSunChartSvg(items, title) {
+  // items: [{label, value}]
+  const w = 700, h = 220, padL = 34, padR = 14, padT = 18, padB = 34;
+  const maxAbs = Math.max(6, ...items.map((it) => Math.abs(it.value)));
+  const zeroY = padT + (h - padT - padB) / 2;
+  const scale = (h - padT - padB) / 2 / maxAbs;
+  const barW = (w - padL - padR) / items.length;
+
+  const bars = items.map(function (it, i) {
+    const x = padL + i * barW + barW * 0.18;
+    const bw = barW * 0.64;
+    const barH = Math.abs(it.value) * scale;
+    const y = it.value >= 0 ? zeroY - barH : zeroY;
+    const color = it.value > 0 ? "#8fd98f" : (it.value < 0 ? "#ff9d9d" : "#c9bfa8");
+    const labelY = it.value >= 0 ? y - 6 : y + barH + 16;
+    return `
+      <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(barH,1).toFixed(1)}" fill="${color}" rx="3"/>
+      <text x="${(x + bw / 2).toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="middle" font-size="12" fill="#f8e7a8" font-family="Georgia,serif">${it.value > 0 ? "+" : ""}${it.value}</text>
+      <text x="${(x + bw / 2).toFixed(1)}" y="${h - padB + 16}" text-anchor="middle" font-size="10" fill="#c9bfa8">${escapeHtml(String(it.label))}</text>`;
+  }).join("");
+
+  const arrows = items.map(function (it, i) {
+    if (i === 0) return "";
+    const prev = items[i - 1].value;
+    const x = padL + i * barW;
+    const symbol = it.value > prev ? "↗" : (it.value < prev ? "↘" : "→");
+    const color = it.value > prev ? "#8fd98f" : (it.value < prev ? "#ff9d9d" : "#c9bfa8");
+    return `<text x="${x.toFixed(1)}" y="${(padT + 4).toFixed(1)}" font-size="14" fill="${color}">${symbol}</text>`;
+  }).join("");
+
+  return `
+    <div style="max-width:720px;margin:10px auto 22px;text-align:center;">
+      <div style="color:#f6d66c;font-family:Georgia,serif;font-size:16px;margin-bottom:6px;">${escapeHtml(title)}</div>
+      <svg viewBox="0 0 ${w} ${h}" style="width:100%;max-width:700px;background:rgba(0,0,0,.15);border:1px solid rgba(215,170,49,.3);border-radius:10px;">
+        <line x1="${padL}" y1="${zeroY}" x2="${w - padR}" y2="${zeroY}" stroke="rgba(225,180,52,.4)" stroke-width="1"/>
+        ${bars}
+        ${arrows}
+      </svg>
+      <div style="color:#8a8098;font-size:12px;margin-top:6px;">Зелёное — рост энергии (Солнце выше), красное — спад (Луна выше). Стрелки сверху — динамика по сравнению с предыдущим периодом.</div>
+    </div>`;
+}
+
 function renderMoonSunResult(name, birthDate, targetYear, container) {
   const [day, month, year] = birthDate.split(".").map(Number);
 
@@ -2393,23 +2442,34 @@ function renderMoonSunResult(name, birthDate, targetYear, container) {
     return;
   }
 
+  const yearChart = buildMoonSunChartSvg(
+    res.fiveYear.map((row) => ({ label: row.year, value: row.result })),
+    "Динамика по годам"
+  );
+  const monthChart = buildMoonSunChartSvg(
+    res.months.map((row) => ({ label: row.month.slice(0, 3), value: row.result })),
+    "Динамика по месяцам, " + targetYear
+  );
+
   const blocks = [];
 
   blocks.push({
     title: "5-летний прогноз (с " + targetYear + " года)",
-    entries: res.fiveYear.map(function (row) {
+    entries: res.fiveYear.map(function (row, i) {
       const sign = row.result > 0 ? "+" : "";
+      const arrow = trendArrow(row.result, i > 0 ? res.fiveYear[i - 1].result : null);
       let text = "Луна: " + row.moon + ", Солнце: " + row.sun + ". " + row.interpretation;
       if (row.specialNotes.length) text += " — " + row.specialNotes.join(" — ");
-      return { number: row.year + " (" + row.age + " лет), " + sign + row.result, text: text };
+      return { number: arrow + row.year + " (" + row.age + " лет), " + sign + row.result, text: text };
     })
   });
 
   blocks.push({
     title: "Прогноз по месяцам, " + targetYear + " год",
-    entries: res.months.map(function (row) {
+    entries: res.months.map(function (row, i) {
       const sign = row.result > 0 ? "+" : "";
-      return { number: row.month + ", " + sign + row.result, text: row.interpretation };
+      const arrow = trendArrow(row.result, i > 0 ? res.months[i - 1].result : null);
+      return { number: arrow + row.month + ", " + sign + row.result, text: row.interpretation };
     })
   });
 
@@ -2419,6 +2479,7 @@ function renderMoonSunResult(name, birthDate, targetYear, container) {
   });
 
   renderEditableResult(blocks, container, "Луна и Солнце - " + name, birthDate, "moonsun");
+  container.insertAdjacentHTML("afterbegin", yearChart + monthChart);
 }
 
 function renderVedicResult(name, birthDate, container) {
