@@ -569,7 +569,7 @@ const DIRECTIONS = [
   { key: "pythagoras",    icon: "pythagoras", title: "Квадрат<br>Пифагора" },
   { key: "moonsun",       icon: "🌙",  title: "Луна и<br>Солнце" },
   { key: "lovecards",     icon: "💘",  title: "Карты<br>Любви" },
-  { key: "prognostika",   icon: "🔮",  title: "Прогностика<br>по периодам" }
+  { key: "prognostika",   icon: "🔮",  title: "Прогностика" }
 ];
 const DIRECTION_NAMES = Object.fromEntries(DIRECTIONS.map(d => [d.key, d.title.replace("<br>", " ")]));
 const SECTION_LABELS = { manuals: "Методическое пособие", videos: "Видео", tests: "Тест" };
@@ -2608,7 +2608,7 @@ function renderPrognostikaResult(name, birthDate, targetYear, container) {
     entries: res.months.map(function (m) {
       return {
         number: m.month + ", число " + m.number,
-        text: m.text + " — Можно: " + m.doText + " — Нельзя: " + m.dontText
+        text: m.text + "\n\nЧто можно делать:\n" + m.doText + "\n\nЧего следует избегать:\n" + m.dontText
       };
     })
   });
