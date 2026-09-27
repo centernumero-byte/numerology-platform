@@ -1468,8 +1468,8 @@ function renderHealthMapDiagram(v, container, afterNode) {
   box.style.cssText = "max-width:420px;margin:0 auto 30px;";
   box.className = "dl-health-box";
   box.innerHTML = `
-    <div style="color:#c9bfa8;font-size:14px;margin-bottom:10px;text-align:center;">Карта здоровья</div>
-    <table style="width:100%;border-collapse:collapse;font-size:13px;color:#eee5d0;border:1px solid rgba(225,180,52,.25);">
+    <div class="dl-health-title" style="color:#c9bfa8;font-size:14px;margin-bottom:10px;text-align:center;">Карта здоровья</div>
+    <table class="dl-health-table" style="width:100%;border-collapse:collapse;font-size:13px;color:#eee5d0;border:1px solid rgba(225,180,52,.25);">
       <thead><tr style="color:#8a8098;font-size:11px;"><td style="padding:6px 8px 6px 25px;border:1px solid rgba(225,180,52,.25);">Чакры</td><td style="text-align:center;border:1px solid rgba(225,180,52,.25);">Физика</td><td style="text-align:center;border:1px solid rgba(225,180,52,.25);">Энергия</td><td style="text-align:center;border:1px solid rgba(225,180,52,.25);">Эмоции</td></tr></thead>
       <tbody>${rowsHtml}</tbody>
     </table>`;
@@ -1490,10 +1490,10 @@ function renderPurposeDiagram(diagramValues, container, afterNode, count) {
 
   function item(title, formula, result) {
     return `
-      <div style="width:180px;text-align:center;">
-        <div style="color:#f6d66c;font-family:Georgia,serif;font-size:13px;margin-bottom:6px;">${title}</div>
-        <div style="color:#fff;font-family:Georgia,serif;font-size:20px;">${result}</div>
-        <div style="color:#8a8098;font-size:11px;">(${formula})</div>
+      <div class="dl-purpose-item" style="width:180px;text-align:center;">
+        <div class="dl-pt" style="color:#f6d66c;font-family:Georgia,serif;font-size:13px;margin-bottom:6px;">${title}</div>
+        <div class="dl-pr" style="color:#fff;font-family:Georgia,serif;font-size:20px;">${result}</div>
+        <div class="dl-pf" style="color:#8a8098;font-size:11px;">(${formula})</div>
       </div>`;
   }
 
@@ -1508,8 +1508,8 @@ function renderPurposeDiagram(diagramValues, container, afterNode, count) {
   const box = document.createElement("div");
   box.style.cssText = "max-width:420px;margin:0 auto 30px;";
   box.className = "dl-purpose-box";
-  box.innerHTML = rows.map(function (row) {
-    return `<div style="display:flex;justify-content:center;gap:24px;margin-bottom:16px;">${row.join("")}</div>`;
+  box.innerHTML = `<div class="dl-purpose-heading" style="display:none;">Предназначение</div>` + rows.map(function (row) {
+    return `<div class="dl-purpose-row" style="display:flex;justify-content:center;gap:24px;margin-bottom:16px;">${row.join("")}</div>`;
   }).join("");
   container.insertBefore(box, afterNode.nextSibling);
 }
@@ -1912,7 +1912,20 @@ function downloadHtmlFile(filename, htmlBody) {
       /* Страница 1 — диаграмма матрицы; страница 2 — карта здоровья и предназначение */
       .diagram-wrap:has(.dl-matrix-box) { break-inside: auto; }
       .dl-matrix-box { break-after: page; page-break-after: always; break-inside: avoid; margin-bottom: 0 !important; }
-      .dl-health-box, .dl-purpose-box { break-inside: avoid; page-break-inside: avoid; }`;
+      .dl-health-box, .dl-purpose-box { break-inside: avoid; page-break-inside: avoid; }
+      /* Страница 2: крупная карта здоровья и отдельные карточки предназначения */
+      .dl-health-box { max-width: 620px !important; margin: 6px auto 0 !important; }
+      .diagram-wrap .dl-health-title, .diagram-wrap .dl-purpose-heading { display: block !important; color: #5d2789 !important; font-family: Georgia, serif; font-size: 21px !important; margin: 0 0 16px !important; text-align: center; }
+      .dl-health-table { font-size: 16px !important; }
+      .dl-health-table td { padding: 11px 14px !important; border-color: #d9c38a !important; font-size: 16px !important; }
+      .dl-health-table thead td { font-size: 14px !important; font-weight: 700; background: #f5eee0; }
+      .dl-health-table span[style*="border-radius:50%"] { width: 13px !important; height: 13px !important; }
+      .dl-purpose-box { max-width: 620px !important; margin: 44px auto 0 !important; padding-top: 30px; border-top: 1px solid #d7aa31; }
+      .dl-purpose-row { gap: 22px !important; margin-bottom: 22px !important; }
+      .dl-purpose-item { width: 290px !important; border: 1px solid #d7aa31; border-radius: 12px; padding: 16px 12px; background: #fbf7ee; }
+      .dl-pt { font-size: 16px !important; margin-bottom: 8px !important; }
+      .diagram-wrap .dl-pr { font-size: 32px !important; color: #5d2789 !important; font-weight: 700; margin-bottom: 6px; }
+      .dl-pf { font-size: 12px !important; }`;
 
   const fullHtml = `<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8">
 <title>${title.replace(/[<>]/g, "")}</title>
