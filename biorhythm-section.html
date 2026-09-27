@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Биоритмы — калькулятор Бибигуль Нарманбетовой</title>
+<style>
+/* Цвета вынесены в переменные — при встраивании в index.html заменить на переменные платформы */
+#bio-section {
+  --bg: #1d2530; --panel: #253040; --line: #3a4658; --text: #e9e4d8; --muted: #a9b0bb;
+  --gold: #d4b26a; --phys: #e36d6d; --emo: #5d9ce8; --intel: #5cc27c; --crit: #f0a33c;
+  color: var(--text); font-family: inherit; line-height: 1.5;
+  max-width: 980px; margin: 0 auto; padding: 16px;
+  box-sizing: border-box;
+}
+#bio-section *, #bio-section *::before, #bio-section *::after { box-sizing: border-box; }
+body.bio-standalone { margin: 0; background: #1d2530; font-family: "Segoe UI", Roboto, Arial, sans-serif;
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+#bio-section h2 { color: var(--gold); font-weight: 600; font-size: 1.6rem; margin: 0 0 4px; }
+#bio-section .bio-sub { color: var(--muted); margin: 0 0 20px; max-width: 70ch; }
+#bio-section .bio-form { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-end;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 20px; }
+#bio-section label { display: flex; flex-direction: column; gap: 4px; font-size: .9rem; color: var(--muted); }
+#bio-section input[type=date] { background: var(--bg); color: var(--text); border: 1px solid var(--line);
+  border-radius: 6px; padding: 8px 10px; font: inherit; color-scheme: dark; }
+#bio-section button { background: var(--gold); color: #1d2530; border: 0; border-radius: 6px;
+  padding: 9px 18px; font: inherit; font-weight: 600; cursor: pointer; }
+#bio-section button.bio-ghost { background: transparent; color: var(--gold); border: 1px solid var(--gold); }
+#bio-section button:focus-visible, #bio-section input:focus-visible, #bio-section summary:focus-visible,
+#bio-section .bio-hit:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+#bio-section .bio-error { color: #ff9b8f; width: 100%; margin: 0; min-height: 1.2em; font-size: .9rem; }
+#bio-section .bio-chart-wrap { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 12px 8px 8px; overflow-x: auto; }
+#bio-section svg { display: block; width: 100%; min-width: 640px; height: auto; }
+#bio-section .bio-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 8px 8px 2px; font-size: .9rem; color: var(--muted); }
+#bio-section .bio-legend i { display: inline-block; width: 18px; height: 3px; vertical-align: middle; margin-right: 6px; border-radius: 2px; }
+#bio-section .bio-legend .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--crit); }
+#bio-section .bio-today { margin: 20px 0; background: var(--panel); border: 1px solid var(--line);
+  border-left: 4px solid var(--gold); border-radius: 10px; padding: 16px 18px; }
+#bio-section .bio-today h3 { margin: 0 0 10px; font-size: 1.15rem; color: var(--gold); font-weight: 600; }
+#bio-section .bio-meters { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 12px; }
+#bio-section .bio-meter { background: var(--bg); border-radius: 8px; padding: 10px 12px; border-top: 3px solid var(--c); }
+#bio-section .bio-meter b { display: block; font-weight: 600; }
+#bio-section .bio-meter span { color: var(--muted); font-size: .9rem; }
+#bio-section .bio-meter .bio-crit { color: var(--crit); }
+#bio-section .bio-text { margin: 0 0 10px; max-width: 75ch; }
+#bio-section .bio-cycle-notes { margin: 0; padding-left: 18px; color: var(--muted); max-width: 75ch; }
+#bio-section .bio-cycle-notes li { margin-bottom: 6px; }
+#bio-section h3.bio-list-title { color: var(--gold); font-weight: 600; font-size: 1.15rem; margin: 28px 0 10px; }
+#bio-section details { border-bottom: 1px solid var(--line); }
+#bio-section summary { cursor: pointer; padding: 10px 6px; display: grid; grid-template-columns: 9.5em 1fr auto; gap: 10px; align-items: center; list-style: none; }
+#bio-section summary::-webkit-details-marker { display: none; }
+#bio-section summary .bio-date { font-weight: 600; }
+#bio-section summary .bio-chips { display: flex; flex-wrap: wrap; gap: 6px; font-size: .85rem; }
+#bio-section .bio-chip { padding: 1px 8px; border-radius: 10px; background: var(--bg); color: var(--muted); border: 1px solid var(--line); }
+#bio-section .bio-chip.H { color: var(--text); }
+#bio-section .bio-chip.X { color: var(--crit); border-color: var(--crit); }
+#bio-section .bio-flag { color: var(--crit); font-size: .85rem; white-space: nowrap; }
+#bio-section details[open] summary { background: rgba(212,178,106,.08); }
+#bio-section details.is-selected summary { box-shadow: inset 3px 0 0 var(--gold); }
+#bio-section details > div { padding: 4px 8px 14px 16px; }
+#bio-section details p { margin: 0; max-width: 75ch; }
+#bio-section .bio-actions { display: flex; gap: 10px; margin-top: 20px; }
+#bio-section .bio-note { color: var(--muted); font-size: .85rem; margin-top: 16px; max-width: 75ch; }
+@media (max-width: 560px) {
+  #bio-section summary { grid-template-columns: 1fr; gap: 4px; }
+  #bio-section h2 { font-size: 1.35rem; }
+}
+@media print {
+  body.bio-standalone { background: #fff; }
+  #bio-section { --bg: #fff; --panel: #fff; --line: #ccc; --text: #111; --muted: #444; --gold: #8a6a1f; color: #111; }
+  #bio-section .bio-form, #bio-section .bio-actions { display: none; }
+  #bio-section svg { min-width: 0; }
+  #bio-section details > div { display: block !important; }
+  #bio-section details { break-inside: avoid; }
+  #bio-section .bio-chart-wrap, #bio-section .bio-today { break-inside: avoid; }
+}
+</style>
+</head>
+<body class="bio-standalone">
+<section id="bio-section">
+  <h2>Биоритмы</h2>
+  <p class="bio-sub">Физический (23 дня), эмоциональный (28 дней) и интеллектуальный (33 дня) циклы начинаются в день рождения. График показывает их на месяц вперёд от выбранной даты.</p>
+
+  <form class="bio-form" id="bio-form" novalidate>
+    <label>Дата рождения <input type="date" id="bio-birth" required></label>
+    <label>Начало расчёта <input type="date" id="bio-start" required></label>
+    <button type="submit">Рассчитать</button>
+    <p class="bio-error" id="bio-error" role="alert"></p>
+  </form>
+
+  <div id="bio-result" hidden>
+    <div class="bio-chart-wrap">
+      <svg id="bio-chart" viewBox="0 0 900 380" role="img" aria-label="График биоритмов"></svg>
+      <div class="bio-legend">
+        <span><i style="background:var(--phys)"></i>Физический</span>
+        <span><i style="background:var(--emo)"></i>Эмоциональный</span>
+        <span><i style="background:var(--intel)"></i>Интеллектуальный</span>
+        <span><i class="dot"></i>Критический день</span>
+      </div>
+    </div>
+
+    <div class="bio-today" id="bio-day" aria-live="polite"></div>
+
+    <h3 class="bio-list-title">Расшифровка по дням</h3>
+    <div id="bio-list"></div>
+
+    <div class="bio-actions">
+      <button type="button" id="bio-print">Сохранить в PDF</button>
+      <button type="button" class="bio-ghost" id="bio-expand">Раскрыть все дни</button>
+    </div>
+    <p class="bio-note">Буквы в коде дня идут по порядку: физический, эмоциональный, интеллектуальный цикл. H — позитивная фаза, L — негативная, X — критический день. Биоритмы показывают вероятный настрой, а не предопределяют события.</p>
+  </div>
+</section>
+
+<script>
+// Биоритмы — расчётное ядро (без зависимостей).
+// Формула графика — как в таблице: sin(2π · (дата − дата рождения) / период).
+// День цикла — как в методичке: день рождения = 1-й день, счёт 1…период (в таблице последний день ошибочно давал 0).
+// Фазы по методичке: H — позитивная, L — негативная, X — критический день
+//   (физический: 1-й и 12-й дни, эмоциональный: 1-й и 15-й, интеллектуальный: 1-й и 17-й).
+
+const BIO_CYCLES = [
+  { key: 'phys', name: 'Физический', period: 23, color: '#e05a5a' },
+  { key: 'emo', name: 'Эмоциональный', period: 28, color: '#4a8fe0' },
+  { key: 'intel', name: 'Интеллектуальный', period: 33, color: '#4bb56b' },
+];
+
+const DAY_MS = 86400000;
+// Считаем в UTC, чтобы переход на летнее время не сдвигал дни
+function utcDay(y, m, d) { return Math.round(Date.UTC(y, m - 1, d) / DAY_MS); }
+function isValidDate(y, m, d) {
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d;
+}
+
+function cycleState(daysLived, period) {
+  const pos = ((daysLived % period) + period) % period; // 0 … period-1
+  const dayOfCycle = pos + 1;                            // 1 … period
+  const value = Math.sin(2 * Math.PI * daysLived / period);
+  const half = Math.floor(period / 2);                   // 11, 14, 16
+  const phase = (pos === 0 || pos === half) ? 'X' : (pos < half ? 'H' : 'L');
+  return { dayOfCycle, value, percent: Math.round(value * 100), phase };
+}
+
+// birth, start: {y,m,d}; days — сколько дней строить (по умолчанию 31, как в таблице)
+function calcBiorhythms(birth, start, days = 31) {
+  if (!isValidDate(birth.y, birth.m, birth.d)) throw new Error('Некорректная дата рождения');
+  if (!isValidDate(start.y, start.m, start.d)) throw new Error('Некорректная дата начала расчёта');
+  const b = utcDay(birth.y, birth.m, birth.d);
+  const s = utcDay(start.y, start.m, start.d);
+  if (s < b) throw new Error('Дата расчёта раньше даты рождения');
+  const rows = [];
+  for (let i = 0; i < days; i++) {
+    const n = s + i - b; // прожито дней
+    const date = new Date((s + i) * DAY_MS);
+    const row = { date, daysLived: n };
+    BIO_CYCLES.forEach((c) => { row[c.key] = cycleState(n, c.period); });
+    row.code = row.phys.phase + row.emo.phase + row.intel.phase;
+    row.criticalCount = (row.code.match(/X/g) || []).length;
+    rows.push(row);
+  }
+  return rows;
+}
+
+// Расшифровка из методички «Биоритмы – ключ к успеху» (раздел «Биоритмы на каждый день»).
+// Порядок букв: физический, эмоциональный, интеллектуальный.
+const BIO_DAY_TEXTS = {
+  LLL: 'Когда все три биоритма оказываются в самой низкой, негативной, точке, у человека будет гораздо меньше сил, чем в обычные дни, на любые дела. Безопасней всего просто отдаться течению. Лучше не начинать ничего нового, какой бы прилив сил вы ни ощущали. За ошибки порой приходится дорого платить.',
+  HLL: 'С физической точки зрения вы можете справиться со многими вещами, но, когда нужно продумать стратегии на день, отдайте инициативу в чужие руки. Тщательно все обдумывайте и проверяйте, прежде чем брать на себя обязательства. Что бы ни привлекло вас в эмоциональном плане, это продлится лишь пару мгновений.',
+  HHL: 'Позвольте вашему шестому чувству поработать сегодня на вас. Сейчас вы чувствуете себя в хорошей форме и вполне способны выполнить самые выдающиеся задачи. Однако если вам кажется, что все будет хорошо и проблем не возникнет, то лучше не полагаться на собственные суждения. Тем не менее в целом будет хороший день.',
+  HHH: 'Данная комбинация выпадает не слишком часто, но, когда это случается, извлеките из такого дня максимальную пользу, потому что всё будет складываться так, как вы хотите. Когда все три цикла находятся в положительной фазе, это означает, что настало ваше время. Убедитесь, что вас окружают правильные люди, которые помогут на пути к успеху.',
+  LHH: 'Разум и сердце более чем готовы к свершениям, но вы, вероятно, ощущаете, что энергия иссякла. Этот период будет сложным и изнурительным, если вы все же попытаетесь управиться со всеми делами. Лучше запланировать то, что действительно важно.',
+  LLH: 'В этот период гораздо лучше оставаться в одиночестве, потому что вы можете с легкостью потерять самообладание. Порой люди раздражают, но дело не в них, а в вас. Вы знаете, чего хотите, но, вероятно, сегодня не способны достичь желаемого. По возможности избегайте каких-либо встреч.',
+  LHL: 'Сегодня вы не почувствуете себя лидером, но почти определенно будете уверены в некоторых идеях для их дальнейшей реализации. Хотя уровень энергии в этот день довольно низкий. Будет лучше провести время за своим хобби или в компании с людьми, которым вы доверяете.',
+  HLH: 'С физической точки зрения вы в хорошей форме, и разум может работать сверхурочно, но в плане эмоций вы чувствуете упадок и даже легкую подавленность. Если попытаетесь быть лидером, то отношения с окружением сложатся не слишком хорошо. Возможно, лучше свести контакты к минимуму и занять позицию одинокого волка.',
+  LLX: 'В этот период повышается риск аварий и несчастных случаев. Не поддавайтесь сомнительным делам, а не то проиграете. Вероятно, вы будете ощущать недостаток энергии на всех трех биоритмических уровнях, но это интеллектуально критический день. Вы не сможете мыслить здраво, так что не стремитесь делать ничего из ряда вон выходящего.',
+  LHX: 'Это еще один день, когда вы подвержены несчастным случаям. С эмоциональной точки зрения вы и особенный для вас человек должны довольно хорошо ладить. Новые знакомства также приветствуются. Однако физически вы чувствуете себя немного не в своей тарелке, а в интеллектуально критический день на горизонте могут маячить неприятности.',
+  HLX: 'Вас не должно смущать словосочетание «интеллектуально критический день», поскольку подразумевается, что мышление в это время будет в каком-то смысле несовершенным. То, что физическая энергия склонна рассеиваться, а эмоциональные реакции немного чрезмерны, означает, что в это время вы также подвержены авариям и несчастным случаям.',
+  HHX: 'Сегодня нужно быть сверхосторожным, потому что физический подъем вместе с эмоциональным подразумевают ненужный самообман, особенно если мысли путаются, и поскольку вероятны серьезные ошибки в суждениях, то день может оказаться потенциально опасным с точки зрения аварий и несчастных случаев.',
+  LXL: 'Это точно не ваш день – такой слабый с интеллектуальной точки зрения, физически негативный и эмоционально критический. Гораздо лучше делегировать свои дела, а если это невозможно, тогда любые усилия следует предпринимать с большой осторожностью.',
+  LXH: 'Вы склонны мыслить излишне самоуверенно обо всем новом, потому что не сможете заниматься делами с обычным напором и энергией. В эмоционально критический день вы довольно раздражительны, поскольку не воспринимаете критику, пусть и высказанную с самыми добрыми намерениями. Этот период также опасен с точки зрения аварий и несчастных случаев.',
+  HXL: 'Физически вы в самом расцвете сил, но можете поссориться с окружающими, потому что склонны не замечать важных моментов, которые все остальные видят четко. Вы будете не слишком общительны, потому что с эмоциональной точки зрения это критическое время. Будьте осторожны при ведении или проверке записей.',
+  HXH: 'Не лучшее время для поездок за рулем, потому что вы, скорее всего, будете излишне уверены в себе, но недостаточно сосредоточенны, что создаст угрозу аварий или несчастных случаев. Также вы будете раздражаться по мелочам на самого себя или окружающих, которые начнут вас критиковать.',
+  XLL: 'В этот довольно короткий период вы подвержены серьезным происшествиям, и если что-то и должно пойти не лучшим образом, то случится примерно в это время. Следует быть очень осторожными не только ради своей безопасности, но и ради безопасности окружающих. Вам будет недоставать дальновидности, поэтому лучше оставаться в тени.',
+  XLH: 'Опять же, вы подвержены авариям и несчастным случаям, которых можно избежать, если следовать советам окружающих. Вы будете ощущать физическую усталость, эмоциональный упадок и вряд ли потерпите глупых людей. Сохраняйте беспристрастность, поскольку любые отвлечения дорого вам обойдутся, и дело не только в деньгах.',
+  XHH: 'Эмоционально и интеллектуально вы будете на высоте, но не пытайтесь переусердствовать с физической точки зрения. Приятно думать, что вы неуязвимы, но нельзя делать что угодно. В этот период вы также подвержены авариям и несчастным случаям. Будьте осторожны в своих словах и делах.',
+  XHL: 'По сути, это период упадка, потому что вы будете более чем нескоординированы в том, что делаете. Вы слишком рветесь угождать другим и хотите, чтобы вас видели в лучшем свете, нежели вы о себе думаете. Очень вероятны промахи, ошибки и недочеты, если не притормозите.',
+  LXX: 'И эмоциональный, и интеллектуальный ритмы сегодня в критической фазе. Вы, вероятно, чувствуете себя не в своей тарелке или не способны справиться с происходящим. Физически негативная фаза на самом деле совсем не принесет пользы, а только усугубит ситуацию. Попытайтесь избегать физической деятельности, где требуется хорошая координация.',
+  HXX: 'И эмоциональная, и интеллектуальная способности будут задействованы до предела. Физический уровень на высоте, и любой вид спорта только приветствуется, даже если это обычная утренняя пробежка. Возможно, вы чувствуете себя хорошо, но сегодня рискованно начинать любые новые дела.',
+  XLX: 'Довольно тягостный период во всех отношениях, когда люди не готовы к сотрудничеству или просто весьма неуклюжи. Вероятно, дело в вас и вашем восприятии вещей, поскольку эмоционально вы нестабильны, что вовсе не помогает сдерживать темперамент. Вы подвержены несчастным случаям, поскольку можете совершенно неправильно оценивать людей и (или) вещи.',
+  XHX: 'Глядите в оба, потому что вы, вероятно, не заметите предупреждающих знаков, так как самочувствие в порядке. Поскольку и физический, и интеллектуальный циклы находятся в критической фазе, есть вероятность, что сегодня вы совершите много ошибок, в которых не стоит обвинять других.',
+  XXH: 'Когда физический и эмоциональный ритмы находятся в критическом состоянии, всегда существует опасность, что вы совершите серьезные ошибки, меньше всего этого ожидая. Не рекомендуются вождение автомобиля и вообще любого рода путешествия. Это будет довольно неприятный короткий период, поэтому продумывайте все тщательно.',
+  XXL: 'Еще один непродолжительный период, когда не стоит водить машину, и, если говорить в целом, лучше держаться в стороне и браться лишь за крайне необходимые дела. Вы не сможете видеть общей картины, зацикливаясь на мелочах, поэтому по возможности воспринимайте это время как еще один опасный с точки зрения происшествий период.',
+  XXX: 'Такой день выпадает редко. Но все же он случается, поэтому сидите тихо, ничего не делайте и сохраняйте спокойствие и собранность, пока это возможно. Возьмите выходной и проведите время за любимым делом, не требующим сосредоточения, – иначе лучше отказаться и от этого удовольствия. Нового ничего не начинайте и не пытайтесь также ничего завершить.',
+};
+
+// Общая характеристика фаз каждого цикла (методичка, «Физический / Эмоциональный / Интеллектуальный цикл»)
+const BIO_PHASE_TEXTS = {
+  phys: {
+    H: 'Позитивная фаза допускает полное участие практически во всех видах физической активности – тревожиться не о чем. Вы хорошо себя чувствуете и находитесь в приподнятом настроении, все дается без особых усилий.',
+    L: 'В негативной фазе попытайтесь расслабиться. Вы будете чувствовать меньше рвения ко всем физическим активностям. Порой сложно поспевать за другими.',
+    X: 'В критический день постарайтесь избегать лишних упражнений, поскольку повышается риск несчастных случаев.',
+  },
+  emo: {
+    H: 'Вы бодры, склонны к сотрудничеству и более оптимистичны. Вы блистаете в обществе и настроены в целом более творчески мыслить.',
+    L: 'Случаются перепады настроения, вы обидчивы и не склонны к сотрудничеству. Вы становитесь напряженными, можете раздражаться и чувствовать себя подавленно.',
+    X: 'В критический день вы чрезмерно чувствительны и легко испытываете стресс. В результате, как известно, происходят несчастные случаи.',
+  },
+  intel: {
+    H: 'Способности логики и мышления блистают. Вы проницательны, полны предложений и правильно реагируете. Проблемы легко разрешаются, сосредоточенность на высоте, и лучше это время посвятить учебе.',
+    L: 'Скорость восприятия и уровень понимания снижаются.',
+    X: 'В критический день мышление затуманено, вы совершаете глупые ошибки и притягиваете несчастные случаи из-за недальновидности.',
+  },
+};
+
+const BIO_PHASE_NAMES = { H: 'позитивная фаза', L: 'негативная фаза', X: 'критический день' };
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { calcBiorhythms, cycleState, BIO_CYCLES, BIO_DAY_TEXTS, BIO_PHASE_TEXTS, BIO_PHASE_NAMES, isValidDate };
+}
+
+</script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+  const WD = ['вс','пн','вт','ср','чт','пт','сб'];
+  const fmtLong = (d) => `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+  const fmtShort = (d) => `${String(d.getUTCDate()).padStart(2,'0')}.${String(d.getUTCMonth()+1).padStart(2,'0')}`;
+  const parse = (v) => { const [y,m,d] = v.split('-').map(Number); return { y, m, d }; };
+  const cssVar = (n) => getComputedStyle($('bio-section')).getPropertyValue(n).trim();
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  let rows = [], selected = 0;
+
+  function drawChart() {
+    const svg = $('bio-chart');
+    const W = 900, H = 380, L = 44, R = 12, T = 16, B = 52;
+    const n = rows.length, stepX = (W - L - R) / (n - 1);
+    const x = (i) => L + i * stepX;
+    const y = (v) => T + (1 - v) / 2 * (H - T - B);
+    const line = cssVar('--line'), muted = cssVar('--muted');
+    let s = '';
+    // сетка и шкала
+    [1, .5, 0, -.5, -1].forEach((v) => {
+      s += `<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="${line}" stroke-width="${v===0?1.6:0.7}" ${v===0?'':'stroke-dasharray="3 4"'}/>`;
+      s += `<text x="${L-8}" y="${y(v)+4}" fill="${muted}" font-size="12" text-anchor="end">${Math.round(v*100)}%</text>`;
+    });
+    // подсветка выбранного дня
+    s += `<rect x="${x(selected)-stepX/2}" y="${T}" width="${stepX}" height="${H-T-B}" fill="${cssVar('--gold')}" opacity=".14"/>`;
+    // подписи дат
+    rows.forEach((r, i) => {
+      const we = r.date.getUTCDay() === 0 || r.date.getUTCDay() === 6;
+      s += `<text x="${x(i)}" y="${H-B+18}" fill="${we ? cssVar('--text') : muted}" font-size="11" text-anchor="middle">${r.date.getUTCDate()}</text>`;
+      if (i === 0 || r.date.getUTCDate() === 1) s += `<text x="${x(i)}" y="${H-B+34}" fill="${muted}" font-size="11" text-anchor="${i===0?'start':'middle'}">${MONTHS[r.date.getUTCMonth()]}</text>`;
+    });
+    // кривые (сглаженные, по 6 точек на день)
+    BIO_CYCLES.forEach((c) => {
+      const b0 = rows[0].daysLived; let d = '';
+      for (let t = 0; t <= (n - 1) * 6; t++) {
+        const day = t / 6, v = Math.sin(2 * Math.PI * (b0 + day) / c.period);
+        d += `${t ? 'L' : 'M'}${(L + day * stepX).toFixed(1)},${y(v).toFixed(1)}`;
+      }
+      s += `<path d="${d}" fill="none" stroke="${cssVar('--'+c.key)}" stroke-width="2.4" stroke-linejoin="round"/>`;
+      rows.forEach((r, i) => { if (r[c.key].phase === 'X') s += `<circle cx="${x(i)}" cy="${y(r[c.key].value)}" r="5" fill="${cssVar('--crit')}" stroke="${cssVar('--'+c.key)}" stroke-width="2"><title>${c.name}: критический день</title></circle>`; });
+    });
+    // кликабельные зоны дней
+    rows.forEach((r, i) => {
+      s += `<rect class="bio-hit" data-i="${i}" tabindex="0" x="${x(i)-stepX/2}" y="${T}" width="${stepX}" height="${H-T-B+20}" fill="transparent" style="cursor:pointer"><title>${fmtLong(r.date)}: ${r.code}</title></rect>`;
+    });
+    svg.innerHTML = s;
+  }
+
+  function dayCard(r) {
+    const meters = BIO_CYCLES.map((c) => {
+      const st = r[c.key];
+      const ph = st.phase === 'X' ? `<span class="bio-crit">${BIO_PHASE_NAMES.X}</span>` : `<span>${BIO_PHASE_NAMES[st.phase]}</span>`;
+      return `<div class="bio-meter" style="--c:${cssVar('--'+c.key)}"><b>${c.name}: ${st.percent > 0 ? '+' : ''}${st.percent}%</b><span>${st.dayOfCycle}-й день из ${c.period}, </span>${ph}</div>`;
+    }).join('');
+    const notes = BIO_CYCLES.map((c) => `<li><b>${c.name}.</b> ${BIO_PHASE_TEXTS[c.key][r[c.key].phase]}</li>`).join('');
+    return `<h3>${fmtLong(r.date)}, ${WD[r.date.getUTCDay()]} — код дня ${r.code}</h3>
+      <div class="bio-meters">${meters}</div>
+      <p class="bio-text">${esc(BIO_DAY_TEXTS[r.code])}</p>
+      <ul class="bio-cycle-notes">${notes}</ul>`;
+  }
+
+  function renderList() {
+    $('bio-list').innerHTML = rows.map((r, i) => {
+      const chips = BIO_CYCLES.map((c) => `<span class="bio-chip ${r[c.key].phase}">${c.name[0]}: ${r[c.key].dayOfCycle}-й, ${r[c.key].phase}</span>`).join('');
+      const flag = r.criticalCount === 3 ? 'тройной критический' : r.criticalCount === 2 ? 'двойной критический' : r.criticalCount === 1 ? 'критический' : '';
+      return `<details data-i="${i}" ${i === selected ? 'open class="is-selected"' : ''}>
+        <summary><span class="bio-date">${fmtShort(r.date)}, ${WD[r.date.getUTCDay()]} · ${r.code}</span><span class="bio-chips">${chips}</span><span class="bio-flag">${flag}</span></summary>
+        <div><p>${esc(BIO_DAY_TEXTS[r.code])}</p></div></details>`;
+    }).join('');
+  }
+
+  function select(i, scroll) {
+    selected = i;
+    drawChart();
+    $('bio-day').innerHTML = dayCard(rows[i]);
+    document.querySelectorAll('#bio-list details').forEach((el) => {
+      const on = Number(el.dataset.i) === i;
+      el.classList.toggle('is-selected', on);
+      if (on) el.open = true;
+    });
+    if (scroll) $('bio-day').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' });
+  }
+
+  function run() {
+    $('bio-error').textContent = '';
+    const bv = $('bio-birth').value, sv = $('bio-start').value;
+    if (!bv) { $('bio-error').textContent = 'Укажите дату рождения.'; return; }
+    if (!sv) { $('bio-error').textContent = 'Укажите дату начала расчёта.'; return; }
+    try { rows = calcBiorhythms(parse(bv), parse(sv), 31); }
+    catch (e) { $('bio-error').textContent = e.message + '.'; $('bio-result').hidden = true; return; }
+    selected = 0;
+    $('bio-result').hidden = false;
+    renderList();
+    select(0, false);
+  }
+
+  const now = new Date();
+  $('bio-start').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  $('bio-form').addEventListener('submit', (e) => { e.preventDefault(); run(); });
+  $('bio-chart').addEventListener('click', (e) => { const t = e.target.closest('.bio-hit'); if (t) select(Number(t.dataset.i), true); });
+  $('bio-chart').addEventListener('keydown', (e) => { const t = e.target.closest('.bio-hit'); if (t && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); select(Number(t.dataset.i), true); } });
+  $('bio-list').addEventListener('click', (e) => { const d = e.target.closest('details'); if (d && e.target.closest('summary')) { const i = Number(d.dataset.i); setTimeout(() => { if (d.open) select(i, false); }, 0); } });
+  window.addEventListener('beforeprint', () => { if (rows.length) drawChart(); });
+  window.addEventListener('afterprint', () => { if (rows.length) drawChart(); });
+  $('bio-print').addEventListener('click', () => { document.querySelectorAll('#bio-list details').forEach((d) => d.open = true); window.print(); });
+  $('bio-expand').addEventListener('click', () => { const all = document.querySelectorAll('#bio-list details'); const open = [...all].some((d) => !d.open); all.forEach((d) => d.open = open); $('bio-expand').textContent = open ? 'Свернуть все дни' : 'Раскрыть все дни'; });
+})();
+</script>
+</body>
+</html>
