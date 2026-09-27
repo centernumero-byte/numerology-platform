@@ -2216,53 +2216,83 @@ function calculateCodes() {
   }
 
   const name = lastName + " " + firstName;
+  const codesPerson = "Коды любви, миллионера, погашения долгов - " + [lastName, firstName, patronymic].filter(Boolean).join(" ");
   result.innerHTML = `
-    <div style="max-width:720px;margin:0 auto;">
+    <div style="max-width:720px;margin:0 auto;" id="codesResult">
 
-      <div class="accordion-item">
+      <div class="accordion-item codes-section">
         <button type="button" class="accordion-header" onclick="toggleAccordionBody('code-love')"><span>💗 Код любви</span><span>▾</span></button>
         <div class="accordion-body hidden" id="code-love" style="white-space:normal;">
-          <div style="text-align:center;">${res.loveSvg}</div>
-          <p style="margin-top:14px;"><b>Как использовать:</b> перерисуйте сердце с числами в <b>полнолуние</b> — <b>красной ручкой на красной бумаге</b>. Носите рисунок с собой, например в сумке, но <b>не в кошельке</b>.</p>
+          <div class="codes-pic" style="text-align:center;">${res.loveSvg}</div>
+          <div class="editable-text codes-text" contenteditable="false" style="margin-top:14px;padding:6px;border-radius:6px;outline:none;">
+            <p><b>Как использовать:</b> перерисуйте сердце с числами в <b>полнолуние</b> — <b>красной ручкой на красной бумаге</b>. Носите рисунок с собой, например в сумке, но <b>не в кошельке</b>.</p>
+          </div>
         </div>
       </div>
 
-      <div class="accordion-item">
+      <div class="accordion-item codes-section">
         <button type="button" class="accordion-header" onclick="toggleAccordionBody('code-millionaire')"><span>⭐ Код миллионера</span><span>▾</span></button>
         <div class="accordion-body hidden" id="code-millionaire" style="white-space:normal;">
-          <div style="text-align:center;">${res.starSvg}</div>
-          <p style="color:#f6d66c;font-family:Georgia,serif;font-size:18px;margin:20px 0 8px;">Как нарисовать код миллионера на купюре в один доллар</p>
-          <ol style="margin:0 0 14px;padding-left:22px;line-height:1.6;">
-            <li>Рисуйте в <b>растущую луну</b>.</li>
-            <li>Возьмите купюру в <b>один доллар</b> лицевой стороной к себе (сторона с портретом).</li>
-            <li>Слева от портрета нарисуйте <b>красной ручкой</b> звезду с числами — так, как показано ниже.</li>
-            <li>Сложите купюру и положите её в кошелёк.</li>
-          </ol>
-          ${res.dollarSvg}
+          <div class="codes-pic" style="text-align:center;">${res.starSvg}</div>
+          <div class="editable-text codes-text" contenteditable="false" style="margin-top:14px;padding:6px;border-radius:6px;outline:none;">
+            <p style="color:#f6d66c;font-family:Georgia,serif;font-size:18px;margin:6px 0 8px;">Как нарисовать код миллионера на купюре в один доллар</p>
+            <ol style="margin:0 0 14px;padding-left:22px;line-height:1.6;">
+              <li>Рисуйте в <b>растущую луну</b>.</li>
+              <li>Возьмите купюру в <b>один доллар</b> лицевой стороной к себе (сторона с портретом).</li>
+              <li>Слева от портрета нарисуйте <b>красной ручкой</b> звезду с числами — так, как показано ниже.</li>
+              <li>Сложите купюру и положите её в кошелёк.</li>
+            </ol>
+          </div>
+          <div class="codes-pic">${res.dollarSvg}</div>
         </div>
       </div>
 
-      <div class="accordion-item">
+      <div class="accordion-item codes-section">
         <button type="button" class="accordion-header" onclick="toggleAccordionBody('code-debt')"><span>⭕ Код погашения долгов</span><span>▾</span></button>
         <div class="accordion-body hidden" id="code-debt" style="white-space:normal;">
-          <div style="text-align:center;">${res.debtSvg}</div>
-          <p style="color:#f6d66c;font-family:Georgia,serif;font-size:18px;margin:20px 0 8px;">Как сделать круг погашения долгов</p>
-          <ol style="margin:0 0 14px;padding-left:22px;line-height:1.6;">
-            <li>Выполняйте технику именно в <b>новолуние</b>.</li>
-            <li>Нарисуйте круг и разделите его на 8 секторов, как на рисунке выше.</li>
-            <li>Раскрасьте секторы теми же цветами и впишите числа, как на рисунке.</li>
-            <li>Посередине круга напишите дату, когда вы его сделали.</li>
-            <li>Положите круг погашения в кошелёк. Очень важно не вытаскивать его постоянно и держать подальше от чужих глаз.</li>
-          </ol>
+          <div class="codes-pic" style="text-align:center;">${res.debtSvg}</div>
+          <div class="editable-text codes-text" contenteditable="false" style="margin-top:14px;padding:6px;border-radius:6px;outline:none;">
+            <p style="color:#f6d66c;font-family:Georgia,serif;font-size:18px;margin:6px 0 8px;">Как сделать круг погашения долгов</p>
+            <ol style="margin:0 0 14px;padding-left:22px;line-height:1.6;">
+              <li>Выполняйте технику именно в <b>новолуние</b>.</li>
+              <li>Нарисуйте круг и разделите его на 8 секторов, как на рисунке выше.</li>
+              <li>Раскрасьте секторы теми же цветами и впишите числа, как на рисунке.</li>
+              <li>Посередине круга напишите дату, когда вы его сделали.</li>
+              <li>Положите круг погашения в кошелёк. Очень важно не вытаскивать его постоянно и держать подальше от чужих глаз.</li>
+            </ol>
+          </div>
         </div>
       </div>
 
       <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;">
+        <button type="button" id="editToggleBtn" class="material-manager-button" style="width:auto;" onclick="toggleResultEditing(this)">✏️ Изменить</button>
+        <button type="button" id="calcDownloadBtn" class="material-manager-button" style="width:auto;" onclick='downloadCodesResult(${JSON.stringify(codesPerson)}, ${JSON.stringify(birthDate)})'>Скачать (рисунки + текст)</button>
         <button type="button" class="material-manager-button" style="width:auto;background:rgba(0,0,0,.15);" onclick="openCalculator('codes')">Новый расчёт</button>
       </div>
     </div>`;
 
   saveCalculationHistory({ direction: "codes", title: "Коды любви, миллионера, погашения долгов - " + name + " - " + birthDate, personName: name, birthDate, lastName, firstName, patronymic, alphabet });
+}
+
+function downloadCodesResult(personLabel, dateLabel) {
+  let body = `<h1>${escapeHtml(personLabel)}${dateLabel ? " (" + escapeHtml(dateLabel) + ")" : ""}</h1>`;
+  document.querySelectorAll("#codesResult .codes-section").forEach(function (section) {
+    const title = section.querySelector(".accordion-header span")?.textContent || "";
+    body += `<div style="break-inside:avoid;page-break-inside:avoid;margin-bottom:24px;"><h2>${escapeHtml(title)}</h2>`;
+    section.querySelectorAll(".accordion-body > .codes-pic, .accordion-body > .codes-text").forEach(function (el) {
+      if (el.classList.contains("codes-pic")) {
+        body += `<div style="text-align:center;margin:10px 0;">${el.innerHTML}</div>`;
+      } else {
+        const clone = el.cloneNode(true);
+        clone.removeAttribute("contenteditable");
+        clone.style.background = "none"; clone.style.border = "none";
+        clone.querySelectorAll("[style]").forEach(function (n) { n.style.color = ""; });
+        body += `<div style="font-size:14px;line-height:1.5;">${clone.innerHTML}</div>`;
+      }
+    });
+    body += `</div>`;
+  });
+  downloadHtmlFile(personLabel + (dateLabel ? " - " + dateLabel : "") + ".html", body);
 }
 
 function calculatePythagoras() {
