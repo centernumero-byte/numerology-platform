@@ -583,11 +583,18 @@ const DIRECTIONS = [
   { key: "chakra",        icon: "🪷",  title: "Чакроанализ" },
   { key: "chakra_compat", icon: "💞",  title: "Совместимость<br>по чакроанализу" },
   { key: "pyth_compat",   icon: "🔢",  title: "Совместимость<br>по Пифагору" },
-  { key: "vedic_astro",   icon: "🪐",  title: "Ведическая<br>астрология" }
+  { key: "vedic_astro",   icon: "🪐",  title: "Ведическая<br>астрология" },
+  { key: "ki_star",       icon: "✨",  title: "Звезда Ки" },
+  { key: "loshu",         icon: "🔳",  title: "Лошу" },
+  { key: "personal_cycles", icon: "🔄", title: "Личные циклы" },
+  { key: "human_design",  icon: "🧬",  title: "Дизайн<br>Человека" },
+  { key: "bazi",          icon: "🏮",  title: "Ба Цзы" },
+  { key: "western_astro", icon: "♈",  title: "Западная<br>астрология" },
+  { key: "lunar_day",     icon: "🌖",  title: "Лунный день<br>рождения" }
 ];
 
 // Разделы, которые уже есть на платформе, но калькулятор ещё не готов
-const COMING_SOON_CALCULATORS = new Set(["chakra", "chakra_compat", "pyth_compat", "vedic_astro"]);
+const COMING_SOON_CALCULATORS = new Set(["chakra", "chakra_compat", "pyth_compat", "vedic_astro", "ki_star", "loshu", "personal_cycles", "human_design", "bazi", "western_astro", "lunar_day"]);
 const DIRECTION_NAMES = Object.fromEntries(DIRECTIONS.map(d => [d.key, d.title.replace(/<br>/g, " ")]));
 const SECTION_LABELS = { manuals: "Методическое пособие", videos: "Видео", tests: "Тест" };
 const CONTENT_TYPES = [
@@ -3816,7 +3823,7 @@ async function saveLibraryLink(id) {
    МОИ РАСЧЁТЫ
    ============================================================ */
 
-const DIRECTION_ORDER = ["adult", "child", "compatibility", "vedic", "pythagoras", "moonsun", "lovecards", "prognostika", "codes", "karmic", "biorhythms", "usin", "chakra", "chakra_compat", "pyth_compat", "vedic_astro"];
+const DIRECTION_ORDER = ["adult", "child", "compatibility", "vedic", "pythagoras", "moonsun", "lovecards", "prognostika", "codes", "karmic", "biorhythms", "usin", "chakra", "chakra_compat", "pyth_compat", "vedic_astro", "ki_star", "loshu", "personal_cycles", "human_design", "bazi", "western_astro", "lunar_day"];
 
 function paginatedTableHtml(containerId, headerHtml, rowsHtmlArray, pageSize) {
   pageSize = pageSize || 15;
