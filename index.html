@@ -511,6 +511,7 @@ body {
 <script src="karmic-data.js"></script>
 <script src="karmic-engine.js"></script>
 <script src="biorhythm-engine.js"></script>
+<script src="usin-engine.js"></script>
 <script>
 
 /* ============================================================
@@ -577,7 +578,8 @@ const DIRECTIONS = [
   { key: "prognostika",   icon: "🔮",  title: "Прогностика" },
   { key: "codes",         icon: "💎",  title: "Коды любви,<br>миллионера,<br>погашения долгов" },
   { key: "karmic",        icon: "☯",   title: "Кармическая<br>нумерология" },
-  { key: "biorhythms",    icon: "📈",  title: "Биоритмы" }
+  { key: "biorhythms",    icon: "📈",  title: "Биоритмы" },
+  { key: "usin",          icon: "🌀",  title: "У-Син" }
 ];
 const DIRECTION_NAMES = Object.fromEntries(DIRECTIONS.map(d => [d.key, d.title.replace(/<br>/g, " ")]));
 const SECTION_LABELS = { manuals: "Методическое пособие", videos: "Видео", tests: "Тест" };
@@ -1044,6 +1046,12 @@ function calculate(type) {
   if (type === "prognostika" && window.PrognostikaEngine) {
     renderPrognostikaResult(name, birthDate, prognostikaYear, result);
     saveCalculationHistory({ direction: "prognostika", title: "Прогностика - " + name + " - " + birthDate, personName: name, birthDate });
+    return;
+  }
+  if (type === "usin" && window.UsinEngine) {
+    if (renderUsinResult(name, birthDate, result)) {
+      saveCalculationHistory({ direction: "usin", title: "У-Син - " + name + " - " + birthDate, personName: name, birthDate });
+    }
     return;
   }
   if (type === "karmic" && window.KarmicEngine) {
@@ -2938,6 +2946,60 @@ function renderBiorhythmResult(name, birthDate, startDate, container) {
   return true;
 }
 
+/* ============================================================
+   У-СИН
+   ============================================================ */
+function buildUsinChartSvg(res) {
+  const W = 560, H = 580, cx = 280, cy = 305, R = 190, r = 68;
+  const pos = res.elements.map(function (e, i) {
+    const a = -Math.PI / 2 + i * 2 * Math.PI / 5;
+    return [cx + R * Math.cos(a), cy + R * Math.sin(a)];
+  });
+  let svg = `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="rgba(225,180,52,.45)" stroke-width="2"/>`;
+  const star = [0, 2, 4, 1, 3, 0].map(function (k, i) { return (i ? "L" : "M") + pos[k][0].toFixed(1) + "," + pos[k][1].toFixed(1); }).join(" ");
+  svg += `<path d="${star}" fill="none" stroke="rgba(225,180,52,.25)" stroke-width="1.5" stroke-dasharray="5 5"/>`;
+  const digitsLine = function (d, n) { return n ? String(d).repeat(n) : "—"; };
+  res.elements.forEach(function (e, i) {
+    const [x, y] = pos[i];
+    const yinTxt = digitsLine(e.yin, e.yinCount), yangTxt = digitsLine(e.yang, e.yangCount);
+    const fs = (t) => t.length > 4 ? 20 : t.length > 2 ? 26 : 32;
+    svg += `
+      <path d="M${x},${y - r} A${r},${r} 0 0,0 ${x},${y + r} Z" fill="${e.color}"/>
+      <path d="M${x},${y - r} A${r},${r} 0 0,1 ${x},${y + r} Z" fill="${e.light}"/>
+      <circle cx="${x}" cy="${y}" r="${r}" fill="none" stroke="rgba(0,0,0,.55)" stroke-width="2"/>
+      <line x1="${x}" y1="${y - r}" x2="${x}" y2="${y + r}" stroke="rgba(0,0,0,.55)" stroke-width="2"/>
+      <text x="${x - r / 2}" y="${y + 9}" text-anchor="middle" font-size="${fs(yinTxt)}" font-family="Georgia,serif" font-weight="700" fill="#fff">${yinTxt}</text>
+      <text x="${x + r / 2}" y="${y + 9}" text-anchor="middle" font-size="${fs(yangTxt)}" font-family="Georgia,serif" font-weight="700" fill="#1d1433">${yangTxt}</text>
+      <text x="${x}" y="${y - r - 10}" text-anchor="middle" font-size="18" font-family="Georgia,serif" fill="#f6d66c">${e.name}</text>
+      <text x="${x}" y="${y + r + 22}" text-anchor="middle" font-size="14" font-family="Arial,sans-serif" fill="#e9dfc6">${e.regime.name}</text>`;
+  });
+  return `
+    <div style="max-width:620px;margin:10px auto 22px;text-align:center;">
+      <div style="color:#f6d66c;font-family:Georgia,serif;font-size:20px;margin-bottom:6px;">Личная карта У-Син</div>
+      <div style="color:#e9dfc6;font-size:15px;margin-bottom:10px;letter-spacing:1px;">${res.row.dateDigits.length ? "" : ""}${escapeHtml(res.rowText)}</div>
+      <svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:560px;">${svg}</svg>
+      <div style="color:#c9bfa8;font-size:13px;margin-top:4px;">В каждом круге слева — Инь (тёмная половина), справа — Ян (светлая). Инь: ${res.yinTotal} · Ян: ${res.yangTotal}</div>
+    </div>`;
+}
+
+function renderUsinResult(name, birthDate, container) {
+  const [day, month, year] = birthDate.split(".").map(Number);
+  let res;
+  try {
+    res = window.UsinEngine.getFullResult(day, month, year);
+  } catch (error) {
+    console.error("Ошибка расчёта У-Син:", error);
+    container.innerHTML = `<div style="color:#ff9d9d;padding:16px;">Не удалось выполнить расчёт: ${escapeHtml(error.message || String(error))}</div>`;
+    return false;
+  }
+  res.rowText = day + "." + String(month).padStart(2, "0") + "." + year + "   " + res.row.n1 + "." + res.row.n2 + "   " + res.row.n3 + "." + res.row.n4;
+  renderEditableResult(res.blocks, container, "У-Син - " + name, birthDate, "usin");
+  container.insertAdjacentHTML("afterbegin", buildUsinChartSvg(res));
+  const firstBody = container.querySelector(".accordion-body");
+  if (firstBody) firstBody.classList.remove("hidden");
+  return true;
+}
+
 function renderVedicResult(name, birthDate, container) {
   const [day, month, year] = birthDate.split(".").map(Number);
 
@@ -3735,7 +3797,7 @@ async function saveLibraryLink(id) {
    МОИ РАСЧЁТЫ
    ============================================================ */
 
-const DIRECTION_ORDER = ["adult", "child", "compatibility", "vedic", "pythagoras", "moonsun", "lovecards", "prognostika", "codes", "karmic", "biorhythms"];
+const DIRECTION_ORDER = ["adult", "child", "compatibility", "vedic", "pythagoras", "moonsun", "lovecards", "prognostika", "codes", "karmic", "biorhythms", "usin"];
 
 function paginatedTableHtml(containerId, headerHtml, rowsHtmlArray, pageSize) {
   pageSize = pageSize || 15;
