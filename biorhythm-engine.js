@@ -1,3 +1,4 @@
+(function () {
 // Биоритмы — расчётное ядро (без зависимостей).
 // Формула графика — как в таблице: sin(2π · (дата − дата рождения) / период).
 // День цикла — как в методичке: день рождения = 1-й день, счёт 1…период (в таблице последний день ошибочно давал 0).
@@ -100,6 +101,11 @@ const BIO_PHASE_TEXTS = {
 
 const BIO_PHASE_NAMES = { H: 'позитивная фаза', L: 'негативная фаза', X: 'критический день' };
 
+if (typeof window !== 'undefined') {
+  window.BiorhythmEngine = { calcBiorhythms, cycleState, BIO_CYCLES, BIO_DAY_TEXTS, BIO_PHASE_TEXTS, BIO_PHASE_NAMES, isValidDate };
+}
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { calcBiorhythms, cycleState, BIO_CYCLES, BIO_DAY_TEXTS, BIO_PHASE_TEXTS, BIO_PHASE_NAMES, isValidDate };
 }
+
+})();

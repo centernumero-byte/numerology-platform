@@ -507,6 +507,9 @@ body {
 <script src="love-cards-engine.js"></script>
 <script src="prognostika-engine.js"></script>
 <script src="codes-engine.js"></script>
+<script src="karmic-data.js"></script>
+<script src="karmic-engine.js"></script>
+<script src="biorhythm-engine.js"></script>
 <script>
 
 /* ============================================================
@@ -571,7 +574,9 @@ const DIRECTIONS = [
   { key: "moonsun",       icon: "🌙",  title: "Луна и<br>Солнце" },
   { key: "lovecards",     icon: "💘",  title: "Карты<br>Любви" },
   { key: "prognostika",   icon: "🔮",  title: "Прогностика" },
-  { key: "codes",         icon: "💎",  title: "Коды любви,<br>миллионера,<br>долгов" }
+  { key: "codes",         icon: "💎",  title: "Коды любви,<br>миллионера,<br>долгов" },
+  { key: "karmic",        icon: "☯",   title: "Кармическая<br>нумерология" },
+  { key: "biorhythms",    icon: "📈",  title: "Биоритмы" }
 ];
 const DIRECTION_NAMES = Object.fromEntries(DIRECTIONS.map(d => [d.key, d.title.replace("<br>", " ")]));
 const SECTION_LABELS = { manuals: "Методическое пособие", videos: "Видео", tests: "Тест" };
@@ -873,6 +878,12 @@ async function openCalculator(type) {
           style="display:block;width:100%;padding:13px;margin:8px 0 20px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
         <div id="prognostikaYearError" style="color:#ff9b9b;min-height:22px;margin-bottom:10px;"></div>` : ""}
 
+        ${type === "biorhythms" ? `
+        <label>Дата начала расчёта (график строится на 31 день вперёд)</label>
+        <input id="bioStartDate" type="text" placeholder="ДД.ММ.ГГГГ" maxlength="10" inputmode="numeric" oninput="formatBirthDate(this)" value="${todayDdMmYyyy()}"
+          style="display:block;width:100%;padding:13px;margin:8px 0 5px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
+        <div id="bioStartDateError" style="color:#ff9b9b;min-height:22px;margin-bottom:10px;"></div>` : ""}
+
         <button onclick="calculate('${type}')" style="width:100%;padding:14px;border:1px solid #d7aa31;border-radius:10px;background:linear-gradient(90deg,#713199,#5d2789);color:#f8d96d;font-size:16px;cursor:pointer;">Рассчитать</button>
         <button onclick="location.reload()" style="width:100%;padding:14px;margin-top:10px;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.15);color:#f5d46b;font-size:16px;cursor:pointer;">Назад</button>
 
@@ -983,6 +994,24 @@ function calculate(type) {
     }
     prognostikaYear = Number(yearRaw);
   }
+  let bioStartDate = null;
+  if (type === "biorhythms") {
+    const startInput = document.getElementById("bioStartDate");
+    const startError = document.getElementById("bioStartDateError");
+    if (startError) startError.textContent = "";
+    const startRaw = startInput ? startInput.value.trim() : "";
+    if (!isValidBirthDate(startRaw)) {
+      if (startError) startError.textContent = "Введите дату начала расчёта в формате ДД.ММ.ГГГГ.";
+      return;
+    }
+    const [sd, sm, sy] = startRaw.split(".").map(Number);
+    const [bd, bm, by] = birthDate.split(".").map(Number);
+    if (Date.UTC(sy, sm - 1, sd) < Date.UTC(by, bm - 1, bd)) {
+      if (startError) startError.textContent = "Дата начала расчёта не может быть раньше даты рождения.";
+      return;
+    }
+    bioStartDate = startRaw;
+  }
 
   if (!result) return;
 
@@ -1014,6 +1043,18 @@ function calculate(type) {
   if (type === "prognostika" && window.PrognostikaEngine) {
     renderPrognostikaResult(name, birthDate, prognostikaYear, result);
     saveCalculationHistory({ direction: "prognostika", title: "Прогностика - " + name + " - " + birthDate, personName: name, birthDate });
+    return;
+  }
+  if (type === "karmic" && window.KarmicEngine) {
+    if (renderKarmicResult(name, birthDate, result)) {
+      saveCalculationHistory({ direction: "karmic", title: "Кармическая нумерология - " + name + " - " + birthDate, personName: name, birthDate });
+    }
+    return;
+  }
+  if (type === "biorhythms" && window.BiorhythmEngine) {
+    if (renderBiorhythmResult(name, birthDate, bioStartDate, result)) {
+      saveCalculationHistory({ direction: "biorhythms", title: "Биоритмы - " + name + " - " + birthDate, personName: name, birthDate });
+    }
     return;
   }
 
@@ -2181,7 +2222,7 @@ function calculateCodes() {
         <button type="button" class="accordion-header" onclick="toggleAccordionBody('code-love')"><span>💗 Код любви</span><span>▾</span></button>
         <div class="accordion-body hidden" id="code-love">
           <div style="text-align:center;">${res.loveSvg}</div>
-          <p style="margin-top:14px;">Ваш код любви — это шесть чисел, объединённых в форму сердца: имя и фамилия составляют верхнюю часть, число судьбы и день рождения — вторую половину, отчество — центр, месяц рождения — нижнюю точку.</p>
+          <p style="margin-top:14px;">Ваш код любви — это семь чисел, объединённых в форму сердца: код имени и фамилии — левая верхняя часть, код судьбы и дня рождения — правая, код отчества — центр, ниже — код месяца, а на нижнем острие — код года рождения.</p>
           <p><b>Как использовать:</b> перерисуйте это сердце с числами на чистый лист бумаги (от руки, спокойно, без спешки) и носите с собой — в кошельке или сумке — либо положите под подушку перед сном, когда хотите привлечь в жизнь любовь и гармоничные отношения.</p>
         </div>
       </div>
@@ -2190,7 +2231,7 @@ function calculateCodes() {
         <button type="button" class="accordion-header" onclick="toggleAccordionBody('code-millionaire')"><span>⭐ Код миллионера</span><span>▾</span></button>
         <div class="accordion-body hidden" id="code-millionaire">
           <div style="text-align:center;">${res.starSvg}</div>
-          <p style="margin-top:14px;">Ваш денежный код разложен по вершинам пятиконечной звезды — классический символ денежного изобилия, как на долларовой купюре.</p>
+          <p style="margin-top:14px;">Пять ваших кодов разложены по вершинам пятиконечной звезды — классического символа денежного изобилия, как на долларовой купюре: код активации, души, сердца, левого и правого корня.</p>
           <p><b>Как использовать:</b> перерисуйте звезду с цифрами на бумагу и разместите там, где чаще всего бывают деньги — в кошельке, кассе, рабочем столе. Можно также написать этот код на купюре, которую вы не тратите, и хранить её отдельно как денежный талисман.</p>
         </div>
       </div>
@@ -2199,7 +2240,7 @@ function calculateCodes() {
         <button type="button" class="accordion-header" onclick="toggleAccordionBody('code-debt')"><span>⭕ Код погашения долгов</span><span>▾</span></button>
         <div class="accordion-body hidden" id="code-debt">
           <div style="text-align:center;">${res.debtSvg}</div>
-          <p style="margin-top:14px;">Круг разделён на 8 цветных секторов — по числу имени, фамилии, отчества, дня, месяца, года рождения, а также кодов сердца и души.</p>
+          <p style="margin-top:14px;">Круг разделён на 8 цветных секторов: коды месяца и года рождения, души и сердца, имени и фамилии, отчества и дня рождения.</p>
           <p><b>Как использовать:</b> перерисуйте круг с секторами и числами на бумагу. Держите рисунок рядом с документами по долгу (кредитному договору, распиской) или в том месте, где вы храните деньги, предназначенные на его погашение — это помогает настроиться на осознанное и своевременное закрытие обязательств.</p>
         </div>
       </div>
@@ -2414,7 +2455,7 @@ function downloadEditableResult(personLabel, dateLabel) {
     bodyHtml += `<h2>${escapeHtml(block.title)}</h2>`;
     block.entries.forEach(function (e) {
       const numLabelPdf = typeof e.number === "number" ? String(e.number) : (typeof e.number === "string" ? e.number.trim() : "");
-      bodyHtml += (numLabelPdf ? `<div class="num">${escapeHtml(numLabelPdf)}</div>` : "") + `<p>${escapeHtml(e.text)}</p>`;
+      bodyHtml += (numLabelPdf ? `<div class="num">${escapeHtml(numLabelPdf)}</div>` : "") + `<p>${escapeHtml(e.text).replace(/\n/g, "<br>")}</p>`;
     });
   });
 
@@ -2621,7 +2662,10 @@ function renderLoveCardsResult(name, birthDate, targetYear, container) {
     <div style="max-width:720px;margin:0 auto 20px;text-align:center;padding:22px;border:1px solid #d7aa31;border-radius:14px;background:linear-gradient(145deg,#302052,#21163d);">
       <div style="color:#8a8098;font-size:13px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Ваша карта рождения</div>
       <div style="color:#f6d66c;font-family:Georgia,serif;font-size:42px;margin-bottom:10px;">${escapeHtml(res.birthCard.card)}</div>
-      <div style="color:#f8e7a8;font-size:15px;line-height:1.5;text-align:left;">${escapeHtml(res.birthCard.text)}</div>
+      <div style="color:#f8e7a8;font-size:15px;line-height:1.5;text-align:left;white-space:pre-line;">${escapeHtml(res.birthCard.text)}</div>
+      ${res.birthCard.suitText ? `
+      <div style="color:#f6d66c;font-family:Georgia,serif;font-size:18px;margin:18px 0 6px;text-align:left;">Основное направление: ${escapeHtml(res.birthCard.suit)}</div>
+      <div style="color:#f8e7a8;font-size:15px;line-height:1.5;text-align:left;white-space:pre-line;">${escapeHtml(res.birthCard.suitText)}</div>` : ""}
     </div>`;
 
   const blocks = [{
@@ -2687,6 +2731,128 @@ function renderPrognostikaResult(name, birthDate, targetYear, container) {
   });
 
   renderEditableResult(blocks, container, "Прогностика - " + name, birthDate, "prognostika");
+}
+
+/* ============================================================
+   КАРМИЧЕСКАЯ НУМЕРОЛОГИЯ
+   ============================================================ */
+function renderKarmicResult(name, birthDate, container) {
+  const [day, month, year] = birthDate.split(".").map(Number);
+  let res;
+  try {
+    res = window.KarmicEngine.getFullResult(day, month, year, name);
+  } catch (error) {
+    console.error("Ошибка расчёта кармической нумерологии:", error);
+    container.innerHTML = `<div style="color:#ff9d9d;padding:16px;">Не удалось выполнить расчёт: ${escapeHtml(error.message || String(error))}</div>`;
+    return false;
+  }
+  renderEditableResult(res.blocks, container, "Кармическая нумерология - " + name, birthDate, "karmic");
+  return true;
+}
+
+/* ============================================================
+   БИОРИТМЫ
+   ============================================================ */
+function todayDdMmYyyy() {
+  const d = new Date();
+  return String(d.getDate()).padStart(2, "0") + "." + String(d.getMonth() + 1).padStart(2, "0") + "." + d.getFullYear();
+}
+
+const BIO_COLORS = { phys: "#ff7a7a", emo: "#6fa8ff", intel: "#7ddc8f" };
+const BIO_WEEKDAYS = ["вс", "пн", "вт", "ср", "чт", "пт", "сб"];
+
+function bioDateLabel(date) {
+  return String(date.getUTCDate()).padStart(2, "0") + "." + String(date.getUTCMonth() + 1).padStart(2, "0") + "." + date.getUTCFullYear();
+}
+
+function buildBiorhythmChartSvg(rows, cycles) {
+  const w = 720, h = 300, padL = 44, padR = 12, padT = 16, padB = 40;
+  const n = rows.length, stepX = (w - padL - padR) / (n - 1);
+  const x = (i) => padL + i * stepX;
+  const y = (v) => padT + (1 - v) / 2 * (h - padT - padB);
+  let svg = "";
+  [1, 0.5, 0, -0.5, -1].forEach(function (v) {
+    svg += `<line x1="${padL}" x2="${w - padR}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="rgba(225,180,52,${v === 0 ? ".6" : ".2"})" stroke-width="1" ${v === 0 ? "" : 'stroke-dasharray="3 4"'}/>`;
+    svg += `<text x="${padL - 6}" y="${(y(v) + 4).toFixed(1)}" text-anchor="end" font-size="11" fill="#c9bfa8">${Math.round(v * 100)}%</text>`;
+  });
+  rows.forEach(function (r, i) {
+    const wd = r.date.getUTCDay();
+    const weekend = wd === 0 || wd === 6;
+    svg += `<text x="${x(i).toFixed(1)}" y="${h - padB + 15}" text-anchor="middle" font-size="10" fill="${weekend ? "#f6d66c" : "#c9bfa8"}">${r.date.getUTCDate()}</text>`;
+    if (i === 0 || r.date.getUTCDate() === 1) {
+      svg += `<text x="${x(i).toFixed(1)}" y="${h - padB + 30}" text-anchor="${i === 0 ? "start" : "middle"}" font-size="10" fill="#c9bfa8">${String(r.date.getUTCMonth() + 1).padStart(2, "0")}.${r.date.getUTCFullYear()}</text>`;
+    }
+  });
+  const base = rows[0].daysLived;
+  cycles.forEach(function (c) {
+    let d = "";
+    for (let t = 0; t <= (n - 1) * 6; t++) {
+      const day = t / 6;
+      const v = Math.sin(2 * Math.PI * (base + day) / c.period);
+      d += (t ? "L" : "M") + (padL + day * stepX).toFixed(1) + "," + y(v).toFixed(1);
+    }
+    svg += `<path d="${d}" fill="none" stroke="${BIO_COLORS[c.key]}" stroke-width="2.4" stroke-linejoin="round"/>`;
+    rows.forEach(function (r, i) {
+      if (r[c.key].phase === "X") {
+        svg += `<circle cx="${x(i).toFixed(1)}" cy="${y(r[c.key].value).toFixed(1)}" r="4.5" fill="#f0a33c" stroke="${BIO_COLORS[c.key]}" stroke-width="2"/>`;
+      }
+    });
+  });
+  const legend = cycles.map(c => `<span style="white-space:nowrap;"><span style="display:inline-block;width:16px;height:3px;background:${BIO_COLORS[c.key]};vertical-align:middle;margin-right:5px;"></span>${c.name} (${c.period} дн.)</span>`).join(" &nbsp; ")
+    + ` &nbsp; <span style="white-space:nowrap;"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#f0a33c;vertical-align:middle;margin-right:5px;"></span>критический день</span>`;
+  return `
+    <div style="max-width:720px;margin:10px auto 22px;text-align:center;">
+      <div style="color:#f6d66c;font-family:Georgia,serif;font-size:16px;margin-bottom:6px;">Биоритмы с ${bioDateLabel(rows[0].date)} по ${bioDateLabel(rows[rows.length - 1].date)}</div>
+      <svg viewBox="0 0 ${w} ${h}" style="width:100%;max-width:720px;background:rgba(0,0,0,.15);border:1px solid rgba(215,170,49,.3);border-radius:10px;">${svg}</svg>
+      <div style="color:#c9bfa8;font-size:12px;margin-top:6px;line-height:1.7;">${legend}</div>
+      <div style="color:#8a8098;font-size:12px;margin-top:4px;">Выше нуля — позитивная фаза, ниже нуля — негативная. Жёлтым выделены выходные.</div>
+    </div>`;
+}
+
+function renderBiorhythmResult(name, birthDate, startDate, container) {
+  const [bd, bm, by] = birthDate.split(".").map(Number);
+  const [sd, sm, sy] = startDate.split(".").map(Number);
+  const E = window.BiorhythmEngine;
+  let rows;
+  try {
+    rows = E.calcBiorhythms({ y: by, m: bm, d: bd }, { y: sy, m: sm, d: sd }, 31);
+  } catch (error) {
+    console.error("Ошибка расчёта биоритмов:", error);
+    container.innerHTML = `<div style="color:#ff9d9d;padding:16px;">Не удалось выполнить расчёт: ${escapeHtml(error.message || String(error))}</div>`;
+    return false;
+  }
+
+  const first = rows[0];
+  const blocks = [];
+  blocks.push({
+    title: "Состояние на " + bioDateLabel(first.date) + " — код дня " + first.code,
+    entries: E.BIO_CYCLES.map(function (c) {
+      const st = first[c.key];
+      return {
+        number: c.name + ": " + (st.percent > 0 ? "+" : "") + st.percent + "%, " + st.dayOfCycle + "-й день из " + c.period + ", " + E.BIO_PHASE_NAMES[st.phase],
+        text: E.BIO_PHASE_TEXTS[c.key][st.phase]
+      };
+    }).concat([{ number: "Код дня " + first.code, text: E.BIO_DAY_TEXTS[first.code] }])
+  });
+  blocks.push({
+    title: "Расшифровка по дням",
+    entries: rows.map(function (r) {
+      const marks = r.criticalCount === 3 ? " — тройной критический день" : r.criticalCount === 2 ? " — двойной критический день" : r.criticalCount === 1 ? " — критический день" : "";
+      const detail = E.BIO_CYCLES.map(function (c) { return c.name[0] + ": " + r[c.key].dayOfCycle + "-й день, " + (r[c.key].percent > 0 ? "+" : "") + r[c.key].percent + "%"; }).join("; ");
+      return { number: bioDateLabel(r.date) + " (" + BIO_WEEKDAYS[r.date.getUTCDay()] + "), код " + r.code + marks, text: detail + "\n\n" + E.BIO_DAY_TEXTS[r.code] };
+    })
+  });
+  blocks.push({
+    title: "Как читать код дня",
+    entries: [{ number: "", text: "Три буквы кода идут по порядку: физический, эмоциональный, интеллектуальный цикл.\nH — позитивная фаза, L — негативная фаза, X — критический день (смена фазы).\nКритические дни: физический цикл — 1-й и 12-й день, эмоциональный — 1-й и 15-й, интеллектуальный — 1-й и 17-й.\nБиоритмы показывают вероятный настрой, а не предопределяют события." }]
+  });
+
+  renderEditableResult(blocks, container, "Биоритмы - " + name, birthDate + ", с " + startDate, "biorhythms");
+  container.insertAdjacentHTML("afterbegin", buildBiorhythmChartSvg(rows, E.BIO_CYCLES));
+  // сразу раскрываем состояние на первый день, чтобы расшифровка была видна под графиком
+  const firstBody = container.querySelector(".accordion-body");
+  if (firstBody) firstBody.classList.remove("hidden");
+  return true;
 }
 
 function renderVedicResult(name, birthDate, container) {
@@ -3486,7 +3652,7 @@ async function saveLibraryLink(id) {
    МОИ РАСЧЁТЫ
    ============================================================ */
 
-const DIRECTION_ORDER = ["adult", "child", "compatibility", "vedic", "pythagoras", "moonsun", "lovecards", "prognostika", "codes"];
+const DIRECTION_ORDER = ["adult", "child", "compatibility", "vedic", "pythagoras", "moonsun", "lovecards", "prognostika", "codes", "karmic", "biorhythms"];
 
 function paginatedTableHtml(containerId, headerHtml, rowsHtmlArray, pageSize) {
   pageSize = pageSize || 15;
@@ -3618,14 +3784,14 @@ async function reopenCalculation(r) {
     await openCalculator(r.direction);
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
-    if (r.direction === "pythagoras") {
+    if (r.direction === "pythagoras" || r.direction === "codes") {
       const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ""; };
       set("pythLastName", r.last_name);
       set("pythFirstName", r.first_name);
       set("pythPatronymic", r.patronymic);
       set("pythAlphabet", r.alphabet || "russian");
       set("birthDate", r.birth_date);
-      calculatePythagoras();
+      if (r.direction === "codes") calculateCodes(); else calculatePythagoras();
     } else if (r.direction === "compatibility") {
       const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ""; };
       set("birthDate1", r.birth_date);

@@ -1,3 +1,4 @@
+(function () {
 // Кармическая нумерология — расчётное ядро.
 // Точная копия формул листа «Рассчет», которые реально попадают в «Расшифровку».
 // Вход: { day, month, year, firstName }  (Фамилия/Отчество/пол в отчёт не попадают)
@@ -89,4 +90,60 @@ function calcKarmic({ day, month, year, firstName }) {
   };
 }
 
-if (typeof module !== 'undefined') module.exports = { calcKarmic, nameArcana };
+if (typeof module !== 'undefined' && module.exports) module.exports = { calcKarmic, nameArcana };
+
+// ---------------- Подключение к платформе ----------------
+// Порядок и источники текстов — как на листе «Расшифровка» исходного Excel.
+function karmicPeriod(from, to) {
+  if (from === null) return '∞';
+  return from + '-' + (to === null ? '∞' : to);
+}
+
+function getKarmicResult(day, month, year, firstName) {
+  const T = (typeof window !== 'undefined' && window.KARMIC_TEXTS) || {};
+  const t = (table, n) => (T[table] && T[table][n]) || '';
+  const r = calcKarmic({ day, month, year, firstName });
+  if (!r.name) throw new Error('В имени нет букв для расчёта. Введите имя буквами.');
+  const blocks = [];
+  const one = (title, table, n) => blocks.push({ title: title + ' — ' + n, entries: [{ number: n, text: t(table, n) }] });
+
+  one('Месяц рождения', 'month', r.month);
+  one('Самореализация (СЗ)', 'sz', r.SZ);
+  one('День рождения', 'day', r.day);
+  blocks.push({
+    title: 'Ошибки прошлого воплощения (кармические узлы)',
+    entries: r.OPV.map((n, i) => ({ number: (i === 4 ? 'Главный кармический узел 5' : 'Кармический узел ' + (i + 1)) + ': ' + n, text: t('opv', n) })),
+  });
+  one('Имя', 'name', r.name);
+  one('Зона комфорта', 'zk', r.ZK);
+  one('Точка препятствия', 'tp', r.TP);
+  blocks.push({
+    title: 'Точки препятствия человека (числа кармы)',
+    entries: r.TPchel.map((n, i) => ({ number: (i === 4 ? 'Главное число кармы 5' : 'Число кармы ' + (i + 1)) + ': ' + n, text: t('tpChel', n) })),
+  });
+  blocks.push({
+    title: 'Кармические уроки',
+    entries: r.KU.map((n, i) => ({ number: 'Кармический урок ' + (i + 1) + ': ' + n, text: t(['ku1', 'ku2', 'ku3', 'sz'][i], n) })),
+  });
+  one('Ангел-покровитель', 'gift', r.angel);
+  one('Талант', 'gift', r.talent);
+  one('Гармония души', 'harmony', r.harmony);
+  one('Проработка кармы', 'mission', r.karmaWork);
+  blocks.push({
+    title: 'Циклы жизни',
+    entries: r.cycles.map((c) => ({ number: 'Цикл ' + karmicPeriod(c.from, c.to) + ' лет: ' + c.value, text: t('cycles', c.value) })),
+  });
+  blocks.push({
+    title: 'События по периодам жизни',
+    entries: r.events.flatMap((e) => [
+      { number: 'События «+» ' + karmicPeriod(e.from, e.to) + ': ' + e.plus, text: t('eventsPlus', e.plus) },
+      { number: 'События «−» ' + karmicPeriod(e.from, e.to) + ': ' + e.minus, text: t('eventsMinus', e.minus) },
+    ]),
+  });
+  return { numbers: r, blocks };
+}
+
+if (typeof window !== 'undefined') window.KarmicEngine = { getFullResult: getKarmicResult, calcKarmic, nameArcana };
+if (typeof module !== 'undefined' && module.exports) module.exports.getKarmicResult = getKarmicResult;
+
+})();
