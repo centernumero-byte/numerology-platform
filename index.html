@@ -579,8 +579,15 @@ const DIRECTIONS = [
   { key: "codes",         icon: "💎",  title: "Коды любви,<br>миллионера,<br>погашения долгов" },
   { key: "karmic",        icon: "☯",   title: "Кармическая<br>нумерология" },
   { key: "biorhythms",    icon: "📈",  title: "Биоритмы" },
-  { key: "usin",          icon: "🌀",  title: "У-Син" }
+  { key: "usin",          icon: "🌀",  title: "У-Син" },
+  { key: "chakra",        icon: "🪷",  title: "Чакроанализ" },
+  { key: "chakra_compat", icon: "💞",  title: "Совместимость<br>по чакроанализу" },
+  { key: "pyth_compat",   icon: "🔢",  title: "Совместимость<br>по Пифагору" },
+  { key: "vedic_astro",   icon: "🪐",  title: "Ведическая<br>астрология" }
 ];
+
+// Разделы, которые уже есть на платформе, но калькулятор ещё не готов
+const COMING_SOON_CALCULATORS = new Set(["chakra", "chakra_compat", "pyth_compat", "vedic_astro"]);
 const DIRECTION_NAMES = Object.fromEntries(DIRECTIONS.map(d => [d.key, d.title.replace(/<br>/g, " ")]));
 const SECTION_LABELS = { manuals: "Методическое пособие", videos: "Видео", tests: "Тест" };
 const CONTENT_TYPES = [
@@ -772,6 +779,18 @@ async function openCalculator(type) {
   if (!session) { showLogin(); return; }
 
   const title = DIRECTION_NAMES[type] || "Расчёт";
+
+  if (COMING_SOON_CALCULATORS.has(type)) {
+    document.body.innerHTML = `
+      <div style="min-height:100vh;padding:40px;background:linear-gradient(135deg,#17102f,#211443,#17102f);color:#f8e7a8;font-family:Arial,sans-serif;">
+        <div style="max-width:650px;margin:0 auto;padding:35px;border:1px solid #d7aa31;border-radius:20px;background:linear-gradient(145deg,#302052,#21163d);text-align:center;">
+          <h1 style="margin-top:0;color:#f6d66c;font-family:Georgia,serif;font-weight:500;">${title}</h1>
+          <p style="font-size:17px;color:#e9dfc6;margin:24px 0 30px;">Калькулятор этого раздела скоро появится.</p>
+          <button type="button" onclick="location.reload()" style="width:100%;padding:14px;border:1px solid #d7aa31;border-radius:10px;background:rgba(0,0,0,.2);color:#f6d66c;font-size:16px;cursor:pointer;">Назад</button>
+        </div>
+      </div>`;
+    return;
+  }
 
   if (type === "pythagoras" || type === "codes") {
     document.body.innerHTML = `
@@ -3797,7 +3816,7 @@ async function saveLibraryLink(id) {
    МОИ РАСЧЁТЫ
    ============================================================ */
 
-const DIRECTION_ORDER = ["adult", "child", "compatibility", "vedic", "pythagoras", "moonsun", "lovecards", "prognostika", "codes", "karmic", "biorhythms", "usin"];
+const DIRECTION_ORDER = ["adult", "child", "compatibility", "vedic", "pythagoras", "moonsun", "lovecards", "prognostika", "codes", "karmic", "biorhythms", "usin", "chakra", "chakra_compat", "pyth_compat", "vedic_astro"];
 
 function paginatedTableHtml(containerId, headerHtml, rowsHtmlArray, pageSize) {
   pageSize = pageSize || 15;
