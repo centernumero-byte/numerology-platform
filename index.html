@@ -1134,40 +1134,43 @@ const CHAKRA_COLOR = {
   neutral: "#8a7fae",
 };
 
-// Кольцо прогноза: те же значения, что в разделе «Прогноз» (buildForecastTable), разложенные по возрастам
+// Кольцо прогноза: те же значения, что в разделе «Прогноз» (buildForecastTable), разложенные по возрастам.
+// Все подписи горизонтальные: числа — снаружи восьмиугольника, возраст — внутри, на одинаковом расстоянии от линии.
 function buildForecastRingSvg(engine, positions, mid) {
   const anchors = getForecastAnchors(engine);
   const table = buildForecastTable(anchors, 80);
   const order = ["a", "f", "b", "g", "c", "y", "d", "k"]; // 0, 10, 20 … 70 лет
-  const numColor = "#d4ad45", ageColor = "#9a90aa", lineColor = "rgba(154,144,170,.9)";
+  const numColor = "#e9dfc6", numStrong = "#f6d66c", ageColor = "#9a90aa", lineColor = "rgba(233,223,198,.75)";
+  const font = "Arial,Helvetica,sans-serif";
   const fmt = (s) => String(s).replace(/\./g, ",");
+  const anchorFor = (nx) => nx > 0.35 ? "start" : nx < -0.35 ? "end" : "middle";
   let lines = "", labels = "";
   for (let d = 0; d < 8; d++) {
     const p1 = positions[order[d]], p2 = positions[order[(d + 1) % 8]];
-    const len = Math.hypot(p2.x - p1.x, p2.y - p1.y);
-    const r0 = 24 / len; // отступ от больших кружков, чтобы точки их не касались
-    lines += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="${lineColor}" stroke-width="1.2"/>`;
+    const ex = p2.x - p1.x, ey = p2.y - p1.y, len = Math.hypot(ex, ey);
+    // внешняя нормаль к ребру (от центра)
+    let nx = ey / len, ny = -ex / len;
+    const cx = (p1.x + p2.x) / 2 - mid, cy = (p1.y + p2.y) / 2 - mid;
+    if (nx * cx + ny * cy < 0) { nx = -nx; ny = -ny; }
+    const r0 = 20 / len;
+    lines += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="${lineColor}" stroke-width="1"/>`;
     for (let i = 1; i < 8; i++) {
       const row = table[d * 8 + i];
       const t = r0 + (1 - 2 * r0) * (i / 8);
-      const x = p1.x + (p2.x - p1.x) * t, y = p1.y + (p2.y - p1.y) * t;
-      const dx = x - mid, dy = y - mid, dl = Math.hypot(dx, dy), ux = dx / dl, uy = dy / dl;
+      const x = p1.x + ex * t, y = p1.y + ey * t;
       const isFive = i === 4;
       lines += isFive
-        ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.4" fill="#241640" stroke="${lineColor}" stroke-width="1.4"/>`
-        : `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.1" fill="${lineColor}"/>`;
-      // число — сразу снаружи точки
-      labels += `<text x="${(x + ux * 13).toFixed(1)}" y="${(y + uy * 13 + 4).toFixed(1)}" text-anchor="middle" font-family="Georgia,serif" font-size="${isFive ? 13 : 11}" font-weight="${isFive ? 700 : 400}" fill="${numColor}">${row.energy1}</text>`;
-      // возраст — дальше, по лучу от центра (повёрнут, чтобы подписи не налезали друг на друга)
-      let ang = Math.atan2(dy, dx) * 180 / Math.PI, anchor = "start";
-      if (ux < -0.01) { ang += 180; anchor = "end"; }
-      const ax = x + ux * 24, ay = y + uy * 24;
+        ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.6" fill="#241640" stroke="${lineColor}" stroke-width="1.1"/>`
+        : `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.6" fill="${lineColor}"/>`;
+      const ox = x + nx * 7, oy = y + ny * 7 + (ny > 0.35 ? 6 : ny < -0.35 ? 0 : 3);
+      labels += `<text x="${ox.toFixed(1)}" y="${oy.toFixed(1)}" text-anchor="${anchorFor(nx)}" font-family="${font}" font-size="${isFive ? 10.5 : 9.5}" font-weight="${isFive ? 700 : 400}" fill="${isFive ? numStrong : numColor}">${row.energy1}</text>`;
       const ageText = isFive ? `${d * 10 + 5} лет` : fmt(row.label.replace(" лет", ""));
-      labels += `<text x="${ax.toFixed(1)}" y="${ay.toFixed(1)}" dy="2.5" text-anchor="${anchor}" transform="rotate(${ang.toFixed(1)} ${ax.toFixed(1)} ${ay.toFixed(1)})" font-family="Arial,sans-serif" font-size="${isFive ? 8 : 7}" font-weight="${isFive ? 700 : 400}" fill="${isFive ? "#c9bfa8" : ageColor}">${ageText}</text>`;
+      const ix = x - nx * 6, iy = y - ny * 6 + (-ny > 0.35 ? 5 : -ny < -0.35 ? 0 : 2);
+      labels += `<text x="${ix.toFixed(1)}" y="${iy.toFixed(1)}" text-anchor="${anchorFor(-nx)}" font-family="${font}" font-size="${isFive ? 6.4 : 5.4}" font-weight="${isFive ? 700 : 400}" fill="${isFive ? numColor : ageColor}">${ageText}</text>`;
     }
-    // подпись десятилетия у вершины
+    // подпись десятилетия у вершины, снаружи
     const vx = p1.x - mid, vy = p1.y - mid, vl = Math.hypot(vx, vy);
-    labels += `<text x="${(p1.x + vx / vl * 32).toFixed(1)}" y="${(p1.y + vy / vl * 32 + 4).toFixed(1)}" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" font-weight="700" fill="#c9bfa8">${d * 10} лет</text>`;
+    labels += `<text x="${(p1.x + vx / vl * 26).toFixed(1)}" y="${(p1.y + vy / vl * 26 + 3).toFixed(1)}" text-anchor="middle" font-family="${font}" font-size="8" font-weight="700" fill="${numColor}">${d * 10} лет</text>`;
   }
   return { lines, labels };
 }
@@ -1227,9 +1230,10 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   // Расположение вдоль линии — равными долями, независимо от исходных координат в Excel (те нужны только для значений).
   // mid = истинный центр viewBox (410/2=205, 240/2=120) — раньше был сдвинут на +20/+10,
   // из-за чего точки c и d (справа и снизу) вылезали за край и обрезались.
-  const mid = svgSize === "small" ? 120 : 205;
+  const bigRing = withForecast && svgSize !== "small" && omitAncestral !== true;
+  const mid = svgSize === "small" ? 120 : bigRing ? 250 : 205;
   // Все 8 углов (a,b,c,d,f,g,k,y) — на одной окружности, равное расстояние от центра.
-  const R1 = svgSize === "small" ? 100 : 175;
+  const R1 = svgSize === "small" ? 100 : bigRing ? 222 : 175;
   const R2 = R1;
 
   function polar(angleDeg, radius) {
@@ -1362,16 +1366,18 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   const subSvg = subKeys.map(k => circle(positions[k], values[k], 9 * rScale, 8.5 * rScale, pointColor[k])).join("");
   const centerSvg = circle(positions.e, values.e, 18 * rScale, 14 * rScale, pointColor.e);
 
-  const viewSize = svgSize === "small" ? 240 : 410;
+  const viewSize = svgSize === "small" ? 240 : bigRing ? 500 : 410;
   const inner = `${outerSquareLines}${innerDiamondLines}${axisLines}${lineageLines}${lineageLabels}${wellbeingLine}${dollarSign}${heartSign}${centerSvg}${subSvg}${outerSvg}${mainSvg}`;
   let svg;
   if (withForecast && svgSize !== "small" && !omitCorners) {
     // Кольцо прогноза по возрастам вокруг матрицы: восьмиугольник через 8 внешних точек (0, 10, 20 … 70 лет)
-    const pad = 95, full = viewSize + pad * 2;
+    const pad = 44, full = viewSize + pad * 2;
     const ring = buildForecastRingSvg(engine, positions, mid);
-    svg = `<svg viewBox="${-pad} ${-pad} ${full} ${full}" style="width:100%;max-width:800px;">
+    svg = `<div class="matrix-ring-scroll" style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+      <svg viewBox="${-pad} ${-pad} ${full} ${full}" style="width:100%;min-width:680px;max-width:860px;display:block;margin:0 auto;">
       ${ring.lines}${inner}${ring.labels}
-    </svg>`;
+    </svg></div>
+    <div class="matrix-ring-hint" style="display:none;color:#a99fb5;font-size:12px;margin-top:6px;">← листайте диаграмму пальцем →</div>`;
   } else {
     svg = `<svg viewBox="0 0 ${viewSize} ${viewSize}" style="width:100%;max-width:${svgSize === "small" ? 250 : 420}px;">
       ${inner}
@@ -1388,9 +1394,10 @@ function renderMatrixDiamondDiagram(engine, container, includeHealthMap, purpose
   window._lastDiagramValues = values;
 
   const box = document.createElement("div");
-  box.style.cssText = "max-width:" + (engine === window.AdultMatrixEngine ? 800 : 380) + "px;margin:0 auto 20px;text-align:center;";
+  box.style.cssText = "max-width:" + (engine === window.AdultMatrixEngine ? 860 : 380) + "px;margin:0 auto 20px;text-align:center;";
   box.innerHTML = `<div style="color:#c9bfa8;font-size:14px;margin-bottom:10px;">Диаграмма матрицы</div>${svg}`;
   container.insertBefore(box, container.firstChild);
+  centerMatrixRingScroll(box);
 
   let afterNode = box;
   if (includeHealthMap !== false) {
@@ -1398,6 +1405,16 @@ function renderMatrixDiamondDiagram(engine, container, includeHealthMap, purpose
     afterNode = box.nextSibling;
   }
   renderPurposeDiagram(values, container, afterNode, purposeCount);
+}
+
+function centerMatrixRingScroll(root) {
+  (root || document).querySelectorAll(".matrix-ring-scroll").forEach(function (el) {
+    if (el.scrollWidth > el.clientWidth + 4) {
+      el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
+      const hint = el.parentNode.querySelector(".matrix-ring-hint");
+      if (hint) hint.style.display = "block";
+    }
+  });
 }
 
 function renderHealthMapDiagram(v, container, afterNode) {
@@ -5223,7 +5240,20 @@ function showLanding() {
     .lp-foot { text-align:center; padding:50px 0 60px; color:#a99fb5; }
     .lp-modal { position:fixed; inset:0; background:rgba(10,6,24,.75); display:flex; align-items:center; justify-content:center; padding:20px; z-index:1000; }
     .lp-modal > div { max-width:460px; width:100%; border:1px solid #d7aa31; border-radius:18px; padding:28px; background:linear-gradient(145deg,#302052,#21163d); text-align:center; }
-    @media (max-width:600px) { .lp-trial { padding:20px; } .lp-hero { padding:30px 0; } }
+    @media (max-width:600px) {
+      .lp-wrap { padding:0 14px; }
+      .lp-top { padding:14px 0; }
+      .lp-logo { font-size:18px; }
+      .lp-top .lp-btn { padding:9px 14px; font-size:14px; }
+      .lp-hero { padding:24px 0 10px; }
+      .lp-hero p { font-size:16px; }
+      .lp-hero .lp-btn, .lp-foot .lp-btn { width:100%; }
+      .lp-h2 { font-size:24px; margin:36px 0 16px; }
+      .lp-card { padding:18px; }
+      .lp-trial { padding:18px 12px; }
+      .lp-lock { padding:13px 14px; font-size:15px; }
+      #lpResult .lp-btn { width:100%; }
+    }
   </style>
   <div class="lp">
     <div class="lp-wrap">
@@ -5330,7 +5360,7 @@ function runTrialMatrix() {
   window._trialDownload = {
     title: "Матрица судьбы - " + name + " (" + birthDate + ") - пробная версия",
     body: `<h1>Матрица судьбы: ${escapeHtml(name)}, ${escapeHtml(birthDate)}</h1>
-      <div style="max-width:800px;margin:0 auto 20px;">${diagram ? diagram.svg : ""}</div>
+      <div style="max-width:860px;margin:0 auto 20px;">${diagram ? diagram.svg : ""}</div>
       ${card ? `<h2>${escapeHtml(card.title)}</h2>` + card.entries.map(function (e) {
         const num = typeof e.number === "number" ? String(e.number) : String(e.number || "").trim();
         return (num ? `<div class="num">${escapeHtml(num)}</div>` : "") + `<p>${escapeHtml(e.text).replace(/\n/g, "<br>")}</p>`;
@@ -5340,7 +5370,7 @@ function runTrialMatrix() {
 
   out.innerHTML = `
     <div style="margin-top:24px;">
-      <div style="max-width:800px;margin:0 auto 20px;text-align:center;">
+      <div style="max-width:860px;margin:0 auto 20px;text-align:center;">
         <div style="color:#c9bfa8;font-size:14px;margin-bottom:10px;">Диаграмма матрицы</div>${diagram ? diagram.svg : ""}
       </div>
       ${card ? `<div class="lp-open"><h3>${escapeHtml(card.title)}</h3>${cardHtml}</div>` : ""}
@@ -5350,6 +5380,7 @@ function runTrialMatrix() {
         <button type="button" class="lp-btn ghost" onclick="showRegister()">Открыть полную версию</button>
       </div>
     </div>`;
+  centerMatrixRingScroll(out);
   out.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
