@@ -137,38 +137,86 @@ function buildMillionaireStarSvg(codes) {
   <div style="color:#c9bfa8;font-size:13px;margin-top:6px;text-align:center;line-height:1.5;">Вверху — код активации, слева — код души, справа — код сердца, внизу — левый и правый корень.<br>Единый код: <b>${codes.millionaireRaw}</b> → <b>${codes.millionaireCode}</b></div>`;
 }
 
-// Техника погашения долгов — круг из 8 секторов в том же порядке, что на листе «Техника погашения долгов»:
-// сверху месяц и год, справа душа и сердце, снизу имя и фамилия, слева отчество и день
+// Техника погашения долгов — круг, разрезанный как пирог на 8 частей, цвета и порядок как в методичке:
+// сверху синий (месяц), по часовой: сиреневый (год), розовый (душа), красный (сердце), голубой (имя),
+// оранжевый (фамилия), жёлтый (отчество), зелёный (день)
 function buildDebtCircleSvg(codes) {
   const sectors = [
-    { label: "Месяц", value: codes.monthCode, color: "#e0913e" },
-    { label: "Год", value: codes.yearCode, color: "#4fc3c0" },
-    { label: "Душа", value: codes.soulCode, color: "#d7aa31" },
-    { label: "Сердце", value: codes.heartCode, color: "#ff9d9d" },
-    { label: "Имя", value: codes.firstNameCode, color: "#8fd98f" },
-    { label: "Фамилия", value: codes.lastNameCode, color: "#f6d66c" },
-    { label: "Отчество", value: codes.middleNameCode, color: "#9b6bd6" },
-    { label: "День", value: codes.dayCode, color: "#5b8ef2" },
+    { color: "#3A99DC", name: "Синий", label: "код месяца", value: codes.monthCode, text: "#fff" },
+    { color: "#D1A9CA", name: "Сиреневый", label: "код года", value: codes.yearCode, text: "#1d1d1d" },
+    { color: "#FCDAD6", name: "Розовый", label: "код души", value: codes.soulCode, text: "#1d1d1d" },
+    { color: "#C0202A", name: "Красный", label: "код сердца", value: codes.heartCode, text: "#fff" },
+    { color: "#66B9BD", name: "Голубой", label: "код имени", value: codes.firstNameCode, text: "#1d1d1d" },
+    { color: "#E3830A", name: "Оранжевый", label: "код фамилии", value: codes.lastNameCode, text: "#1d1d1d" },
+    { color: "#F4B819", name: "Жёлтый", label: "код отчества", value: codes.middleNameCode, text: "#1d1d1d" },
+    { color: "#A8B42A", name: "Зелёный", label: "код дня", value: codes.dayCode, text: "#1d1d1d" },
   ];
-  const cx = 200, cy = 200, R = 150, r0 = 56;
+  const cx = 170, cy = 170, R = 160;
   const n = sectors.length;
-  const start = -Math.PI * 3 / 4; // первый сектор — вверху слева
+  const start = -Math.PI / 2 - Math.PI / n; // синий сектор — ровно сверху
+  const pt = (t, k) => [cx + R * k * Math.cos(t), cy + R * k * Math.sin(t)];
   const parts = sectors.map((s, i) => {
     const a0 = start + (i / n) * 2 * Math.PI;
     const a1 = start + ((i + 1) / n) * 2 * Math.PI;
-    const x0 = cx + R * Math.cos(a0), y0 = cy + R * Math.sin(a0);
-    const x1 = cx + R * Math.cos(a1), y1 = cy + R * Math.sin(a1);
-    const xi0 = cx + r0 * Math.cos(a0), yi0 = cy + r0 * Math.sin(a0);
-    const xi1 = cx + r0 * Math.cos(a1), yi1 = cy + r0 * Math.sin(a1);
-    const mid = (a0 + a1) / 2;
-    const lx = cx + (R + 26) * Math.cos(mid), ly = cy + (R + 26) * Math.sin(mid) + 4;
-    const tx = cx + (r0 + R) / 2 * Math.cos(mid), ty = cy + (r0 + R) / 2 * Math.sin(mid) + 6;
+    const [x0, y0] = pt(a0, 1), [x1, y1] = pt(a1, 1);
+    const [tx, ty] = pt((a0 + a1) / 2, 0.66);
     return `
-      <path d="M${xi0.toFixed(1)},${yi0.toFixed(1)} L${x0.toFixed(1)},${y0.toFixed(1)} A${R},${R} 0 0,1 ${x1.toFixed(1)},${y1.toFixed(1)} L${xi1.toFixed(1)},${yi1.toFixed(1)} A${r0},${r0} 0 0,0 ${xi0.toFixed(1)},${yi0.toFixed(1)} Z" fill="${s.color}" fill-opacity="0.75" stroke="#122522" stroke-width="1.5"/>
-      <text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="middle" font-size="18" font-family="Georgia,serif" fill="#122522" font-weight="700">${s.value}</text>
-      <text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" font-size="12" fill="#c9bfa8">${s.label}</text>`;
+      <path d="M${cx},${cy} L${x0.toFixed(1)},${y0.toFixed(1)} A${R},${R} 0 0,1 ${x1.toFixed(1)},${y1.toFixed(1)} Z" fill="${s.color}"/>
+      <text x="${tx.toFixed(1)}" y="${(ty + 10).toFixed(1)}" text-anchor="middle" font-size="28" font-family="Arial,sans-serif" fill="${s.text}" font-weight="700">${s.value}</text>`;
   }).join("");
-  return `<svg viewBox="0 0 400 400" style="width:100%;max-width:340px;">${parts}</svg>`;
+  const legend = sectors.map((s) => `<div style="margin:3px 0;"><span style="display:inline-block;width:14px;height:14px;background:${s.color};border-radius:3px;vertical-align:middle;margin-right:8px;"></span>${s.name} — ${s.label}: <b>${s.value}</b></div>`).join("");
+  return `<svg viewBox="0 0 340 340" style="width:100%;max-width:340px;">${parts}</svg>
+  <div style="color:#e9dfc6;font-size:14px;margin:10px auto 0;display:inline-block;text-align:left;line-height:1.5;">${legend}</div>`;
+}
+
+// Купюра в один доллар (схематичный рисунок) с нарисованной звездой кода миллионера
+function buildDollarStarSvg(codes) {
+  const W = 780, H = 332;
+  const ink = "#2e4a36", paper = "#e9eee2", mid = "#b9c7b0";
+  const corner = (x, y) => `
+    <g transform="translate(${x},${y})">
+      <rect x="-30" y="-34" width="60" height="68" rx="14" fill="${paper}" stroke="${ink}" stroke-width="3"/>
+      <text x="0" y="17" text-anchor="middle" font-size="48" font-family="Georgia,serif" font-weight="700" fill="${ink}">1</text>
+    </g>`;
+  // звезда
+  const sx = 252, sy = 186, R = 44;
+  const pts = [];
+  for (let i = 0; i < 5; i++) {
+    const a = -Math.PI / 2 + i * 2 * Math.PI / 5;
+    pts.push([sx + R * Math.cos(a), sy + R * Math.sin(a)]);
+  }
+  const starPath = [0, 2, 4, 1, 3, 0].map((k, i) => (i ? "L" : "M") + pts[k][0].toFixed(1) + "," + pts[k][1].toFixed(1)).join(" ") + "Z";
+  // вершины: верх, право, низ-право, низ-лево, лево
+  const vals = [codes.activationCode, codes.heartCode, codes.rightRootCode, codes.leftRootCode, codes.soulCode];
+  const off = [[0, -12], [22, 8], [14, 26], [-14, 26], [-22, 8]];
+  const nums = pts.map((p, i) => `<text x="${(p[0] + off[i][0]).toFixed(1)}" y="${(p[1] + off[i][1]).toFixed(1)}" text-anchor="middle" font-size="26" font-family="'Comic Sans MS','Segoe Print',cursive" fill="#d0112b" font-weight="700">${vals[i]}</text>`).join("");
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:640px;display:block;margin:0 auto;">
+    <rect x="2" y="2" width="${W - 4}" height="${H - 4}" rx="10" fill="${paper}" stroke="${ink}" stroke-width="4"/>
+    <rect x="16" y="16" width="${W - 32}" height="${H - 32}" rx="6" fill="none" stroke="${ink}" stroke-width="2"/>
+    <rect x="24" y="24" width="${W - 48}" height="${H - 48}" rx="4" fill="none" stroke="${mid}" stroke-width="6"/>
+    <text x="${W / 2}" y="46" text-anchor="middle" font-size="15" letter-spacing="4" font-family="Georgia,serif" font-weight="700" fill="${ink}">FEDERAL RESERVE NOTE</text>
+    <text x="${W / 2}" y="80" text-anchor="middle" font-size="30" font-family="Georgia,serif" font-weight="700" fill="${ink}">THE UNITED STATES OF AMERICA</text>
+    <text x="100" y="104" font-size="10" font-family="Arial,sans-serif" fill="${ink}">THIS NOTE IS LEGAL TENDER</text>
+    <text x="100" y="117" font-size="10" font-family="Arial,sans-serif" fill="${ink}">FOR ALL DEBTS, PUBLIC AND PRIVATE</text>
+    <!-- портрет -->
+    <ellipse cx="${W / 2}" cy="178" rx="78" ry="98" fill="${mid}" stroke="${ink}" stroke-width="4"/>
+    <ellipse cx="${W / 2}" cy="178" rx="68" ry="88" fill="${paper}" stroke="${ink}" stroke-width="1.5"/>
+    <circle cx="${W / 2}" cy="160" r="30" fill="${mid}" stroke="${ink}" stroke-width="2"/>
+    <path d="M${W / 2 - 55},262 C${W / 2 - 50},205 ${W / 2 + 50},205 ${W / 2 + 55},262 Z" fill="${mid}" stroke="${ink}" stroke-width="2"/>
+    <!-- печати -->
+    <circle cx="138" cy="246" r="34" fill="${paper}" stroke="#222" stroke-width="5"/>
+    <circle cx="138" cy="246" r="23" fill="none" stroke="#222" stroke-width="2" stroke-dasharray="3 3"/>
+    <circle cx="602" cy="200" r="40" fill="${paper}" stroke="#2f7d4a" stroke-width="5"/>
+    <circle cx="602" cy="200" r="28" fill="none" stroke="#2f7d4a" stroke-width="2" stroke-dasharray="3 3"/>
+    <text x="602" y="208" text-anchor="middle" font-size="22" font-family="Georgia,serif" font-weight="700" fill="#2f7d4a">$</text>
+    <!-- номинал -->
+    <rect x="${W / 2 - 120}" y="${H - 58}" width="240" height="34" rx="4" fill="${paper}" stroke="${ink}" stroke-width="2"/>
+    <text x="${W / 2}" y="${H - 33}" text-anchor="middle" font-size="24" letter-spacing="6" font-family="Georgia,serif" font-weight="700" fill="${ink}">ONE DOLLAR</text>
+    ${corner(66, 72)}${corner(W - 66, 72)}${corner(66, H - 72)}${corner(W - 66, H - 72)}
+    <!-- звезда кода миллионера -->
+    <path d="${starPath}" fill="none" stroke="#d0112b" stroke-width="3" stroke-linejoin="round"/>
+    ${nums}
+  </svg>`;
 }
 
 function getFullResult(lastName, firstName, middleName, day, month, year, alphabetKey) {
@@ -176,7 +224,8 @@ function getFullResult(lastName, firstName, middleName, day, month, year, alphab
   const loveSvg = buildLoveHeartSvg(codes);
   const starSvg = buildMillionaireStarSvg(codes);
   const debtSvg = buildDebtCircleSvg(codes);
-  return { codes, loveSvg, starSvg, debtSvg };
+  const dollarSvg = buildDollarStarSvg(codes);
+  return { codes, loveSvg, starSvg, debtSvg, dollarSvg };
 }
 
 window.CodesEngine = { getFullResult, computeAllCodes, nameCode, reduceWithMaster };

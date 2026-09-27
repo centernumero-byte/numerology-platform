@@ -504,6 +504,7 @@ body {
 <script src="pyth-engine.js"></script>
 <script src="vedic-engine.js"></script>
 <script src="moon-sun-engine.js"></script>
+<script src="moon-sun-table.js"></script>
 <script src="love-cards-engine.js"></script>
 <script src="prognostika-engine.js"></script>
 <script src="codes-engine.js"></script>
@@ -571,7 +572,7 @@ const DIRECTIONS = [
   { key: "compatibility", icon: "💕",  title: "Матрица<br>совместимости" },
   { key: "vedic",         icon: "ॐ",   title: "Ведическая<br>нумерология" },
   { key: "pythagoras",    icon: "pythagoras", title: "Квадрат<br>Пифагора" },
-  { key: "moonsun",       icon: "🌙",  title: "Луна и<br>Солнце" },
+  { key: "moonsun",       icon: "🌙",  title: "Прогнозирование<br>по методу<br>Луна и Солнце" },
   { key: "lovecards",     icon: "💘",  title: "Карты<br>Любви" },
   { key: "prognostika",   icon: "🔮",  title: "Прогностика" },
   { key: "codes",         icon: "💎",  title: "Коды любви,<br>миллионера,<br>погашения долгов" },
@@ -835,7 +836,7 @@ async function openCalculator(type) {
 
   document.body.innerHTML = `
     <div style="min-height:100vh;padding:40px;background:linear-gradient(135deg,#17102f,#211443,#17102f);color:#f8e7a8;font-family:Arial,sans-serif;">
-      <div style="max-width:650px;margin:0 auto;padding:35px;border:1px solid #d7aa31;border-radius:20px;background:linear-gradient(145deg,#302052,#21163d);">
+      <div style="max-width:${type === "moonsun" ? "1100px" : "650px"};margin:0 auto;padding:35px;border:1px solid #d7aa31;border-radius:20px;background:linear-gradient(145deg,#302052,#21163d);">
         <h1 style="margin-top:0;color:#f6d66c;font-family:Georgia,serif;font-weight:500;">${title}</h1>
 
         <label>Имя</label>
@@ -1030,9 +1031,9 @@ function calculate(type) {
     saveCalculationHistory({ direction: "vedic", title: "Ведическая нумерология - " + name + " - " + birthDate, personName: name, birthDate });
     return;
   }
-  if (type === "moonsun" && window.MoonSunEngine) {
+  if (type === "moonsun" && window.MoonSunTable) {
     renderMoonSunResult(name, birthDate, moonSunYear, result);
-    saveCalculationHistory({ direction: "moonsun", title: "Луна и Солнце - " + name + " - " + birthDate, personName: name, birthDate });
+    saveCalculationHistory({ direction: "moonsun", title: "Прогнозирование по методу Луна и Солнце - " + name + " - " + birthDate, personName: name, birthDate });
     return;
   }
   if (type === "lovecards" && window.LoveCardsEngine) {
@@ -2248,8 +2249,8 @@ function calculateCodes() {
             </li>
             <li>Сложите купюру и положите её в кошелёк.</li>
           </ol>
-          <p style="margin:0 0 6px;color:#c9bfa8;font-size:14px;">Пример, как должна выглядеть звезда на купюре:</p>
-          <img src="codes-dollar-example.jpg" alt="Пример: звезда с кодами нарисована красной ручкой слева от портрета на лицевой стороне купюры в один доллар" style="width:100%;max-width:640px;border-radius:10px;border:1px solid rgba(215,170,49,.4);display:block;margin:0 auto;">
+          <p style="margin:0 0 6px;color:#c9bfa8;font-size:14px;">Вот как должна выглядеть ваша звезда на купюре — красной ручкой, слева от портрета:</p>
+          ${res.dollarSvg}
         </div>
       </div>
 
@@ -2257,8 +2258,15 @@ function calculateCodes() {
         <button type="button" class="accordion-header" onclick="toggleAccordionBody('code-debt')"><span>⭕ Код погашения долгов</span><span>▾</span></button>
         <div class="accordion-body hidden" id="code-debt" style="white-space:normal;">
           <div style="text-align:center;">${res.debtSvg}</div>
-          <p style="margin-top:14px;">Круг разделён на 8 цветных секторов: коды месяца и года рождения, души и сердца, имени и фамилии, отчества и дня рождения.</p>
-          <p><b>Как использовать:</b> перерисуйте круг с секторами и числами на бумагу. Держите рисунок рядом с документами по долгу (кредитному договору, распиской) или в том месте, где вы храните деньги, предназначенные на его погашение — это помогает настроиться на осознанное и своевременное закрытие обязательств.</p>
+          <p style="margin-top:14px;">Круг разделён на 8 цветных секторов: коды месяца и года рождения, души и сердца, имени, фамилии, отчества и дня рождения. Цвет каждого сектора подписан под кругом.</p>
+          <p style="color:#f6d66c;font-family:Georgia,serif;font-size:18px;margin:20px 0 8px;">Как сделать круг погашения долгов</p>
+          <ol style="margin:0 0 14px;padding-left:22px;line-height:1.6;">
+            <li>Выполняйте технику именно в <b>новолуние</b>.</li>
+            <li>Нарисуйте круг и разделите его на 8 секторов, как на рисунке выше.</li>
+            <li>Раскрасьте каждый сектор своим цветом и впишите в него число.</li>
+            <li>Посередине круга напишите дату, когда вы его сделали.</li>
+            <li>Положите круг погашения в кошелёк. Очень важно не вытаскивать его постоянно и держать подальше от чужих глаз.</li>
+          </ol>
         </div>
       </div>
 
@@ -2611,56 +2619,95 @@ function buildMoonSunChartSvg(items, title) {
     </div>`;
 }
 
+function moonSunResultColor(v, values) {
+  // цветовая шкала как в Excel: минимум из 5 лет — красный, медиана — жёлтый, максимум — зелёный
+  const mix = (c1, c2, t) => c1.map((x, i) => Math.round(x + (c2[i] - x) * t));
+  const red = [248, 105, 107], yellow = [255, 235, 132], green = [99, 190, 123];
+  const s = values.slice().sort((x, y) => x - y);
+  const min = s[0], max = s[s.length - 1];
+  const mid = s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2;
+  let c = yellow;
+  if (v < mid && mid > min) c = mix(yellow, red, (mid - v) / (mid - min));
+  else if (v > mid && max > mid) c = mix(yellow, green, (v - mid) / (max - mid));
+  return "rgb(" + c.join(",") + ")";
+}
+
+function buildMoonSunTableHtml(rows, name, birthDate) {
+  const fmt1 = (x) => (x === null || x === undefined) ? "—" : x.toFixed(1).replace(".", ",");
+  const th = "background:#cdbfe0;color:#221733;font-weight:700;padding:8px 6px;border:1px solid #9a8ab8;text-align:center;vertical-align:middle;";
+  const td = "background:#f2f0f5;color:#221733;font-weight:700;padding:10px 6px;border:1px solid #b9aecb;text-align:center;vertical-align:middle;font-size:12px;line-height:1.35;";
+  const body = rows.map(function (r) {
+    return `<tr>
+      <td style="${td}">${r.year}</td>
+      <td style="${td}">${r.age}</td>
+      <td style="${td}font-size:18px;">${fmt1(r.energyTrend)}</td>
+      <td style="${td}">${fmt1(r.energyValue)}</td>
+      <td style="${td}">${escapeHtml(r.personalYearText)}</td>
+      <td style="${td}font-size:18px;">${r.fateful}</td>
+      <td style="${td}">${escapeHtml(r.cycleText)}</td>
+      <td style="${td}">${escapeHtml(r.moonText)}</td>
+      <td style="${td}">${escapeHtml(r.sunText)}</td>
+      <td style="${td}">${escapeHtml(r.resultText || String(r.result))}</td>
+      <td style="${td}background:${moonSunResultColor(r.result, rows.map(x => x.result))};color:${r.result < 0 ? "#c00000" : "#221733"};font-size:14px;">${r.result}</td>
+    </tr>`;
+  }).join("");
+  return `
+    <div style="max-width:1000px;margin:10px auto 22px;">
+      <div style="color:#f6d66c;font-family:Georgia,serif;font-size:18px;margin-bottom:8px;text-align:center;">Прогноз на 5 лет</div>
+      <div style="overflow-x:auto;border-radius:8px;">
+        <table style="border-collapse:collapse;width:100%;min-width:900px;font-family:Arial,sans-serif;">
+          <thead><tr>
+            <th style="${th}">Год</th>
+            <th style="${th}">Возраст</th>
+            <th style="${th}" colspan="2">Энергетический потенциал</th>
+            <th style="${th}">Персональное число года</th>
+            <th style="${th}">Судьбоносные события</th>
+            <th style="${th}">12-летний цикл перерождения<br><span style="font-weight:400;">(позитивность или негативность чисел)</span></th>
+            <th style="${th}">Луна<br><span style="font-weight:400;">(энергия кармической программы)</span></th>
+            <th style="${th}">Солнце<br><span style="font-weight:400;">(энергия личной программы)</span></th>
+            <th style="${th}" colspan="2">Год на + или −<br><span style="font-weight:400;">(реализация планов)</span></th>
+          </tr></thead>
+          <tbody>${body}</tbody>
+        </table>
+      </div>
+      <div style="color:#8a8098;font-size:12px;margin-top:6px;">Возраст указан на сегодняшнее число и месяц каждого года. 12-летний цикл показывается в годы судьбоносных событий («+»).</div>
+    </div>`;
+}
+
 function renderMoonSunResult(name, birthDate, targetYear, container) {
   const [day, month, year] = birthDate.split(".").map(Number);
 
-  let res;
+  let rows;
   try {
-    res = window.MoonSunEngine.getFullResult(day, month, year, name, targetYear);
+    rows = window.MoonSunTable.getTable(day, month, year, targetYear);
   } catch (error) {
     console.error("Ошибка расчёта Луна и Солнце:", error);
     container.innerHTML = `<div style="color:#ff9d9d;padding:16px;">Не удалось выполнить расчёт: ${escapeHtml(error.message || String(error))}</div>`;
     return;
   }
 
-  const yearChart = buildMoonSunChartSvg(
-    res.fiveYear.map((row) => ({ label: row.year, value: row.result })),
-    "Динамика по годам"
-  );
-  const monthChart = buildMoonSunChartSvg(
-    res.months.map((row) => ({ label: row.month.slice(0, 3), value: row.result })),
-    "Динамика по месяцам, " + targetYear
-  );
+  // Прогноз по месяцам и примечание — из прежнего движка, если он подключён
+  let res = null;
+  try { if (window.MoonSunEngine) res = window.MoonSunEngine.getFullResult(day, month, year, name, targetYear); }
+  catch (error) { console.error("Прогноз по месяцам недоступен:", error); }
 
   const blocks = [];
+  if (res && res.months && res.months.length) {
+    blocks.push({
+      title: "Прогноз по месяцам, " + targetYear + " год",
+      entries: res.months.map(function (row, i) {
+        const sign = row.result > 0 ? "+" : "";
+        const arrow = trendArrow(row.result, i > 0 ? res.months[i - 1].result : null);
+        return { number: arrow + row.month + ", " + sign + row.result, text: row.interpretation };
+      })
+    });
+  }
+  if (res && res.startNote) {
+    blocks.push({ title: "Важное примечание", entries: [{ number: "", text: res.startNote }] });
+  }
 
-  blocks.push({
-    title: "5-летний прогноз (с " + targetYear + " года)",
-    entries: res.fiveYear.map(function (row, i) {
-      const sign = row.result > 0 ? "+" : "";
-      const arrow = trendArrow(row.result, i > 0 ? res.fiveYear[i - 1].result : null);
-      let text = "Луна: " + row.moon + ", Солнце: " + row.sun + ". " + row.interpretation;
-      if (row.specialNotes.length) text += " — " + row.specialNotes.join(" — ");
-      return { number: arrow + row.year + " (" + row.age + " лет), " + sign + row.result, text: text };
-    })
-  });
-
-  blocks.push({
-    title: "Прогноз по месяцам, " + targetYear + " год",
-    entries: res.months.map(function (row, i) {
-      const sign = row.result > 0 ? "+" : "";
-      const arrow = trendArrow(row.result, i > 0 ? res.months[i - 1].result : null);
-      return { number: arrow + row.month + ", " + sign + row.result, text: row.interpretation };
-    })
-  });
-
-  blocks.push({
-    title: "Важное примечание",
-    entries: [{ number: "", text: res.startNote }]
-  });
-
-  renderEditableResult(blocks, container, "Луна и Солнце - " + name, birthDate, "moonsun");
-  container.insertAdjacentHTML("afterbegin", yearChart + monthChart);
+  renderEditableResult(blocks, container, "Прогнозирование по методу Луна и Солнце - " + name, birthDate, "moonsun");
+  container.insertAdjacentHTML("afterbegin", buildMoonSunTableHtml(rows, name, birthDate));
 }
 
 function renderLoveCardsResult(name, birthDate, targetYear, container) {
