@@ -1145,14 +1145,18 @@ function buildForecastRingSvg(engine, positions, mid) {
   const fmt = (s) => String(s).replace(/\./g, ",");
   const anchorFor = (nx) => nx > 0.35 ? "start" : nx < -0.35 ? "end" : "middle";
   let lines = "", labels = "";
+  // Восьмиугольник прогноза — снаружи матрицы: большие кружки остаются внутри и не пересекаются линиями кольца
+  const R = Math.hypot(positions.a.x - mid, positions.a.y - mid);
+  const k = (R + 34) / R;
+  const V = order.map(key => ({ x: mid + (positions[key].x - mid) * k, y: mid + (positions[key].y - mid) * k }));
   for (let d = 0; d < 8; d++) {
-    const p1 = positions[order[d]], p2 = positions[order[(d + 1) % 8]];
+    const p1 = V[d], p2 = V[(d + 1) % 8];
     const ex = p2.x - p1.x, ey = p2.y - p1.y, len = Math.hypot(ex, ey);
     // внешняя нормаль к ребру (от центра)
     let nx = ey / len, ny = -ex / len;
     const cx = (p1.x + p2.x) / 2 - mid, cy = (p1.y + p2.y) / 2 - mid;
     if (nx * cx + ny * cy < 0) { nx = -nx; ny = -ny; }
-    const r0 = 20 / len;
+    const r0 = 0.07;
     lines += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="${lineColor}" stroke-width="1"/>`;
     for (let i = 1; i < 8; i++) {
       const row = table[d * 8 + i];
@@ -1170,7 +1174,8 @@ function buildForecastRingSvg(engine, positions, mid) {
     }
     // подпись десятилетия у вершины, снаружи
     const vx = p1.x - mid, vy = p1.y - mid, vl = Math.hypot(vx, vy);
-    labels += `<text x="${(p1.x + vx / vl * 26).toFixed(1)}" y="${(p1.y + vy / vl * 26 + 3).toFixed(1)}" text-anchor="middle" font-family="${font}" font-size="8" font-weight="700" fill="${numColor}">${d * 10} лет</text>`;
+    lines += `<circle cx="${p1.x.toFixed(1)}" cy="${p1.y.toFixed(1)}" r="1.8" fill="${lineColor}"/>`;
+    labels += `<text x="${(p1.x + vx / vl * 14).toFixed(1)}" y="${(p1.y + vy / vl * 14 + 3).toFixed(1)}" text-anchor="middle" font-family="${font}" font-size="8" font-weight="700" fill="${numColor}">${d * 10} лет</text>`;
   }
   return { lines, labels };
 }
@@ -1371,7 +1376,7 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
   let svg;
   if (withForecast && svgSize !== "small" && !omitCorners) {
     // Кольцо прогноза по возрастам вокруг матрицы: восьмиугольник через 8 внешних точек (0, 10, 20 … 70 лет)
-    const pad = 44, full = viewSize + pad * 2;
+    const pad = 64, full = viewSize + pad * 2;
     const ring = buildForecastRingSvg(engine, positions, mid);
     svg = `<div class="matrix-ring-scroll" style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
       <svg viewBox="${-pad} ${-pad} ${full} ${full}" style="width:100%;min-width:680px;max-width:860px;display:block;margin:0 auto;">
