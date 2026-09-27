@@ -574,11 +574,11 @@ const DIRECTIONS = [
   { key: "moonsun",       icon: "🌙",  title: "Луна и<br>Солнце" },
   { key: "lovecards",     icon: "💘",  title: "Карты<br>Любви" },
   { key: "prognostika",   icon: "🔮",  title: "Прогностика" },
-  { key: "codes",         icon: "💎",  title: "Коды любви,<br>миллионера,<br>долгов" },
+  { key: "codes",         icon: "💎",  title: "Коды любви,<br>миллионера,<br>погашения долгов" },
   { key: "karmic",        icon: "☯",   title: "Кармическая<br>нумерология" },
   { key: "biorhythms",    icon: "📈",  title: "Биоритмы" }
 ];
-const DIRECTION_NAMES = Object.fromEntries(DIRECTIONS.map(d => [d.key, d.title.replace("<br>", " ")]));
+const DIRECTION_NAMES = Object.fromEntries(DIRECTIONS.map(d => [d.key, d.title.replace(/<br>/g, " ")]));
 const SECTION_LABELS = { manuals: "Методическое пособие", videos: "Видео", tests: "Тест" };
 const CONTENT_TYPES = [
   { key: "calculators", label: "Калькуляторы" },
@@ -2220,25 +2220,42 @@ function calculateCodes() {
 
       <div class="accordion-item">
         <button type="button" class="accordion-header" onclick="toggleAccordionBody('code-love')"><span>💗 Код любви</span><span>▾</span></button>
-        <div class="accordion-body hidden" id="code-love">
+        <div class="accordion-body hidden" id="code-love" style="white-space:normal;">
           <div style="text-align:center;">${res.loveSvg}</div>
           <p style="margin-top:14px;">Ваш код любви — это семь чисел, объединённых в форму сердца: код имени и фамилии — левая верхняя часть, код судьбы и дня рождения — правая, код отчества — центр, ниже — код месяца, а на нижнем острие — код года рождения.</p>
-          <p><b>Как использовать:</b> перерисуйте это сердце с числами на чистый лист бумаги (от руки, спокойно, без спешки) и носите с собой — в кошельке или сумке — либо положите под подушку перед сном, когда хотите привлечь в жизнь любовь и гармоничные отношения.</p>
+          <p><b>Как использовать:</b> соедините числа в форму сердца, как на рисунке выше, и перерисуйте его в <b>полнолуние</b> — <b>красной ручкой на красной бумаге</b>. Носите рисунок с собой, например в сумке, но <b>не в кошельке</b>.</p>
         </div>
       </div>
 
       <div class="accordion-item">
         <button type="button" class="accordion-header" onclick="toggleAccordionBody('code-millionaire')"><span>⭐ Код миллионера</span><span>▾</span></button>
-        <div class="accordion-body hidden" id="code-millionaire">
+        <div class="accordion-body hidden" id="code-millionaire" style="white-space:normal;">
           <div style="text-align:center;">${res.starSvg}</div>
           <p style="margin-top:14px;">Пять ваших кодов разложены по вершинам пятиконечной звезды — классического символа денежного изобилия, как на долларовой купюре: код активации, души, сердца, левого и правого корня.</p>
-          <p><b>Как использовать:</b> перерисуйте звезду с цифрами на бумагу и разместите там, где чаще всего бывают деньги — в кошельке, кассе, рабочем столе. Можно также написать этот код на купюре, которую вы не тратите, и хранить её отдельно как денежный талисман.</p>
+          <p style="color:#f6d66c;font-family:Georgia,serif;font-size:18px;margin:20px 0 8px;">Как нарисовать код миллионера на купюре в один доллар</p>
+          <ol style="margin:0 0 14px;padding-left:22px;line-height:1.6;">
+            <li>Дождитесь <b>растущей луны</b> — рисовать нужно в этот период.</li>
+            <li>Возьмите купюру в <b>один доллар</b> и положите её <b>лицевой стороной</b> к себе (сторона с портретом Вашингтона).</li>
+            <li>В <b>левой части</b> купюры, слева от портрета, нарисуйте пятиконечную звезду.</li>
+            <li>Расставьте числа у вершин звезды:
+              <ul style="margin:6px 0;padding-left:18px;">
+                <li>на самом верху — код активации: <b>${res.codes.activationCode}</b>;</li>
+                <li>справа — код сердца: <b>${res.codes.heartCode}</b>;</li>
+                <li>слева — код души: <b>${res.codes.soulCode}</b>;</li>
+                <li>внизу справа — код правого корня: <b>${res.codes.rightRootCode}</b>;</li>
+                <li>внизу слева — код левого корня: <b>${res.codes.leftRootCode}</b>.</li>
+              </ul>
+            </li>
+            <li>Сложите купюру и положите её в кошелёк.</li>
+          </ol>
+          <p style="margin:0 0 6px;color:#c9bfa8;font-size:14px;">Пример, как должна выглядеть звезда на купюре:</p>
+          <img src="codes-dollar-example.jpg" alt="Пример: звезда с кодами нарисована красной ручкой слева от портрета на лицевой стороне купюры в один доллар" style="width:100%;max-width:640px;border-radius:10px;border:1px solid rgba(215,170,49,.4);display:block;margin:0 auto;">
         </div>
       </div>
 
       <div class="accordion-item">
         <button type="button" class="accordion-header" onclick="toggleAccordionBody('code-debt')"><span>⭕ Код погашения долгов</span><span>▾</span></button>
-        <div class="accordion-body hidden" id="code-debt">
+        <div class="accordion-body hidden" id="code-debt" style="white-space:normal;">
           <div style="text-align:center;">${res.debtSvg}</div>
           <p style="margin-top:14px;">Круг разделён на 8 цветных секторов: коды месяца и года рождения, души и сердца, имени и фамилии, отчества и дня рождения.</p>
           <p><b>Как использовать:</b> перерисуйте круг с секторами и числами на бумагу. Держите рисунок рядом с документами по долгу (кредитному договору, распиской) или в том месте, где вы храните деньги, предназначенные на его погашение — это помогает настроиться на осознанное и своевременное закрытие обязательств.</p>
@@ -2250,7 +2267,7 @@ function calculateCodes() {
       </div>
     </div>`;
 
-  saveCalculationHistory({ direction: "codes", title: "Коды любви, миллионера, долгов - " + name + " - " + birthDate, personName: name, birthDate, lastName, firstName, patronymic, alphabet });
+  saveCalculationHistory({ direction: "codes", title: "Коды любви, миллионера, погашения долгов - " + name + " - " + birthDate, personName: name, birthDate, lastName, firstName, patronymic, alphabet });
 }
 
 function calculatePythagoras() {
