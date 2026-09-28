@@ -427,6 +427,12 @@ body {
 .key-number-box strong { display: block; font-size: 22px; color: #f6d66c; }
 .key-number-box span { font-size: 12px; color: #b8ad98; }
 
+
+/* Телефон: у страниц калькуляторов уменьшаем большие боковые отступы, чтобы диаграммам и тексту хватало ширины */
+@media (max-width: 600px) {
+  body > div[style*="min-height:100vh"][style*="padding:40px"] { padding: 10px !important; }
+  body > div[style*="min-height:100vh"] > div[style*="padding:35px"] { padding: 16px 12px !important; border-radius: 14px !important; }
+}
 </style>
 </head>
 <body>
@@ -1378,11 +1384,12 @@ function buildDiagramSvgMarkup(engine, sheetName, rowOffset, svgSize, omitAncest
     // Кольцо прогноза по возрастам вокруг матрицы: восьмиугольник через 8 внешних точек (0, 10, 20 … 70 лет)
     const pad = 64, full = viewSize + pad * 2;
     const ring = buildForecastRingSvg(engine, positions, mid);
-    svg = `<div class="matrix-ring-scroll" style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
-      <svg viewBox="${-pad} ${-pad} ${full} ${full}" style="width:100%;min-width:680px;max-width:860px;display:block;margin:0 auto;">
+    svg = `<div class="matrix-ring-scroll" style="overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;">
+      <div class="matrix-ring-inner" style="max-width:860px;margin:0 auto;">
+      <svg viewBox="${-pad} ${-pad} ${full} ${full}" width="${full}" height="${full}" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;aspect-ratio:1 / 1;display:block;">
       ${ring.lines}${inner}${ring.labels}
-    </svg></div>
-    <div class="matrix-ring-hint" style="display:none;color:#a99fb5;font-size:12px;margin-top:6px;">← листайте диаграмму пальцем →</div>`;
+    </svg></div></div>
+    <button type="button" class="matrix-ring-hint" onclick="toggleMatrixRingZoom(this)" style="display:none;margin:10px auto 0;padding:9px 16px;border:1px solid #d7aa31;border-radius:10px;background:rgba(0,0,0,.2);color:#f6d66c;font-size:14px;cursor:pointer;">🔍 Увеличить диаграмму</button>`;
   } else {
     svg = `<svg viewBox="0 0 ${viewSize} ${viewSize}" style="width:100%;max-width:${svgSize === "small" ? 250 : 420}px;">
       ${inner}
@@ -1413,14 +1420,25 @@ function renderMatrixDiamondDiagram(engine, container, includeHealthMap, purpose
   renderPurposeDiagram(values, container, afterNode, purposeCount);
 }
 
+// На телефоне диаграмма сначала видна целиком; кнопка «Увеличить» делает её крупной (листается пальцем)
 function centerMatrixRingScroll(root) {
   (root || document).querySelectorAll(".matrix-ring-scroll").forEach(function (el) {
-    if (el.scrollWidth > el.clientWidth + 4) {
-      el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
-      const hint = el.parentNode.querySelector(".matrix-ring-hint");
-      if (hint) hint.style.display = "block";
-    }
+    const btn = el.parentNode.querySelector(".matrix-ring-hint");
+    if (btn && el.clientWidth < 600) btn.style.display = "block";
   });
+}
+
+function toggleMatrixRingZoom(btn) {
+  const scroll = btn.parentNode.querySelector(".matrix-ring-scroll");
+  const inner = scroll && scroll.querySelector(".matrix-ring-inner");
+  if (!inner) return;
+  const zoomed = inner.style.minWidth === "780px";
+  inner.style.minWidth = zoomed ? "" : "780px";
+  btn.textContent = zoomed ? "🔍 Увеличить диаграмму" : "↩ Показать целиком (листайте пальцем)";
+  if (!zoomed) {
+    scroll.scrollLeft = (scroll.scrollWidth - scroll.clientWidth) / 2;
+    scroll.scrollIntoView({ block: "nearest" });
+  }
 }
 
 function renderHealthMapDiagram(v, container, afterNode) {
@@ -1893,7 +1911,8 @@ function downloadHtmlFile(filename, htmlBody) {
       svg { max-width: 100%; height: auto; }
       /* Диаграмма матрицы с кольцом прогноза: без прокрутки, тёмные цвета на белом */
       .matrix-ring-scroll { overflow: visible !important; }
-      .matrix-ring-scroll svg { min-width: 0 !important; width: 100% !important; max-width: 680px !important; }
+      .matrix-ring-inner { min-width: 0 !important; max-width: 680px !important; }
+      .matrix-ring-scroll svg { width: 100% !important; height: auto !important; }
       .matrix-ring-hint { display: none !important; }
       .fr-line { stroke: #5b516e !important; }
       .fr-dot { fill: #5b516e !important; }
