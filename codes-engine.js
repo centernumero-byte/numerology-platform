@@ -90,7 +90,7 @@ function computeAllCodes(lastName, firstName, middleName, day, month, year, alph
 
 function circleAt(cx, cy, r, value, fill) {
   return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" stroke="#122522" stroke-width="1.5"/>
-    <text x="${cx}" y="${cy + 6}" text-anchor="middle" font-size="18" font-family="Georgia,serif" fill="#122522" font-weight="700">${value}</text>`;
+    <text x="${cx}" y="${cy + 6}" text-anchor="middle" font-size="18" font-family="PT Serif,Georgia,serif" fill="#122522" font-weight="700">${value}</text>`;
 }
 
 // Код любви — сердце из 7 чисел (как на листе «Код любви»): сверху имя, фамилия | судьба, день;
