@@ -1944,7 +1944,23 @@ function downloadHtmlFile(filename, htmlBody) {
       .dl-purpose-item { width: 290px !important; border: 1px solid #d7aa31; border-radius: 12px; padding: 16px 12px; background: #fbf7ee; }
       .dl-pt { font-size: 16px !important; margin-bottom: 8px !important; }
       .diagram-wrap .dl-pr { font-size: 32px !important; color: #5d2789 !important; font-weight: 700; margin-bottom: 6px; }
-      .dl-pf { font-size: 12px !important; }`;
+      .dl-pf { font-size: 12px !important; }
+      /* Таблица «Луна и Солнце»: целиком на листе, тёмный текст на белом */
+      .ms-table-scroll { overflow: visible !important; border: none !important; }
+      .ms-table { min-width: 0 !important; width: 100% !important; table-layout: auto; }
+      .ms-table th, .ms-table td { padding: 6px 4px !important; font-size: 9.5px !important; line-height: 1.3 !important; border: 1px solid #cdbb8a !important; }
+      .ms-table th span { font-size: 7.5px !important; margin-top: 2px !important; }
+      .ms-table tr > *:nth-child(1) { width: 6%; } .ms-table tr > *:nth-child(2) { width: 6%; }
+      .ms-table td:nth-child(3), .ms-table td:nth-child(4) { width: 5%; }
+      .ms-table td:nth-child(5) { width: 11%; } .ms-table td:nth-child(6) { width: 8%; }
+      .ms-table td:nth-child(7) { width: 13%; } .ms-table td:nth-child(8) { width: 10%; }
+      .ms-table td:nth-child(9) { width: 16%; } .ms-table td:nth-child(10) { width: 13%; } .ms-table td:nth-child(11) { width: 7%; }
+      .ms-table th { background: #f3ecdf !important; }
+      .diagram-wrap .ms-table th, .diagram-wrap .ms-table th * { color: #4a2a6e !important; }
+      .ms-table td { background: #fff !important; }
+      .diagram-wrap .ms-table td { color: #2b2238 !important; }
+      .ms-table td span[style*="border-radius:14px"] { padding: 4px 6px !important; min-width: 0 !important; font-size: 11px !important; }
+      .diagram-wrap .ms-table td span[style*="border-radius:14px"] { color: #1d1433 !important; }`;
 
   const fullHtml = `<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8">
 <title>${title.replace(/[<>]/g, "")}</title>
@@ -2836,8 +2852,8 @@ function buildMoonSunTableHtml(rows, name, birthDate) {
   return `
     <div style="max-width:1000px;margin:10px auto 22px;">
       <div style="color:#f6d66c;font-family:Georgia,serif;font-size:20px;margin-bottom:10px;text-align:center;">Прогноз на 5 лет</div>
-      <div style="overflow-x:auto;border:1px solid rgba(225,180,52,.35);border-radius:12px;">
-        <table style="border-collapse:collapse;width:100%;min-width:900px;font-family:Arial,sans-serif;">
+      <div class="ms-table-scroll" style="overflow-x:auto;border:1px solid rgba(225,180,52,.35);border-radius:12px;">
+        <table class="ms-table" style="border-collapse:collapse;width:100%;min-width:900px;font-family:Arial,sans-serif;">
           <thead><tr>
             <th style="${th}">Год</th>
             <th style="${th}">Возраст</th>
