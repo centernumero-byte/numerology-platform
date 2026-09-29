@@ -5407,15 +5407,15 @@ async function renderAdminTrialLeads(afterEl) {
   box.className = "table-card";
   box.id = "trialLeadsCard";
   box.style.marginBottom = "18px";
-  box.innerHTML = `<div class="table-title">📋 Пробные расчёты по моей ссылке</div><div id="trialLeadsBody" style="color:#a9a0b5;">…</div>`;
+  box.innerHTML = `<div class="table-title">📋 Пробные расчёты (главная страница и моя ссылка)</div><div id="trialLeadsBody" style="color:#a9a0b5;">…</div>`;
   afterEl.insertAdjacentElement("afterend", box);
   try {
     const { data, error, count } = await supabaseClient.from("trial_leads")
-      .select("name, birth_date, created_at", { count: "exact" })
+      .select("name, birth_date, created_at, ref_code", { count: "exact" })
       .order("created_at", { ascending: false }).limit(200);
     if (error) throw error;
     const body = document.getElementById("trialLeadsBody");
-    if (!data || !data.length) { body.textContent = "По вашей ссылке пока никто не делал пробный расчёт"; return; }
+    if (!data || !data.length) { body.textContent = "Пока никто не делал пробный расчёт"; return; }
     const fmt = function (iso) {
       const d = new Date(iso);
       return String(d.getDate()).padStart(2, "0") + "." + String(d.getMonth() + 1).padStart(2, "0") + "." + d.getFullYear()
@@ -5427,11 +5427,13 @@ async function renderAdminTrialLeads(afterEl) {
           <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(225,180,52,.35);color:#f6d66c;font-weight:400;">Дата и время</th>
           <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(225,180,52,.35);color:#f6d66c;font-weight:400;">Имя</th>
           <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(225,180,52,.35);color:#f6d66c;font-weight:400;">Дата рождения</th>
+          <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(225,180,52,.35);color:#f6d66c;font-weight:400;">Откуда</th>
         </tr></thead>
         <tbody>${data.map(function (r) {
           return `<tr><td style="padding:8px;border-bottom:1px solid rgba(225,180,52,.12);white-space:nowrap;">${fmt(r.created_at)}</td>
             <td style="padding:8px;border-bottom:1px solid rgba(225,180,52,.12);">${escapeHtml(r.name || "—")}</td>
-            <td style="padding:8px;border-bottom:1px solid rgba(225,180,52,.12);white-space:nowrap;">${escapeHtml(r.birth_date || "—")}</td></tr>`;
+            <td style="padding:8px;border-bottom:1px solid rgba(225,180,52,.12);white-space:nowrap;">${escapeHtml(r.birth_date || "—")}</td>
+            <td style="padding:8px;border-bottom:1px solid rgba(225,180,52,.12);white-space:nowrap;color:#c9bfa8;">${r.ref_code === "site" ? "Главная страница" : "Ваша ссылка"}</td></tr>`;
         }).join("")}</tbody></table></div>`;
   } catch (e) {
     console.warn("Пробные расчёты не загружены:", e);
@@ -5687,8 +5689,8 @@ function runTrialMatrix() {
     return;
   }
   try {
-    const refCode = new URLSearchParams(window.location.search).get("ref");
-    if (refCode) supabaseClient.rpc("log_trial", { p_code: refCode, p_name: name, p_birth: birthDate }).then(function () {}, function () {});
+    const refCode = new URLSearchParams(window.location.search).get("ref") || "";
+    supabaseClient.rpc("log_trial", { p_code: refCode, p_name: name, p_birth: birthDate }).then(function () {}, function () {});
   } catch (e) { /* не мешаем расчёту */ }
   const blocks = res.rasshifrovka || [];
   const card = blocks.find(b => /визитн/i.test(b.title)) || blocks[0];
