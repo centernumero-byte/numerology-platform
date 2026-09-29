@@ -5287,7 +5287,7 @@ async function showTestAttemptDetail(attemptId) {
 /* ============================================================
    ЛИЧНАЯ ССЫЛКА ДЛЯ КЛИЕНТОВ (WhatsApp / Telegram)
    ============================================================ */
-const REF_TEXT = {"cardTitle": "Моя ссылка для клиентов", "cardText": "Отправляйте эту ссылку клиентам: они бесплатно попробуют расчёт, а заказать полный расчёт или доступ к платформе напишут вам в WhatsApp или Telegram", "copy": "Копировать", "copied": "Ссылка скопирована", "open": "Открыть", "waLabel": "WhatsApp — номер телефона", "waPh": "+7 701 123 45 67", "tgLabel": "Telegram — логин", "tgPh": "@username", "hint": "Достаточно заполнить одно поле. Номер WhatsApp пишите с кодом страны, Telegram — логин без пробелов", "save": "Сохранить", "saved": "Сохранено", "saving": "Сохраняем…", "errWa": "Проверьте номер WhatsApp: нужен номер с кодом страны, например +7 701 123 45 67", "errTg": "Проверьте логин Telegram: только латинские буквы, цифры и _, от 5 символов", "errSave": "Не удалось сохранить", "loading": "Загрузка…", "ctaTitle": "Заказать полный расчёт или доступ к платформе", "ctaText": "Напишите — подскажем, как получить полную расшифровку или доступ", "waBtn": "Написать в WhatsApp", "tgBtn": "Написать в Telegram", "waMsg": "Здравствуйте! Хочу заказать полный расчёт / доступ к платформе", "forUser": "Для кого настроить ссылку", "me": "Для себя", "noLink": "Ссылка появится после того, как вы впишете WhatsApp или Telegram и нажмёте «Сохранить»", "needOne": "Впишите WhatsApp или Telegram", "yourLink": "Ссылка для клиентов"};
+const REF_TEXT = {"cardTitle": "Моя ссылка для клиентов", "cardText": "Отправляйте эту ссылку клиентам: они бесплатно попробуют расчёт, а заказать полный расчёт или доступ к платформе напишут вам в WhatsApp или Telegram", "copy": "Копировать", "copied": "Ссылка скопирована", "open": "Открыть", "waLabel": "WhatsApp — номер телефона", "waPh": "+7 701 123 45 67", "tgLabel": "Telegram — логин", "tgPh": "@username", "hint": "Достаточно заполнить одно поле. Номер WhatsApp пишите с кодом страны, Telegram — логин без пробелов", "save": "Сохранить", "saved": "Сохранено", "saving": "Сохраняем…", "errWa": "Проверьте номер WhatsApp: нужен номер с кодом страны, например +7 701 123 45 67", "errTg": "Проверьте логин Telegram: только латинские буквы, цифры и _, от 5 символов", "errSave": "Не удалось сохранить", "loading": "Загрузка…", "ctaTitle": "Заказать полный расчёт или доступ к платформе", "ctaText": "Напишите — подскажем, как получить полную расшифровку или доступ", "waBtn": "Написать в WhatsApp", "tgBtn": "Написать в Telegram", "waMsg": "Здравствуйте! Хочу заказать полный расчёт / доступ к платформе", "forUser": "Для кого настроить ссылку", "me": "Для себя", "noLink": "Ссылка появится после того, как вы впишете WhatsApp или Telegram и нажмёте «Сохранить»", "needOne": "Впишите WhatsApp или Telegram", "yourLink": "Ссылка для клиентов", "clientTitle": "Бесплатный расчёт матрицы судьбы", "clientSub": "Введите имя и дату рождения — получите диаграмму матрицы и визитную карточку", "clientCtaTitle": "Получить полный расчёт", "clientCtaText": "Напишите — подготовлю полную расшифровку вашей матрицы", "clientModalTitle": "Раздел доступен в полном расчёте", "clientModalText": "Полная расшифровка матрицы доступна по запросу. Напишите, чтобы заказать полный расчёт", "close": "Закрыть", "cardTextStudent": "Отправляйте эту ссылку клиентам: они бесплатно сделают расчёт матрицы, а полный расчёт закажут у вас в WhatsApp или Telegram", "cardTextTeacher": "Отправляйте эту ссылку тем, кому хотите продать доступ к платформе: они увидят презентацию платформы, попробуют расчёт и напишут вам в WhatsApp или Telegram"};
 
 function normWhatsapp(v) {
   v = String(v || "").trim();
@@ -5321,13 +5321,14 @@ function contactButtonsHtml(c) {
 function landingContactHtml() {
   const c = window._landingContact;
   if (!c || (!c.whatsapp && !c.telegram)) return "";
+  const cm = !!window._clientMode;
   return `<div style="margin:22px 0 6px;padding:20px;border:1px solid #d7aa31;border-radius:14px;text-align:center;background:rgba(0,0,0,.18);">
-      <div style="font-family:PT Serif,Georgia,serif;color:#f6d66c;font-size:20px;margin-bottom:6px;">${REF_TEXT.ctaTitle}</div>
-      <div style="color:#e9dfc6;font-size:14px;margin-bottom:10px;">${REF_TEXT.ctaText}</div>
+      <div style="font-family:PT Serif,Georgia,serif;color:#f6d66c;font-size:20px;margin-bottom:6px;">${cm ? REF_TEXT.clientCtaTitle : REF_TEXT.ctaTitle}</div>
+      <div style="color:#e9dfc6;font-size:14px;margin-bottom:10px;">${cm ? REF_TEXT.clientCtaText : REF_TEXT.ctaText}</div>
       ${contactButtonsHtml(c)}
     </div>`;
 }
-async function loadLandingContact() {
+async function fetchLandingContact() {
   let c = null;
   const ref = new URLSearchParams(window.location.search).get("ref");
   try {
@@ -5335,13 +5336,15 @@ async function loadLandingContact() {
       const { data } = await supabaseClient.rpc("get_referral_contact", { p_code: ref });
       c = (data && data[0]) || null;
     }
+    // Ссылка действует, только если владелец вписал WhatsApp или Telegram.
+    // Иначе открывается обычная главная страница с контактами администратора.
     if (!c || (!c.whatsapp && !c.telegram)) {
       const { data } = await supabaseClient.rpc("get_default_contact");
       c = (data && data[0]) || null;
+      if (c) c.role = null;
     }
   } catch (e) { console.warn("Контакты для пробной версии не загружены:", e); }
   window._landingContact = c && (c.whatsapp || c.telegram) ? c : null;
-  document.querySelectorAll(".lp-contact-slot").forEach(function (el) { el.innerHTML = landingContactHtml(); });
 }
 
 // Карточка «Моя ссылка для клиентов» в разделе «Доступы».
@@ -5355,7 +5358,7 @@ async function injectReferralCard() {
   card.style.marginBottom = "18px";
   card.innerHTML = `
     <div class="table-title">🔗 ${REF_TEXT.cardTitle}</div>
-    <p style="margin:0 0 12px;">${REF_TEXT.cardText}</p>
+    <p style="margin:0 0 12px;">${window.currentUserRole === "student" ? REF_TEXT.cardTextStudent : REF_TEXT.cardTextTeacher}</p>
     <div id="refUserPickerBox" style="display:none;margin-bottom:14px;">
       <label style="display:block;">${REF_TEXT.forUser}
         <select id="refUserPicker" class="material-manager-input" style="margin:6px 0 0;" onchange="loadReferralFor(this.value)"></select></label>
@@ -5463,10 +5466,16 @@ async function saveReferralContacts() {
   }
 }
 
-function showLanding() {
+async function showLanding() {
+  if (window._landingContact === undefined) await fetchLandingContact();
+  renderLandingPage();
+}
+
+function renderLandingPage() {
   document.body.style.visibility = "visible";
   window.scrollTo(0, 0);
-  setTimeout(loadLandingContact, 0);
+  const clientMode = !!(window._landingContact && window._landingContact.role === "student");
+  window._clientMode = clientMode;
   const directions = [
     { icon: "✨", title: "Матрица судьбы", text: "Полная расшифровка по дате рождения: таланты, предназначение, кармические задачи, отношения, финансы, карта здоровья" },
     { icon: "👶", title: "Детская матрица судьбы", text: "Расшифровка для родителей: характер ребёнка, его способности и то, как помочь ему раскрыться" },
@@ -5532,22 +5541,22 @@ function showLanding() {
     <div class="lp-wrap">
       <div class="lp-top">
         <div class="lp-logo">✧ NUMEROLOGY<small>Platform</small></div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        ${clientMode ? "" : `<div style="display:flex;gap:10px;flex-wrap:wrap;">
           <button type="button" class="lp-btn ghost" onclick="showLogin()">Войти</button>
           <button type="button" class="lp-btn" onclick="showRegister()">Зарегистрироваться</button>
-        </div>
+        </div>`}
       </div>
 
-      <div class="lp-hero">
+      ${clientMode ? `<div class="lp-hero"><h1>${REF_TEXT.clientTitle}</h1><p>${REF_TEXT.clientSub}</p></div>` : `<div class="lp-hero">
         <h1>Платформа для нумерологов<br>и тех, кто изучает нумерологию</h1>
         <p>Готовые расчёты по дате рождения, методические пособия и библиотека в одном месте. Изучайте нумерологию самостоятельно или ускорьте работу с клиентами</p>
         <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
           <button type="button" class="lp-btn" onclick="document.getElementById('lpTrial').scrollIntoView({behavior:'smooth'})">Попробовать бесплатно</button>
           <button type="button" class="lp-btn ghost" onclick="showRegister()">Зарегистрироваться</button>
         </div>
-      </div>
+      </div>`}
 
-      <div class="lp-h2">Направления</div>
+      ${clientMode ? "" : `<div class="lp-h2">Направления</div>
       <div class="lp-grid" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr));">
         ${directions.map(d => `<div class="lp-card"><div class="ic">${d.icon}</div><h3>${d.title}</h3><p>${d.text}</p></div>`).join("")}
       </div>
@@ -5562,11 +5571,11 @@ function showLanding() {
       <div class="lp-who">
         <div class="lp-card"><div class="ic">🌱</div><h3>Для тех, кто изучает нумерологию</h3><p>Считайте свою матрицу и матрицы близких, читайте готовые расшифровки и разбирайтесь в методе по методическим пособиям в своём темпе</p></div>
         <div class="lp-card"><div class="ic">💼</div><h3>Для практикующих нумерологов</h3><p>Расчёт за минуту вместо часов работы вручную: готовая расшифровка с диаграммой, которую можно дополнить своими словами и скачать для клиента</p></div>
-      </div>
+      </div>`}
 
-      <div class="lp-h2" id="lpTrial">Попробуйте бесплатно</div>
+      <div id="lpTrial" ${clientMode ? 'style="display:none"' : 'class="lp-h2"'}>Попробуйте бесплатно</div>
       <div class="lp-trial">
-        <p style="margin:0 0 20px;color:#e9dfc6;text-align:center;">Введите имя и дату рождения — получите диаграмму матрицы судьбы и визитную карточку</p>
+        ${clientMode ? "" : `<p style="margin:0 0 20px;color:#e9dfc6;text-align:center;">Введите имя и дату рождения — получите диаграмму матрицы судьбы и визитную карточку</p>`}
         <label>Имя</label>
         <input id="lpName" type="text">
         <label>Дата рождения</label>
@@ -5577,16 +5586,30 @@ function showLanding() {
       </div>
 
       <div class="lp-foot">
-        <div class="lp-contact-slot" style="max-width:760px;margin:0 auto 20px;"></div>
-        <div class="lp-h2" style="margin-top:0;">Готовы начать?</div>
+        <div class="lp-contact-slot" style="max-width:760px;margin:0 auto 20px;">${landingContactHtml()}</div>
+        ${clientMode ? "" : `<div class="lp-h2" style="margin-top:0;">Готовы начать?</div>
         <button type="button" class="lp-btn" onclick="showRegister()">Зарегистрироваться</button>
-        <div style="margin-top:14px;"><button type="button" onclick="showLogin()" style="background:none;border:none;color:#d7aa31;cursor:pointer;font-size:15px;">Уже есть аккаунт? Войти</button></div>
+        <div style="margin-top:14px;"><button type="button" onclick="showLogin()" style="background:none;border:none;color:#d7aa31;cursor:pointer;font-size:15px;">Уже есть аккаунт? Войти</button></div>`}
       </div>
     </div>
   </div>`;
 }
 
 function showTrialPaywall() {
+  if (window._clientMode) {
+    const mc = document.createElement("div");
+    mc.className = "lp-modal";
+    mc.innerHTML = `<div>
+      <div style="font-size:40px;margin-bottom:8px;">🔒</div>
+      <h3 style="font-family:PT Serif,Georgia,serif;font-weight:500;color:#f6d66c;margin:0 0 12px;font-size:22px;">${REF_TEXT.clientModalTitle}</h3>
+      <p style="color:#e9dfc6;line-height:1.6;margin:0 0 18px;">${REF_TEXT.clientModalText}</p>
+      <div style="margin:0 0 14px;">${contactButtonsHtml(window._landingContact)}</div>
+      <button type="button" onclick="this.closest('.lp-modal').remove()" style="background:none;border:none;color:#a99fb5;cursor:pointer;font-size:14px;">${REF_TEXT.close}</button>
+    </div>`;
+    mc.addEventListener("click", function (e) { if (e.target === mc) mc.remove(); });
+    document.body.appendChild(mc);
+    return;
+  }
   const m = document.createElement("div");
   m.className = "lp-modal";
   m.innerHTML = `
@@ -5653,10 +5676,12 @@ function runTrialMatrix() {
       <div class="lp-contact-slot">${landingContactHtml()}</div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:18px;">
         <button type="button" class="lp-btn" onclick="downloadHtmlFile(window._trialDownload.title + '.html', window._trialDownload.body)">Скачать (диаграмма + визитная карточка)</button>
-        <button type="button" class="lp-btn ghost" onclick="showRegister()">Открыть полную версию</button>
+        ${window._clientMode ? "" : `<button type="button" class="lp-btn ghost" onclick="showRegister()">Открыть полную версию</button>`}
       </div>
     </div>`;
   centerMatrixRingScroll(out);
+  // контакты уже показаны под расчётом — нижний блок с теми же кнопками скрываем, чтобы не повторялись
+  document.querySelectorAll(".lp-foot .lp-contact-slot").forEach(function (el) { el.style.display = "none"; });
   out.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
