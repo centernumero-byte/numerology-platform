@@ -5673,11 +5673,10 @@ function runTrialMatrix() {
       </div>
       ${card ? `<div class="lp-open"><h3>${escapeHtml(card.title)}</h3>${cardHtml}</div>` : ""}
       ${locked.map(t => `<button type="button" class="lp-lock" onclick="showTrialPaywall()"><span>${escapeHtml(t)}</span><span>🔒</span></button>`).join("")}
-      <div class="lp-contact-slot">${landingContactHtml()}</div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:18px;">
         <button type="button" class="lp-btn" onclick="downloadHtmlFile(window._trialDownload.title + '.html', window._trialDownload.body)">Скачать (диаграмма + визитная карточка)</button>
-        ${window._clientMode ? "" : `<button type="button" class="lp-btn ghost" onclick="showRegister()">Открыть полную версию</button>`}
       </div>
+      <div class="lp-contact-slot">${landingContactHtml()}</div>
     </div>`;
   centerMatrixRingScroll(out);
   // контакты уже показаны под расчётом — нижний блок с теми же кнопками скрываем, чтобы не повторялись
