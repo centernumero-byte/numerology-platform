@@ -20,13 +20,28 @@ const diff22 = (a, b) => sum22(Math.abs(a - b));
 const digits = (n) => String(n).split('').map(Number);
 const digitSum = (n) => digits(n).reduce((s, d) => s + d, 0);
 
-function nameArcana(name) {
+// Алфавиты: номер буквы по кругу 1–9 в порядке своего алфавита
+const ALPHABET_LETTERS = {
+  russian: 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя',
+  kazakh: 'аәбвгғдеёжзийкқлмнңоөпрстуұүфхһцчшщъыіьэюя',
+  english: 'abcdefghijklmnopqrstuvwxyz',
+};
+function letterTable(alphabet) {
+  if (!alphabet || !ALPHABET_LETTERS[alphabet]) return LETTERS;
+  const t = {};
+  ALPHABET_LETTERS[alphabet].split('').forEach((ch, i) => { t[ch] = (i % 9) + 1; });
+  if (alphabet === 'english') Object.assign(t, { 'ö': 1, 'ü': 2, 'ß': 3, 'ä': 9 });
+  return t;
+}
+
+function nameArcana(name, alphabet) {
+  const table = letterTable(alphabet);
   const letters = String(name || '').toLowerCase().slice(0, 32).split('');
-  const sum = letters.reduce((s, ch) => s + (LETTERS[ch] || 0), 0);
+  const sum = letters.reduce((s, ch) => s + (table[ch] || 0), 0);
   return r22(sum); // BJ14
 }
 
-function calcKarmic({ day, month, year, firstName }) {
+function calcKarmic({ day, month, year, firstName, alphabet }) {
   // Дт, Мт, Гт (AB23, AD23, AF23)
   const Dt = day > 22 ? day - 22 : day;
   const Mt = month;
@@ -72,7 +87,7 @@ function calcKarmic({ day, month, year, firstName }) {
 
   const ev1 = 36 - root;                                // D48
   return {
-    month, day, SZ, OPV: [OPV1, OPV2, OPV3, OPV4, OPV5], name: nameArcana(firstName),
+    month, day, SZ, OPV: [OPV1, OPV2, OPV3, OPV4, OPV5], name: nameArcana(firstName, alphabet),
     ZK, TP, TPchel: [TP1, TP2, TP3, TP4, TP5], KU: [KU1, KU2, KU3, KU4],
     angel, talent, harmony, karmaWork,
     cycles: [
@@ -99,10 +114,10 @@ function karmicPeriod(from, to) {
   return from + '-' + (to === null ? '∞' : to);
 }
 
-function getKarmicResult(day, month, year, firstName) {
+function getKarmicResult(day, month, year, firstName, alphabet) {
   const T = (typeof window !== 'undefined' && window.KARMIC_TEXTS) || {};
   const t = (table, n) => (T[table] && T[table][n]) || '';
-  const r = calcKarmic({ day, month, year, firstName });
+  const r = calcKarmic({ day, month, year, firstName, alphabet });
   if (!r.name) throw new Error('В имени нет букв для расчёта. Введите имя буквами.');
   const blocks = [];
   const one = (title, table, n) => blocks.push({ title: title + ' — ' + n, entries: [{ number: n, text: t(table, n) }] });

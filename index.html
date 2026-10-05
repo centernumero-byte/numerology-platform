@@ -945,6 +945,16 @@ async function openCalculator(type) {
           style="display:block;width:100%;padding:13px;margin:8px 0 20px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
         <div id="prognostikaYearError" style="color:#ff9b9b;min-height:22px;margin-bottom:10px;"></div>` : ""}
 
+        ${type === "karmic" ? `
+        <label>Алфавит имени</label>
+        <select id="nameAlphabet" style="display:block;width:100%;padding:13px;margin:8px 0 6px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
+          <option value="russian" selected style="background:#2a1b40;color:#fff;">Русский</option>
+          <option value="kazakh" style="background:#2a1b40;color:#fff;">Казахский</option>
+          <option value="english" style="background:#2a1b40;color:#fff;">Английский</option>
+        </select>
+        <div style="color:#c9bfa8;font-size:13px;margin-bottom:20px;line-height:1.4;">
+          Если в имени есть казахские буквы (Ә, Ғ, Қ, Ң, Ө, Ұ, Ү, Һ, І) — выберите «Казахский». Если имя написано латиницей — выберите «Английский». Во всех остальных случаях подходит «Русский».
+        </div>` : ""}
         ${type === "biorhythms" ? calcDateFieldHtml("bioStartDate", "Дата начала расчёта (график строится на 31 день вперёд)") : ""}
         ${type === "adult" || type === "lovecards" ? calcDateFieldHtml("calcDate", "Дата расчёта (по ней определяется текущий возраст и энергия дня)") : ""}
 
@@ -3126,7 +3136,8 @@ function renderKarmicResult(name, birthDate, container) {
   const [day, month, year] = birthDate.split(".").map(Number);
   let res;
   try {
-    res = window.KarmicEngine.getFullResult(day, month, year, name);
+    const alphabet = document.getElementById("nameAlphabet")?.value || "russian";
+    res = window.KarmicEngine.getFullResult(day, month, year, name, alphabet);
   } catch (error) {
     console.error("Ошибка расчёта кармической нумерологии:", error);
     container.innerHTML = `<div style="color:#ff9d9d;padding:16px;">Не удалось выполнить расчёт: ${escapeHtml(error.message || String(error))}</div>`;
