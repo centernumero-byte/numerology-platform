@@ -4025,10 +4025,12 @@ function setPaginatedPage(containerId, headerHtml, page, pageSize) {
 }
 
 function calcStatsByDirection(rows) {
-  const counts = Object.fromEntries(DIRECTION_ORDER.map((d) => [d, 0]));
-  rows.forEach((r) => { if (counts[r.direction] !== undefined) counts[r.direction]++; });
+  const shownDirections = DIRECTION_ORDER.filter((d) => isDirectionVisible(d));
+  const counts = Object.fromEntries(shownDirections.map((d) => [d, 0]));
+  rows = rows.filter((r) => counts[r.direction] !== undefined);
+  rows.forEach((r) => { counts[r.direction]++; });
   return `<div class="stats-grid">` +
-    DIRECTION_ORDER.map((d) => `<div class="stat-card"><span>${escapeHtml(DIRECTION_NAMES[d] || d)}</span><strong>${counts[d]}</strong></div>`).join("") +
+    shownDirections.map((d) => `<div class="stat-card"><span>${escapeHtml(DIRECTION_NAMES[d] || d)}</span><strong>${counts[d]}</strong></div>`).join("") +
     `<div class="stat-card"><span>Всего</span><strong>${rows.length}</strong></div>` +
     `</div>`;
 }
@@ -4260,7 +4262,7 @@ async function renderAccess() {
         return active ? `<span style="color:#8fe3a1;">до ${date}</span>` : `<span style="color:#ff9d9d;">истёк ${date}</span>`;
       };
 
-      const dirRows = DIRECTIONS.map(function (d) {
+      const dirRows = DIRECTIONS.filter(function (d) { return isDirectionVisible(d.key); }).map(function (d) {
         const row = scope[d.key] || {};
         return `<tr>
           <td>${escapeHtml(DIRECTION_NAMES[d.key])}</td>
@@ -4347,7 +4349,7 @@ async function renderAccess() {
               <tr><th>Направление</th><th>Ярлык виден</th>${CONTENT_TYPES.map(c => `<th>${c.label}</th>`).join("")}<th>Срок</th></tr>
             </thead>
             <tbody>
-              ${DIRECTIONS.map(d => `
+              ${DIRECTIONS.filter(d => isDirectionVisible(d.key)).map(d => `
                 <tr>
                   <td>${escapeHtml(DIRECTION_NAMES[d.key])}</td>
                   <td><input type="checkbox" class="scope-visible" data-direction="${d.key}" title="Показывать ярлык этого раздела у пользователя"></td>
@@ -5122,7 +5124,8 @@ async function renderStatistics() {
         <div class="stat-card"><span>Активных за месяц</span><strong>…</strong></div>
       </div>
       <div class="table-card" style="margin-bottom:18px;">
-        <div class="table-title">Расчётов по направлениям</div>
+        <div class="table-title">${isRealAdmin ? "Расчётов по направлениям" : "Расчёты вашей школы по направлениям"}</div>
+        ${isRealAdmin ? "" : `<p style="margin:0 0 12px;color:#c9bfa8;font-size:14px;">Общее количество расчётов: ваши собственные расчёты вместе с расчётами всех ваших учеников и учениц.</p>`}
         <div class="stats-grid" id="calcByDirectionStats">Загрузка...</div>
       </div>
       ${isRealAdmin ? `
@@ -5162,10 +5165,13 @@ async function renderStatistics() {
 
     let historyQuery = supabaseClient.from("calculation_history").select("user_id, direction, created_at");
     const { data: allHistory } = await historyQuery;
-    const relevantHistory = isRealAdmin ? (allHistory || []) : (allHistory || []).filter((h) => clientIds.has(h.user_id));
+    const schoolIds = new Set(clientIds);
+    if (!isRealAdmin && session) schoolIds.add(session.user.id); // учитель + его ученики
+    const relevantHistory = isRealAdmin ? (allHistory || []) : (allHistory || []).filter((h) => schoolIds.has(h.user_id));
+    const studentHistory = isRealAdmin ? relevantHistory : relevantHistory.filter((h) => clientIds.has(h.user_id));
 
     const activeThisMonth = new Set(
-      relevantHistory.filter((h) => {
+      studentHistory.filter((h) => {
         const d = new Date(h.created_at);
         return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
       }).map((h) => h.user_id)
