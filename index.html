@@ -636,6 +636,14 @@ function hasGrant(section, direction) {
   return itemGrantActive(scope[direction] && scope[direction][section]);
 }
 
+// Ярлык раздела виден только если в доступе стоит галочка «Ярлык виден».
+// Администратор видит все ярлыки всегда.
+function isDirectionVisible(direction) {
+  if (window.currentUserRole === "admin") return true;
+  const scope = window.currentUserGrant || {};
+  return !!(scope[direction] && scope[direction].visible === true);
+}
+
 function hideWelcome() {
   const el = document.getElementById("welcomeTop");
   if (el) el.style.display = "none";
@@ -664,7 +672,11 @@ function setActiveSection(section) {
    action: 'calculator' | 'material'  (material охватывает manuals/videos/tests) */
 function renderDirectionCards(section, action, materialFlags) {
   materialFlags = materialFlags || {};
-  return DIRECTIONS.map(function (card) {
+  const visibleDirections = DIRECTIONS.filter(function (card) { return isDirectionVisible(card.key); });
+  if (!visibleDirections.length) {
+    return `<div class="empty-table" style="grid-column:1/-1;">Пока нет открытых разделов.<br><br>Обратитесь к администратору или учителю.</div>`;
+  }
+  return visibleDirections.map(function (card) {
     const icon = card.icon === "pythagoras" ? pythagorasIconHtml() : `<div class="card-icon">${card.icon}</div>`;
     let click = "";
     let subtitle = "";
@@ -4332,12 +4344,13 @@ async function renderAccess() {
         <div style="overflow-x:auto;margin-bottom:16px;">
           <table class="data-table">
             <thead>
-              <tr><th>Направление</th>${CONTENT_TYPES.map(c => `<th>${c.label}</th>`).join("")}<th>Срок</th></tr>
+              <tr><th>Направление</th><th>Ярлык виден</th>${CONTENT_TYPES.map(c => `<th>${c.label}</th>`).join("")}<th>Срок</th></tr>
             </thead>
             <tbody>
               ${DIRECTIONS.map(d => `
                 <tr>
                   <td>${escapeHtml(DIRECTION_NAMES[d.key])}</td>
+                  <td><input type="checkbox" class="scope-visible" data-direction="${d.key}" title="Показывать ярлык этого раздела у пользователя"></td>
                   ${CONTENT_TYPES.map(c => `<td><input type="checkbox" class="scope-cell" data-direction="${d.key}" data-type="${c.key}"></td>`).join("")}
                   <td>${termSelectHtml("scope-term-row", `data-direction="${d.key}"`)}</td>
                 </tr>`).join("")}
@@ -4927,7 +4940,7 @@ function computeEndsAt(termValue) {
 }
 
 function toggleScopeAll(checked) {
-  document.querySelectorAll(".scope-cell, .scope-flag").forEach(function (el) { el.checked = checked; });
+  document.querySelectorAll(".scope-cell, .scope-flag, .scope-visible").forEach(function (el) { el.checked = checked; });
 }
 
 function fillScopeCheckboxes(scope) {
@@ -4949,13 +4962,17 @@ function fillScopeCheckboxes(scope) {
   setFlag("scopeMyCalc", "scopeMyCalcTerm", scope.my_calculations);
   setFlag("scopeAccess", "scopeAccessTerm", scope.access);
   setFlag("scopeStatistics", "scopeStatisticsTerm", scope.statistics);
+  document.querySelectorAll(".scope-visible").forEach(function (el) {
+    const dirScope = scope[el.dataset.direction] || {};
+    el.checked = dirScope.visible === true;
+  });
   const allBox = document.getElementById("scopeSelectAll");
-  if (allBox) allBox.checked = Array.from(document.querySelectorAll(".scope-cell, .scope-flag")).every(el => el.checked);
+  if (allBox) allBox.checked = Array.from(document.querySelectorAll(".scope-cell, .scope-flag, .scope-visible")).every(el => el.checked);
 }
 
 async function loadScopeForSelectedUser() {
   const userId = document.getElementById("accessUserSelect")?.value || "";
-  document.querySelectorAll(".scope-cell, .scope-flag").forEach(function (el) { el.checked = false; });
+  document.querySelectorAll(".scope-cell, .scope-flag, .scope-visible").forEach(function (el) { el.checked = false; });
   if (!userId) return;
   const { data, error } = await supabaseClient
     .from("access_periods")
@@ -4980,6 +4997,10 @@ function collectScope() {
     scope[dir][type] = Object.assign({ granted: true }, computeEndsAt(term));
   });
 
+  document.querySelectorAll(".scope-visible").forEach(function (el) {
+    scope[el.dataset.direction].visible = el.checked;
+  });
+
   const libChecked = document.getElementById("scopeLibrary")?.checked;
   const libTerm = document.getElementById("scopeLibraryTerm")?.value || "unlimited";
   scope.library = libChecked ? Object.assign({ granted: true }, computeEndsAt(libTerm)) : { granted: false };
@@ -5002,6 +5023,7 @@ function collectScope() {
 function scopeHasAnything(scope) {
   return Object.keys(scope).some(function (key) {
     if (key === "library" || key === "my_calculations" || key === "access" || key === "statistics") return !!scope[key]?.granted;
+    if (scope[key] && scope[key].visible === true) return true;
     return Object.values(scope[key] || {}).some(function (item) { return item && item.granted; });
   });
 }
