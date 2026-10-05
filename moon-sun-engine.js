@@ -17,9 +17,16 @@ function computeLifeCode(day, month, year) {
   return day * month * year;
 }
 
+// Код Жизни для расчёта всегда шестизначный: если цифр меньше шести, дописываем нули в конце
+// (9 × 1 × 1970 = 17 730 → 177 300).
+function sixDigitCode(code) {
+  const s = String(code);
+  return s.length >= 6 ? Number(s.slice(0, 6)) : Number(s.padEnd(6, "0"));
+}
+
 // Годовой расчёт Луна/Солнце для конкретного возраста
 function yearlyMoonSun(lifeCode, age) {
-  const quotient = Math.floor(lifeCode / age);
+  const quotient = Math.floor(sixDigitCode(lifeCode) / age);
   const first4 = String(quotient).slice(0, 4).padStart(4, "0");
   const moon = digitSum2(first4.slice(0, 2));
   const sun = digitSum2(first4.slice(2, 4));
@@ -45,14 +52,13 @@ function getAgeAtMonth(birthDay, birthMonth, birthYear, calendarYear, calendarMo
 function applyDeltaToCode(code6, deltaFn) {
   const digits = String(code6).padStart(6, "0").split("").map(Number);
   const out = digits.map(deltaFn);
-  if (out[0] === 0) out[0] = 1;
-  if (out[3] === 0) out[3] = 1;
+  if (out[0] === 0) out[0] = 1; // по методике на 1 меняется только первая цифра
   return Number(out.join(""));
 }
 
 function firstModifiedCode(lifeCode, calendarYear) {
   const yearDigit = reduceDigit(String(calendarYear).split("").reduce((a, c) => a + Number(c), 0));
-  const digits = String(lifeCode).padStart(6, "0").split("").map(Number);
+  const digits = String(sixDigitCode(lifeCode)).split("").map(Number);
   const out = digits.map((d) => reduceDigit(d + yearDigit));
   return Number(out.join(""));
 }

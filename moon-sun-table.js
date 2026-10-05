@@ -113,8 +113,9 @@
     const code = paddedCode(day, month, year);
     const lifeDigits = digitsOf(lifeCode(day, month, year));
     const fateful = fatefulYears(year);
-    const beforeBirthday = refMonth < month || (refMonth === month && refDay < day);
-    const age0 = startYear - year - (beforeBirthday ? 1 : 0);
+    // Возраст в строке — тот, который исполняется человеку в этом году.
+    // Значение «Луна и Солнце» для этого возраста действует со дня рождения (+13 дней).
+    const age0 = startYear - year;
 
     const ages = [0, 1, 2, 3, 4].map((r) => age0 + r);
     const M = ages.map((a) => energy(lifeDigits, a - 1));

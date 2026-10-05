@@ -893,7 +893,7 @@ async function openCalculator(type) {
 
   document.body.innerHTML = `
     <div style="min-height:100vh;padding:40px;background:linear-gradient(135deg,#17102f,#211443,#17102f);color:#f8e7a8;font-family:Arial,sans-serif;">
-      <div style="max-width:${type === "moonsun" ? "1100px" : type === "adult" ? "900px" : "650px"};margin:0 auto;padding:35px;border:1px solid #d7aa31;border-radius:20px;background:linear-gradient(145deg,#302052,#21163d);">
+      <div id="calcBox" style="max-width:650px;margin:0 auto;padding:35px;border:1px solid #d7aa31;border-radius:20px;background:linear-gradient(145deg,#302052,#21163d);">
         <h1 style="margin-top:0;color:#f6d66c;font-family:PT Serif,Georgia,serif;font-weight:500;">${title}</h1>
 
         <label>Имя</label>
@@ -936,11 +936,8 @@ async function openCalculator(type) {
           style="display:block;width:100%;padding:13px;margin:8px 0 20px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
         <div id="prognostikaYearError" style="color:#ff9b9b;min-height:22px;margin-bottom:10px;"></div>` : ""}
 
-        ${type === "biorhythms" ? `
-        <label>Дата начала расчёта (график строится на 31 день вперёд)</label>
-        <input id="bioStartDate" type="text" placeholder="ДД.ММ.ГГГГ" maxlength="10" inputmode="numeric" oninput="formatBirthDate(this)" value="${todayDdMmYyyy()}"
-          style="display:block;width:100%;padding:13px;margin:8px 0 5px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
-        <div id="bioStartDateError" style="color:#ff9b9b;min-height:22px;margin-bottom:10px;"></div>` : ""}
+        ${type === "biorhythms" ? calcDateFieldHtml("bioStartDate", "Дата начала расчёта (график строится на 31 день вперёд)") : ""}
+        ${type === "adult" || type === "lovecards" ? calcDateFieldHtml("calcDate", "Дата расчёта (по ней определяется текущий возраст и энергия дня)") : ""}
 
         <button onclick="calculate('${type}')" style="width:100%;padding:14px;border:1px solid #d7aa31;border-radius:10px;background:linear-gradient(90deg,#713199,#5d2789);color:#f8d96d;font-size:16px;cursor:pointer;">Рассчитать</button>
         <button onclick="location.reload()" style="width:100%;padding:14px;margin-top:10px;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.15);color:#f5d46b;font-size:16px;cursor:pointer;">Назад</button>
@@ -1071,7 +1068,25 @@ function calculate(type) {
     bioStartDate = startRaw;
   }
 
+  window._calcDate = null;
+  if (type === "adult" || type === "lovecards") {
+    const cdInput = document.getElementById("calcDate");
+    const cdError = document.getElementById("calcDateError");
+    if (cdError) cdError.textContent = "";
+    const cdRaw = cdInput ? cdInput.value.trim() : todayDdMmYyyy();
+    if (!isValidBirthDate(cdRaw)) {
+      if (cdError) cdError.textContent = "Введите дату расчёта в формате ДД.ММ.ГГГГ.";
+      return;
+    }
+    const [cd, cm, cy] = cdRaw.split(".").map(Number);
+    window._calcDate = new Date(cy, cm - 1, cd, 12, 0, 0);
+  }
+
   if (!result) return;
+
+  // Форма у всех калькуляторов одной ширины; для широких результатов расширяем блок после расчёта.
+  const calcBox = document.getElementById("calcBox");
+  if (calcBox) calcBox.style.maxWidth = type === "moonsun" ? "1100px" : type === "adult" ? "900px" : "650px";
 
   if (type === "adult" && window.AdultMatrixEngine) {
     renderAdultMatrixResult(name, birthDate, result);
@@ -1640,7 +1655,7 @@ function buildForecastTable(anchors, maxAge) {
 function computeExactAge(birthDateStr) {
   const [d, m, y] = birthDateStr.split(".").map(Number);
   const birth = new Date(y, m - 1, d);
-  const now = new Date();
+  const now = window._calcDate || new Date();
   let years = now.getFullYear() - birth.getFullYear();
   const thisYearBirthday = new Date(now.getFullYear(), m - 1, d);
   let fraction;
@@ -2968,7 +2983,25 @@ function renderLoveCardsResult(name, birthDate, targetYear, container) {
   }];
 
   renderEditableResult(blocks, container, "Карты Любви - " + name, birthDate, "lovecards");
-  container.insertAdjacentHTML("afterbegin", birthCardHtml);
+
+  // Энергия на выбранную дату расчёта
+  let dayHtml = "";
+  try {
+    const cd = window._calcDate || new Date();
+    const cdLabel = String(cd.getDate()).padStart(2, "0") + "." + String(cd.getMonth() + 1).padStart(2, "0") + "." + cd.getFullYear();
+    const dayRows = cd.getFullYear() === targetYear ? res.year : window.LoveCardsEngine.getYearForecast(day, month, year, cd.getFullYear());
+    const row = dayRows.find(function (r) { return r.date === cdLabel; });
+    if (row) {
+      dayHtml = `
+    <div style="max-width:720px;margin:0 auto 20px;padding:22px;border:1px solid #d7aa31;border-radius:14px;background:linear-gradient(145deg,#3a2560,#21163d);">
+      <div style="color:#8a8098;font-size:13px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;text-align:center;">Ваша энергия на ${cdLabel}</div>
+      <div style="color:#f6d66c;font-family:PT Serif,Georgia,serif;font-size:36px;margin-bottom:10px;text-align:center;">${escapeHtml(row.card)}</div>
+      <div style="color:#f8e7a8;font-size:15px;line-height:1.5;white-space:pre-line;">${escapeHtml(row.text)}</div>
+    </div>`;
+    }
+  } catch (error) { console.error("Не удалось показать энергию дня:", error); }
+
+  container.insertAdjacentHTML("afterbegin", birthCardHtml + dayHtml);
 }
 
 function renderPrognostikaResult(name, birthDate, targetYear, container) {
@@ -3045,6 +3078,20 @@ function renderKarmicResult(name, birthDate, container) {
 /* ============================================================
    БИОРИТМЫ
    ============================================================ */
+// Поле даты с кнопкой «Сегодняшняя дата»: дата подставляется по часам устройства,
+// её можно поправить вручную перед расчётом (например, если другой часовой пояс).
+function calcDateFieldHtml(id, label) {
+  return `
+        <label>${label}</label>
+        <div style="display:flex;gap:10px;align-items:stretch;flex-wrap:wrap;margin:8px 0 5px;">
+          <input id="${id}" type="text" placeholder="ДД.ММ.ГГГГ" maxlength="10" inputmode="numeric" oninput="formatBirthDate(this)" value="${todayDdMmYyyy()}"
+            style="flex:1 1 180px;min-width:0;padding:13px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
+          <button type="button" onclick="document.getElementById('${id}').value = todayDdMmYyyy()"
+            style="flex:0 0 auto;padding:13px 16px;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.15);color:#f5d46b;font-size:15px;cursor:pointer;">Сегодняшняя дата</button>
+        </div>
+        <div id="${id}Error" style="color:#ff9b9b;min-height:22px;margin-bottom:10px;"></div>`;
+}
+
 function todayDdMmYyyy() {
   const d = new Date();
   return String(d.getDate()).padStart(2, "0") + "." + String(d.getMonth() + 1).padStart(2, "0") + "." + d.getFullYear();
