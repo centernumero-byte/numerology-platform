@@ -23,16 +23,16 @@ function digitSum(n) {
 }
 // Приведение с мастер-числами (формулы столбца I): 11 — если само число или сумма его первых двух цифр = 11;
 // 22…99 — только если само число мастер; иначе цифровой корень MOD(n-1,9)+1
+// Сворачиваем по шагам: складываем цифры, пока не останется одна цифра.
+// Если на любом шаге получилось мастер-число — дальше не складываем, оставляем его.
 function reduceWithMaster(n) {
-  const k = firstDigitsSum(n, 2);
-  if (n === 11 || k === 11) return 11;
-  if (MASTER_NUMBERS.includes(n)) return n;
-  return ((n - 1) % 9 + 9) % 9 + 1;
+  let v = Math.abs(n);
+  while (v > 9 && !MASTER_NUMBERS.includes(v)) v = digitSum(v);
+  return v;
 }
 // Код дня / месяца: мастер только если само число 11 или 22
 function reduceExactMaster(n) {
-  if (MASTER_NUMBERS.includes(n)) return n;
-  return ((n - 1) % 9 + 9) % 9 + 1;
+  return reduceWithMaster(n);
 }
 
 // Сумма букв по алфавиту (а=1 … и=9, й=1 …); символы вне алфавита (пробел, дефис) не учитываются
@@ -55,18 +55,15 @@ function computeAllCodes(lastName, firstName, middleName, day, month, year, alph
   const lastNameCode = nameCode(lastName, alphabetKey);                      // I2
   const middleNameCode = middleName && letterSum(middleName, alphabetKey) ? nameCode(middleName, alphabetKey) : 0; // I3
 
-  const fateCode = firstDigitsSum(firstDigitsSum(firstNameCode + lastNameCode + middleNameCode, 2), 2); // I4
+  const fateCode = reduceWithMaster(firstNameCode + lastNameCode + middleNameCode); // фамилия + имя + отчество
   const dayCode = reduceExactMaster(day);                                    // I5
   const monthCode = reduceExactMaster(month);                                // I6
-  const yearSum = digitSum(year);                                            // O2
-  const yearStep = (yearSum === 11 || yearSum === 22) ? yearSum : firstDigitsSum(yearSum, 2); // O3
-  const yearCode = firstDigitsSum(yearStep, 2);                              // I7
-  const daySum = firstDigitsSum(day, 2), monthSum = firstDigitsSum(month, 2); // M3, N3
-  const lifePathCode = reduceWithMaster(yearCode + monthSum + daySum);       // I8
+  const yearCode = reduceWithMaster(digitSum(year));                         // сумма цифр года
+  const lifePathCode = reduceWithMaster(dayCode + monthCode + yearCode);     // день + месяц + год
 
   const leftRootCode = reduceWithMaster(firstNameCode + middleNameCode);     // I9
   const rightRootCode = reduceWithMaster(lastNameCode + fateCode);           // I10
-  const heartCode = reduceWithMaster(daySum + monthSum);                     // I11
+  const heartCode = reduceWithMaster(dayCode + monthCode);                   // день + месяц
   const soulCode = reduceWithMaster(yearCode + lifePathCode);                // I12
 
   const activationRaw = (firstNameCode + dayCode) * lastNameCode;            // J13
