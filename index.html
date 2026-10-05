@@ -4436,15 +4436,19 @@ async function renderAccess() {
     </div>`;
 
   if (!isRealAdmin) {
-    const codeEl = document.getElementById("teacherOwnCode");
-    if (codeEl) {
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      if (session) codeEl.textContent = session.user.id.slice(0, 8).toUpperCase();
+    try {
+      const { data: { session: teacherSession } } = await supabaseClient.auth.getSession();
+      const codeEl = document.getElementById("teacherOwnCode");
+      if (codeEl && teacherSession) codeEl.textContent = teacherSession.user.id.slice(0, 8).toUpperCase();
+      // Подтягиваем уже сохранённое название школы, если оно было задано раньше.
+      if (teacherSession) {
+        const { data: mySchool } = await supabaseClient.from("schools").select("id, name").eq("owner_id", teacherSession.user.id).maybeSingle();
+        const schoolInput = document.getElementById("teacherSchoolNameInput");
+        if (schoolInput && mySchool?.name) schoolInput.value = mySchool.name;
+      }
+    } catch (error) {
+      console.error("Ошибка загрузки данных учителя:", error);
     }
-    // Подтягиваем уже сохранённое название школы, если оно было задано раньше.
-    const { data: mySchool } = await supabaseClient.from("schools").select("id, name").eq("owner_id", session.user.id).maybeSingle();
-    const schoolInput = document.getElementById("teacherSchoolNameInput");
-    if (schoolInput && mySchool?.name) schoolInput.value = mySchool.name;
   }
 
   await loadAdminUsers();
