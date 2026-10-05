@@ -5146,9 +5146,11 @@ async function renderStatistics() {
 
   try {
     // ---- Клиенты/ученики и расчёты ----
-    let profilesQuery = supabaseClient.from("profiles").select("id, role, created_at");
+    let profilesQuery = supabaseClient.from("profiles").select("id, role, created_at, status");
     if (!isRealAdmin) profilesQuery = profilesQuery.eq("teacher_id", session.user.id);
-    const { data: clientProfiles } = await profilesQuery;
+    const { data: clientProfilesRaw } = await profilesQuery;
+    // Удалённые аккаунты в статистике не считаем.
+    const clientProfiles = (clientProfilesRaw || []).filter((p) => String(p.status || "").toLowerCase() !== "deleted");
     const clients = (clientProfiles || []).filter((p) => p.role !== "admin" && p.role !== "numerologist" || !isRealAdmin);
     const clientIds = new Set((isRealAdmin ? (clientProfiles || []) : clients).map((p) => p.id));
 
@@ -5236,7 +5238,8 @@ async function renderStatistics() {
       : `<div class="empty-table">В ближайшие 7 дней ничего не заканчивается.</div>`;
 
     // ---- Рейтинг учителей ----
-    const { data: allProfilesFull } = await supabaseClient.from("profiles").select("id, first_name, last_name, email, role, teacher_id");
+    const { data: allProfilesFullRaw } = await supabaseClient.from("profiles").select("id, first_name, last_name, email, role, teacher_id, status");
+    const allProfilesFull = (allProfilesFullRaw || []).filter((p) => String(p.status || "").toLowerCase() !== "deleted");
     const teachers = (allProfilesFull || []).filter((p) => p.role === "numerologist");
     const teacherCounts = teachers.map((t) => ({
       id: t.id,
