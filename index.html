@@ -928,7 +928,16 @@ async function openCalculator(type) {
         <label>Год для прогноза (365 дней)</label>
         <input id="loveCardsYear" type="text" placeholder="ГГГГ, например ${new Date().getFullYear()}" maxlength="4" inputmode="numeric" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4)"
           style="display:block;width:100%;padding:13px;margin:8px 0 20px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
-        <div id="loveCardsYearError" style="color:#ff9b9b;min-height:22px;margin-bottom:10px;"></div>` : ""}
+        <div id="loveCardsYearError" style="color:#ff9b9b;min-height:22px;margin-bottom:10px;"></div>
+
+        <label>Имя партнёра (по желанию)</label>
+        <input id="loveCardsPartnerName" type="text"
+          style="display:block;width:100%;padding:13px;margin:8px 0 20px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
+
+        <label>Дата рождения партнёра (по желанию — для расчёта отношений)</label>
+        <input id="loveCardsPartnerDate" type="text" placeholder="ДД.ММ.ГГГГ" maxlength="10" inputmode="numeric" oninput="formatBirthDate(this)"
+          style="display:block;width:100%;padding:13px;margin:8px 0 5px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
+        <div id="loveCardsPartnerDateError" style="color:#ff9b9b;min-height:22px;margin-bottom:10px;"></div>` : ""}
 
         ${type === "prognostika" ? `
         <label>Интересующий год</label>
@@ -1036,6 +1045,15 @@ function calculate(type) {
       return;
     }
     loveCardsYear = Number(yearRaw);
+    const pInput = document.getElementById("loveCardsPartnerDate");
+    const pError = document.getElementById("loveCardsPartnerDateError");
+    if (pError) pError.textContent = "";
+    const pRaw = pInput ? pInput.value.trim() : "";
+    if (pRaw && !isValidBirthDate(pRaw)) {
+      if (pError) pError.textContent = "Введите дату рождения партнёра в формате ДД.ММ.ГГГГ или оставьте поле пустым.";
+      return;
+    }
+    window._loveCardsPartner = pRaw ? { date: pRaw, name: (document.getElementById("loveCardsPartnerName")?.value || "").trim() } : null;
   }
   let prognostikaYear = null;
   if (type === "prognostika") {
@@ -3018,7 +3036,33 @@ function renderLoveCardsResult(name, birthDate, targetYear, container) {
     }
   } catch (error) { console.error("Не удалось показать энергию дня:", error); }
 
-  container.insertAdjacentHTML("afterbegin", birthCardHtml + dayHtml);
+  // Отношения с партнёром
+  let relHtml = "";
+  const partner = window._loveCardsPartner;
+  if (partner && window.LoveCardsEngine.getRelationship) {
+    try {
+      const [pd, pm] = partner.date.split(".").map(Number);
+      const rel = window.LoveCardsEngine.getRelationship(day, month, pd, pm);
+      const pName = partner.name || "Партнёр";
+      const line = function (title, item) {
+        return `
+        <div style="margin:0 0 14px;">
+          <div style="color:#f6d66c;font-family:PT Serif,Georgia,serif;font-size:18px;margin-bottom:4px;">${escapeHtml(title)}: ${escapeHtml(item.card)} (${item.code})</div>
+          <div style="color:#f8e7a8;font-size:15px;line-height:1.5;">${escapeHtml(item.text)}</div>
+        </div>`;
+      };
+      relHtml = `
+    <div style="max-width:720px;margin:0 auto 20px;padding:22px;border:1px solid #d7aa31;border-radius:14px;background:linear-gradient(145deg,#302052,#21163d);">
+      <div style="color:#8a8098;font-size:13px;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;text-align:center;">Отношения: ${escapeHtml(name)} и ${escapeHtml(pName)}</div>
+      <div style="color:#e9dfc6;font-size:14px;margin-bottom:14px;text-align:center;">Карты рождения: ${escapeHtml(name)} — ${escapeHtml(rel.card1.card)} (${rel.card1.code}), ${escapeHtml(pName)} — ${escapeHtml(rel.card2.card)} (${rel.card2.code})</div>
+      ${line("Общий урок пары", rel.common)}
+      ${line("Урок отношений для " + name, rel.lesson1)}
+      ${line("Урок отношений для " + pName, rel.lesson2)}
+    </div>`;
+    } catch (error) { console.error("Не удалось рассчитать отношения:", error); }
+  }
+
+  container.insertAdjacentHTML("afterbegin", birthCardHtml + dayHtml + relHtml);
 }
 
 function renderPrognostikaResult(name, birthDate, targetYear, container) {
