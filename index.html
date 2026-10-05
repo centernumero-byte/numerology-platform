@@ -2622,7 +2622,24 @@ function renderPythDigitSquare(psychomatrix, container) {
 
 /* Общий рендер результата с возможностью редактирования перед скачиванием.
    Используется для калькулятора по Пифагору (и может переиспользоваться для остальных). */
+// Чистим оформление текста расшифровок: убираем пробелы и переносы строк перед знаками
+// препинания (чтобы точка или запятая не «висели» отдельно), двойные пробелы и пробелы в конце строк.
+function tidyResultText(text) {
+  return String(text == null ? "" : text)
+    .replace(/[ \t\u00a0]*\n[ \t\u00a0]*([.,;:!?»)])/g, "$1")
+    .replace(/[ \t\u00a0]+([.,;:!?»)])/g, "$1")
+    .replace(/([«(])[ \t\u00a0]+/g, "$1")
+    .replace(/([,;])(?=[А-Яа-яЁёA-Za-z])/g, "$1 ")
+    .replace(/([.!?])(?=[А-ЯЁ])/g, "$1 ")
+    .replace(/[ \t\u00a0]{2,}/g, " ")
+    .replace(/[ \t\u00a0]+\n/g, "\n")
+    .trim();
+}
+
 function renderEditableResult(blocks, container, personLabel, dateLabel, calculatorType) {
+  blocks.forEach(function (block) {
+    (block.entries || []).forEach(function (e) { e.text = tidyResultText(e.text); });
+  });
   let idCounter = 0;
   const nextId = () => "acc-edit-" + (idCounter++);
 
