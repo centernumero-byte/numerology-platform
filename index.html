@@ -985,6 +985,12 @@ function isValidBirthDate(value) {
 
 async function saveCalculationHistory(fields) {
   if (window._skipHistorySave) return;
+  // Повторное нажатие «Рассчитать» с теми же данными в течение минуты не сохраняем второй раз
+  const dupKey = [fields.direction, fields.title, fields.birthDate2 || "", fields.alphabet || "", fields.lastName || "", fields.firstName || "", fields.patronymic || ""].join("|");
+  const nowMs = Date.now();
+  window._recentHistorySaves = window._recentHistorySaves || {};
+  if (window._recentHistorySaves[dupKey] && nowMs - window._recentHistorySaves[dupKey] < 60000) return;
+  window._recentHistorySaves[dupKey] = nowMs;
   try {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) return;
