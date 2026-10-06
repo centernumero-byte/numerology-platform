@@ -3126,8 +3126,55 @@ function renderPrognostikaResult(name, birthDate, targetYear, container) {
     })
   });
 
+  // Прогноз на день: с сегодняшней даты на 365 дней вперёд
+  if (res.days && res.days.length) {
+    const today = res.days[0];
+    const last = res.days[res.days.length - 1];
+    const EV_TITLE = "Встречи. События. Действия";
+    const MOOD_TITLE = "Настроение. Душевное самочувствие. Биоритмы";
+    const MONTH_NAMES_PROGNOSTIKA = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+    const MONTH_GENITIVE_PROGNOSTIKA = ["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
+
+    blocks.push({
+      title: "Прогноз на сегодня, " + today.date + " (" + today.weekday + ") — число дня " + today.number,
+      entries: [
+        { number: EV_TITLE, text: today.eventsText },
+        { number: MOOD_TITLE, text: today.moodText },
+      ]
+    });
+
+    const monthGroups = [];
+    res.days.forEach(function (d) {
+      const key = d.year + "-" + d.month;
+      let g = monthGroups[monthGroups.length - 1];
+      if (!g || g.key !== key) {
+        g = { key: key, label: MONTH_NAMES_PROGNOSTIKA[d.month - 1] + " " + d.year, lines: [] };
+        monthGroups.push(g);
+      }
+      g.lines.push(String(d.day).padStart(2, "0") + " " + MONTH_GENITIVE_PROGNOSTIKA[d.month - 1] + ", " + d.weekday + " — число дня " + d.number);
+    });
+
+    blocks.push({
+      title: "Прогноз на 365 дней (" + today.date + " — " + last.date + "): числа дней повторяются циклом каждые 9 дней",
+      entries: monthGroups.map(function (g) {
+        return { number: g.label, text: g.lines.join("\n") };
+      })
+    });
+
+    blocks.push({
+      title: "Расшифровка числа дня (1–9)",
+      entries: [1, 2, 3, 4, 5, 6, 7, 8, 9].map(function (n) {
+        return {
+          number: "Число дня " + n,
+          text: EV_TITLE + ":\n" + res.dayTexts.events[n] + "\n\n" + MOOD_TITLE + ":\n" + res.dayTexts.mood[n]
+        };
+      })
+    });
+  }
+
   renderEditableResult(blocks, container, "Прогностика - " + name, birthDate, "prognostika");
 }
+
 
 /* ============================================================
    КАРМИЧЕСКАЯ НУМЕРОЛОГИЯ
