@@ -4943,7 +4943,7 @@ async function loadDeletedUsersLog() {
   const restorable = deletedProfiles.map(r => ({
     id: r.id, email: r.email, name: [r.last_name, r.first_name].filter(Boolean).join(" "),
     role: r.role, registered_at: r.created_at, sortDate: r.deleted_at,
-    statusLabel: "Удалён " + (r.deleted_at ? new Date(r.deleted_at).toLocaleDateString("ru-RU") : ""),
+    statusLabel: "Удалён " + (r.deleted_at ? new Date(r.deleted_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : ""),
     accessLabel: deleterNameById[r.deleted_by] || "—",
     action: `<button type="button" class="material-manager-button" style="width:auto;padding:6px 10px;font-size:12px;" onclick='restoreUserAccount(${JSON.stringify(r.id)}, ${JSON.stringify([r.last_name, r.first_name].filter(Boolean).join(" ") || r.email)})'>Восстановить</button>`,
   }));
@@ -4990,7 +4990,7 @@ async function loadDeletedUsersLog() {
     legacy = (legacyData || []).map(r => ({
       id: null, email: r.email, name: [r.last_name, r.first_name].filter(Boolean).join(" "),
       role: r.role, registered_at: r.registered_at, sortDate: r.deleted_at,
-      statusLabel: "Удалён " + (r.deleted_at ? new Date(r.deleted_at).toLocaleDateString("ru-RU") : ""),
+      statusLabel: "Удалён " + (r.deleted_at ? new Date(r.deleted_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : ""),
       accessLabel: deleterNameById[r.deleted_by] || "—",
       action: `<span style="color:#8a8098;font-size:12px;">Удалён навсегда</span>`,
     }));
