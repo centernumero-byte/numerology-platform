@@ -4790,7 +4790,7 @@ async function loadAdminUsers() {
             <td>${escapeHtml(user.email || "—")}</td>
             <td>${escapeHtml(user.phone || "—")}</td>
             <td>${escapeHtml(roleLabel(user.role))}</td>
-            <td>${user.created_at ? new Date(user.created_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}</td>
+            <td>${user.created_at ? new Date(user.created_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}${user.restored_at ? " / " + new Date(user.restored_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : ""}</td>
             ${isRealAdmin ? `${codeCell}<td>${user.role === "student" ? escapeHtml(teacherName(user.teacher_id)) : "—"}</td>` : ""}
             <td>${statusLabel(user.status)}${user.restored_at ? ` <span style="color:#8fd18f;font-size:11px;">(восстановлен ${new Date(user.restored_at).toLocaleDateString("ru-RU")})</span>` : ""}${accessBadge(user)}</td>
             ${user.role === "admin" ? (isRealAdmin ? "<td>—</td>" : "") : `<td><button type="button" class="material-manager-button" style="width:auto;padding:6px 10px;font-size:12px;" onclick='deleteUserAccount(${JSON.stringify(user.id)}, ${JSON.stringify(nameOf(user))})'>Удалить</button></td>`}
@@ -4924,7 +4924,7 @@ async function loadDeletedUsersLog() {
 
   let query = supabaseClient
     .from("profiles")
-    .select("id, first_name, last_name, email, role, created_at, deleted_at, deleted_by, teacher_id, status")
+    .select("id, first_name, last_name, email, role, created_at, deleted_at, deleted_by, teacher_id, status, restored_at")
     .in("status", ["deleted", "active"])
     .order("deleted_at", { ascending: false });
   if (!isRealAdmin) query = query.eq("teacher_id", session.user.id);
@@ -4946,10 +4946,48 @@ async function loadDeletedUsersLog() {
     });
   }
 
-  const restorable = deletedProfiles.map(r => ({
+  const fmtDT = (v) => v ? new Date(v).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
+  const profileById = {};
+  allProfiles.forEach(p => { profileById[p.id] = p; });
+
+  // Журнал событий: каждое удаление и каждое восстановление — отдельная строка, ничего не исчезает.
+  const { data: eventsData } = await supabaseClient
+    .from("account_events")
+    .select("id, user_id, email, first_name, last_name, role, registered_at, event, event_at, actor_id")
+    .order("event_at", { ascending: false });
+  const events = eventsData || [];
+  const actorIds = [...new Set(events.map(e => e.actor_id).filter(Boolean).filter(id => !deleterNameById[id]))];
+  if (actorIds.length) {
+    const { data: actors } = await supabaseClient.from("profiles").select("id, role, first_name, last_name, email").in("id", actorIds);
+    (actors || []).forEach(d => { deleterNameById[d.id] = d.role === "admin" ? "Admin" : ("Teacher: " + ([d.last_name, d.first_name].filter(Boolean).join(" ") || d.email)); });
+  }
+  const latestEventId = {};
+  events.forEach(e => { if (!latestEventId[e.user_id]) latestEventId[e.user_id] = e.id; });
+
+  const eventRows = events.map(e => {
+    const prof = profileById[e.user_id];
+    const nm = [e.last_name, e.first_name].filter(Boolean).join(" ");
+    let action = `<span style="color:#8a8098;font-size:12px;">—</span>`;
+    if (latestEventId[e.user_id] === e.id) {
+      if (prof && prof.status === "deleted") {
+        action = `<button type="button" class="material-manager-button" style="width:auto;padding:6px 10px;font-size:12px;" onclick='restoreUserAccount(${JSON.stringify(e.user_id)}, ${JSON.stringify(nm || e.email)})'>Восстановить</button>`;
+      } else if (!prof && e.event === "deleted" && isRealAdmin) {
+        action = `<span style="color:#8a8098;font-size:12px;">Удалён навсегда</span>`;
+      }
+    }
+    return {
+      id: prof ? e.user_id : null, email: e.email, name: nm,
+      role: e.role, registered_at: e.registered_at, restored_at: prof ? prof.restored_at : null, sortDate: e.event_at,
+      statusLabel: (e.event === "restored" ? "Восстановлен " : "Удалён ") + fmtDT(e.event_at),
+      accessLabel: deleterNameById[e.actor_id] || "—",
+      action,
+    };
+  });
+  // На случай удалённых аккаунтов без записи в журнале — показываем их тоже, чтобы можно было восстановить.
+  const restorable = deletedProfiles.filter(r => !latestEventId[r.id]).map(r => ({
     id: r.id, email: r.email, name: [r.last_name, r.first_name].filter(Boolean).join(" "),
-    role: r.role, registered_at: r.created_at, sortDate: r.deleted_at,
-    statusLabel: "Удалён " + (r.deleted_at ? new Date(r.deleted_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : ""),
+    role: r.role, registered_at: r.created_at, restored_at: r.restored_at, sortDate: r.deleted_at,
+    statusLabel: "Удалён " + fmtDT(r.deleted_at),
     accessLabel: deleterNameById[r.deleted_by] || "—",
     action: `<button type="button" class="material-manager-button" style="width:auto;padding:6px 10px;font-size:12px;" onclick='restoreUserAccount(${JSON.stringify(r.id)}, ${JSON.stringify([r.last_name, r.first_name].filter(Boolean).join(" ") || r.email)})'>Восстановить</button>`,
   }));
@@ -4972,7 +5010,7 @@ async function loadDeletedUsersLog() {
         const durationLabel = days >= 28 ? Math.round(days / 30) + " мес." : days + " дн.";
         return {
           id: r.id, email: r.email, name: [r.last_name, r.first_name].filter(Boolean).join(" "),
-          role: r.role, registered_at: r.created_at, sortDate: period.ends_at,
+          role: r.role, registered_at: r.created_at, restored_at: r.restored_at, sortDate: period.ends_at,
           statusLabel: "Истёк срок " + new Date(period.ends_at).toLocaleDateString("ru-RU"),
           accessLabel: `Истёк срок (${durationLabel})`,
           action: `<button type="button" class="material-manager-button" style="width:auto;padding:6px 10px;font-size:12px;" onclick='scrollToGrantAccess(${JSON.stringify(r.id)})'>Возобновить</button>`,
@@ -4980,29 +5018,7 @@ async function loadDeletedUsersLog() {
       });
   }
 
-  let legacy = [];
-  if (isRealAdmin) {
-    // Старые аккаунты, удалённые ещё до того, как удаление стало обратимым — они удалены
-    // окончательно и восстановлению не подлежат, но остаются в журнале как история.
-    const { data: legacyData } = await supabaseClient
-      .from("deleted_users_log")
-      .select("email, first_name, last_name, role, registered_at, deleted_at, deleted_by")
-      .order("deleted_at", { ascending: false });
-    const legacyDeleterIds = [...new Set((legacyData || []).map(r => r.deleted_by).filter(Boolean).filter(id => !deleterNameById[id]))];
-    if (legacyDeleterIds.length) {
-      const { data: moreDeleters } = await supabaseClient.from("profiles").select("id, role, first_name, last_name, email").in("id", legacyDeleterIds);
-      (moreDeleters || []).forEach(d => { deleterNameById[d.id] = d.role === "admin" ? "Admin" : ("Teacher: " + ([d.last_name, d.first_name].filter(Boolean).join(" ") || d.email)); });
-    }
-    legacy = (legacyData || []).map(r => ({
-      id: null, email: r.email, name: [r.last_name, r.first_name].filter(Boolean).join(" "),
-      role: r.role, registered_at: r.registered_at, sortDate: r.deleted_at,
-      statusLabel: "Удалён " + (r.deleted_at ? new Date(r.deleted_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : ""),
-      accessLabel: deleterNameById[r.deleted_by] || "—",
-      action: `<span style="color:#8a8098;font-size:12px;">Удалён навсегда</span>`,
-    }));
-  }
-
-  const rows = [...restorable, ...expired, ...legacy].sort((a, b) => new Date(b.sortDate) - new Date(a.sortDate));
+  const rows = [...eventRows, ...restorable, ...expired].sort((a, b) => new Date(b.sortDate) - new Date(a.sortDate));
   if (!rows.length) { box.innerHTML = `<div class="empty-table">Пока никто не удалялся и ни у кого не истёк срок.</div>`; return; }
 
   const headerHtml = `<thead><tr><th>Email</th><th>Имя</th><th>Роль</th><th>Зарегистрирован</th><th>Статус</th><th>Доступ</th><th>Действие</th></tr></thead>`;
@@ -5011,7 +5027,7 @@ async function loadDeletedUsersLog() {
             <td>${r.id ? `<a href="javascript:void(0)" style="color:#8a8098;text-decoration:underline;" onclick='showUserDetailModal(${JSON.stringify(r.id)})'>${escapeHtml(r.email || "—")}</a>` : escapeHtml(r.email || "—")}</td>
             <td>${escapeHtml(r.name || "—")}</td>
             <td>${escapeHtml(roleLabel(r.role))}</td>
-            <td>${r.registered_at ? new Date(r.registered_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}</td>
+            <td>${r.registered_at ? new Date(r.registered_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}${r.restored_at ? " / " + new Date(r.restored_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : ""}</td>
             <td>${escapeHtml(r.statusLabel)}</td>
             <td>${escapeHtml(r.accessLabel)}</td>
             <td>${r.action}</td>
