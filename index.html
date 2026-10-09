@@ -638,10 +638,19 @@ function hasGrant(section, direction) {
 
 // Ярлык раздела виден только если в доступе стоит галочка «Ярлык виден».
 // Администратор видит все ярлыки всегда.
-function isDirectionVisible(direction) {
+// section (calculators / manuals / videos / tests) — ярлык отдельно для каждого вида материалов.
+// Без section — ярлык виден хотя бы в одном из них.
+function isDirectionVisible(direction, section) {
   if (window.currentUserRole === "admin") return true;
   const scope = window.currentUserGrant || {};
-  return !!(scope[direction] && scope[direction].visible === true);
+  const dir = scope[direction];
+  if (!dir) return false;
+  const vt = dir.visible_types;
+  if (vt && typeof vt === "object") {
+    if (section) return vt[section] === true;
+    return Object.values(vt).some(v => v === true);
+  }
+  return dir.visible === true;
 }
 
 function hideWelcome() {
@@ -672,7 +681,7 @@ function setActiveSection(section) {
    action: 'calculator' | 'material'  (material охватывает manuals/videos/tests) */
 function renderDirectionCards(section, action, materialFlags) {
   materialFlags = materialFlags || {};
-  const visibleDirections = DIRECTIONS.filter(function (card) { return isDirectionVisible(card.key); });
+  const visibleDirections = DIRECTIONS.filter(function (card) { return isDirectionVisible(card.key, section); });
   if (!visibleDirections.length) {
     return `<div class="empty-table" style="grid-column:1/-1;">Пока нет открытых разделов.<br><br>Обратитесь к администратору или учителю.</div>`;
   }
@@ -4518,14 +4527,16 @@ async function renderAccess() {
         <div style="overflow-x:auto;margin-bottom:16px;">
           <table class="data-table">
             <thead>
-              <tr><th>Направление</th><th>Ярлык виден</th>${CONTENT_TYPES.map(c => `<th>${c.label}</th>`).join("")}<th>Срок</th></tr>
+              <tr><th>Направление</th>${CONTENT_TYPES.map(c => `<th>${c.label}</th>`).join("")}<th>Срок</th></tr>
             </thead>
             <tbody>
               ${DIRECTIONS.filter(d => isDirectionVisible(d.key)).map(d => `
                 <tr>
                   <td>${escapeHtml(DIRECTION_NAMES[d.key])}</td>
-                  <td><input type="checkbox" class="scope-visible" data-direction="${d.key}" title="Показывать ярлык этого раздела у пользователя"></td>
-                  ${CONTENT_TYPES.map(c => `<td><input type="checkbox" class="scope-cell" data-direction="${d.key}" data-type="${c.key}"></td>`).join("")}
+                  ${CONTENT_TYPES.map(c => `<td style="white-space:nowrap;">
+                    <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;margin-bottom:6px;"><input type="checkbox" class="scope-visible" data-direction="${d.key}" data-type="${c.key}"> ярлык виден</label>
+                    <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;"><input type="checkbox" class="scope-cell" data-direction="${d.key}" data-type="${c.key}"> доступ</label>
+                  </td>`).join("")}
                   <td>${termSelectHtml("scope-term-row", `data-direction="${d.key}"`)}</td>
                 </tr>`).join("")}
             </tbody>
@@ -5158,7 +5169,8 @@ function fillScopeCheckboxes(scope) {
   setFlag("scopeStatistics", "scopeStatisticsTerm", scope.statistics);
   document.querySelectorAll(".scope-visible").forEach(function (el) {
     const dirScope = scope[el.dataset.direction] || {};
-    el.checked = dirScope.visible === true;
+    const vt = dirScope.visible_types;
+    el.checked = (vt && typeof vt === "object") ? vt[el.dataset.type] === true : dirScope.visible === true;
   });
   const allBox = document.getElementById("scopeSelectAll");
   if (allBox) allBox.checked = Array.from(document.querySelectorAll(".scope-cell, .scope-flag, .scope-visible")).every(el => el.checked);
@@ -5192,7 +5204,11 @@ function collectScope() {
   });
 
   document.querySelectorAll(".scope-visible").forEach(function (el) {
-    scope[el.dataset.direction].visible = el.checked;
+    const dir = scope[el.dataset.direction];
+    dir.visible_types = dir.visible_types || {};
+    dir.visible_types[el.dataset.type] = el.checked;
+    if (el.checked) dir.visible = true;
+    else if (dir.visible !== true) dir.visible = false;
   });
 
   const libChecked = document.getElementById("scopeLibrary")?.checked;
