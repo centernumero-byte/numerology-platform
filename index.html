@@ -834,7 +834,7 @@ async function openCalculator(type) {
         <div style="max-width:650px;margin:0 auto;padding:35px;border:1px solid #d7aa31;border-radius:20px;background:linear-gradient(145deg,#302052,#21163d);">
           <h1 style="margin-top:0;color:#f6d66c;font-family:PT Serif,Georgia,serif;font-weight:500;">${title}</h1>
 
-          <label>Фамилия</label>
+          <label>Фамилия</label>${type === "codes" ? `<div style="font-size:13px;color:#d9c9f0;margin-top:4px;">Для женщин указывается девичья фамилия</div>` : ""}
           <input id="pythLastName" type="text" style="display:block;width:100%;padding:13px;margin:8px 0 16px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
 
           <label>Имя</label>
