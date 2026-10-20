@@ -2049,6 +2049,10 @@ function downloadHtmlFile(filename, htmlBody) {
 </head><body><div class="doc-wrap">${htmlBody}</div>
 </body></html>`;
 
+  // На телефоне печать из скрытого окошка не срабатывает — открываем расчёт
+  // в новой вкладке с кнопкой сохранения в PDF.
+  if (isPhoneDevice()) { openMobilePrintWindow(fullHtml, title, filename, htmlBody); return; }
+
   // Печать через скрытый iframe — родной движок печати браузера. Это ЕДИНСТВЕННЫЙ
   // вариант из всех опробованных, который стабильно давал корректный, читаемый
   // результат без разрывов, дублей и пустых страниц. На html2pdf.js больше не
@@ -2105,6 +2109,29 @@ function downloadHtmlFile(filename, htmlBody) {
   idoc.open();
   idoc.write(fullHtml);
   idoc.close();
+}
+
+function isPhoneDevice() {
+  const ua = navigator.userAgent || "";
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+}
+
+function openMobilePrintWindow(fullHtml, title, filename, htmlBody) {
+  let w = null;
+  try { w = window.open("", "_blank"); } catch (e) { w = null; }
+  if (!w) { downloadHtmlFallback(filename, htmlBody); return; }
+  const css = `<style>
+    .mob-bar { position: sticky; top: 0; z-index: 99; background: #2f6d6a; padding: 12px 14px; text-align: center; font-family: Arial, sans-serif; }
+    .mob-bar button { width: 100%; max-width: 420px; font-size: 17px; padding: 13px 18px; border-radius: 10px; border: 1px solid #d7aa31; background: #f6d66c; color: #1c332f; font-weight: 700; }
+    .mob-bar div { color: #fff; font-size: 13px; margin-top: 7px; line-height: 1.35; }
+    @media print { .mob-bar { display: none !important; } }
+  </style>`;
+  const bar = `<div class="mob-bar"><button type="button" onclick="window.print()">📄 Сохранить в PDF</button><div>Нажмите кнопку и в открывшемся окне выберите «Сохранить как PDF»</div></div>`;
+  const html = fullHtml.replace("</head>", '<meta name="viewport" content="width=device-width, initial-scale=1">' + css + "</head>").replace("<body>", "<body>" + bar);
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+  try { w.document.title = title; } catch (e) { /* не критично */ }
 }
 
 function downloadHtmlFallback(filename, htmlBody) {
