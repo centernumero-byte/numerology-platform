@@ -509,9 +509,9 @@ body, body * { font-variant-numeric: lining-nums; }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-<script src="adult-matrix-engine.js"></script>
+<script src="adult-matrix-engine.js?v=20261029"></script>
 <script src="forecast-data.js"></script>
-<script src="child-matrix-engine.js"></script>
+<script src="child-matrix-engine.js?v=20261029"></script>
 <script src="compat-engine.js"></script>
 <script src="pyth-engine.js"></script>
 <script src="vedic-engine.js?v=20261029"></script>
@@ -858,6 +858,7 @@ async function openCalculator(type) {
             <option value="kazakh" style="background:#2a1b40;color:#fff;">Казахский</option>
             <option value="english" style="background:#2a1b40;color:#fff;">Английский</option>
           </select>
+          <div id="pythAlphabetNotice" style="display:none;color:#f6d66c;font-size:14px;margin:4px 0 8px;line-height:1.4;"></div>
           <div style="color:#c9bfa8;font-size:13px;margin-bottom:20px;line-height:1.4;">
             Если в вашем ФИО есть казахские буквы (Ә, Ғ, Қ, Ң, Ө, Ұ, Ү, Һ, І) — выберите «Казахский». Если ФИО написано латиницей — выберите «Английский». Во всех остальных случаях подходит «Русский».
           </div>
@@ -961,6 +962,7 @@ async function openCalculator(type) {
           <option value="kazakh" style="background:#2a1b40;color:#fff;">Казахский</option>
           <option value="english" style="background:#2a1b40;color:#fff;">Английский</option>
         </select>
+        <div id="nameAlphabetNotice" style="display:none;color:#f6d66c;font-size:14px;margin:4px 0 8px;line-height:1.4;"></div>
         <div style="color:#c9bfa8;font-size:13px;margin-bottom:20px;line-height:1.4;">
           Если в имени есть казахские буквы (Ә, Ғ, Қ, Ң, Ө, Ұ, Ү, Һ, І) — выберите «Казахский». Если имя написано латиницей — выберите «Английский». Во всех остальных случаях подходит «Русский».
         </div>` : ""}
@@ -2657,7 +2659,67 @@ function toggleAccordionBody(id) {
   if (el) el.classList.toggle("hidden");
 }
 
+/* ============================================================
+   КАЗАХСКИЕ БУКВЫ → КАЗАХСКИЙ АЛФАВИТ
+   Если в ФИО есть казахские буквы, а выбран другой алфавит,
+   переключаем на «Казахский» и показываем предупреждение.
+   ============================================================ */
+const KAZAKH_LETTERS_RE = /[әғқңөұүһіӘҒҚҢӨҰҮҺІ]/g;
+const ALPHABET_FIELDS = {
+  nameAlphabet: [{ id: "name", label: "имени" }],
+  pythAlphabet: [
+    { id: "pythLastName", label: "фамилии" },
+    { id: "pythFirstName", label: "имени" },
+    { id: "pythPatronymic", label: "отчестве" },
+  ],
+};
+function checkKazakhAlphabet(selectId) {
+  const select = document.getElementById(selectId);
+  const notice = document.getElementById(selectId + "Notice");
+  if (!select) return;
+  const found = [];
+  const letters = new Set();
+  (ALPHABET_FIELDS[selectId] || []).forEach(function (f) {
+    const value = (document.getElementById(f.id)?.value || "");
+    const m = value.match(KAZAKH_LETTERS_RE);
+    if (m) { found.push(f.label); m.forEach(function (ch) { letters.add(ch.toUpperCase()); }); }
+  });
+  if (!found.length) {
+    if (notice && select.dataset.autoKazakh === "true") { notice.style.display = "none"; notice.textContent = ""; }
+    select.dataset.autoKazakh = "";
+    return;
+  }
+  if (select.value !== "kazakh") {
+    select.value = "kazakh";
+    select.dataset.autoKazakh = "true";
+  }
+  if (notice && select.dataset.autoKazakh === "true") {
+    const where = found.length === 1 ? found[0] : found.slice(0, -1).join(", ") + " и " + found[found.length - 1];
+    notice.textContent = "В " + where + (letters.size > 1 ? " есть казахские буквы (" : " есть казахская буква (") + Array.from(letters).join(", ") +
+      "), поэтому выбран казахский алфавит. Расчёт будет вестись по казахскому алфавиту.";
+    notice.style.display = "block";
+  }
+}
+document.addEventListener("input", function (e) {
+  const id = e.target && e.target.id;
+  if (!id) return;
+  for (const selectId in ALPHABET_FIELDS) {
+    if (ALPHABET_FIELDS[selectId].some(function (f) { return f.id === id; })) checkKazakhAlphabet(selectId);
+  }
+});
+document.addEventListener("change", function (e) {
+  // Если пользователь сам выбрал алфавит при казахских буквах — снова подсказываем
+  const id = e.target && e.target.id;
+  if (id === "nameAlphabet" || id === "pythAlphabet") {
+    e.target.dataset.autoKazakh = "";
+    const n = document.getElementById(id + "Notice");
+    if (n) { n.style.display = "none"; n.textContent = ""; }
+    if (e.target.value !== "kazakh") checkKazakhAlphabet(id);
+  }
+});
+
 function calculateCodes() {
+  checkKazakhAlphabet("pythAlphabet");
   const lastName = document.getElementById("pythLastName")?.value.trim();
   const firstName = document.getElementById("pythFirstName")?.value.trim();
   const patronymic = document.getElementById("pythPatronymic")?.value.trim();
@@ -2770,6 +2832,7 @@ function downloadCodesResult(personLabel, dateLabel) {
 }
 
 function calculatePythagoras() {
+  checkKazakhAlphabet("pythAlphabet");
   const lastName = document.getElementById("pythLastName")?.value.trim();
   const firstName = document.getElementById("pythFirstName")?.value.trim();
   const patronymic = document.getElementById("pythPatronymic")?.value.trim();
@@ -3405,6 +3468,7 @@ function renderKarmicResult(name, birthDate, container) {
   const [day, month, year] = birthDate.split(".").map(Number);
   let res;
   try {
+    checkKazakhAlphabet("nameAlphabet");
     const alphabet = document.getElementById("nameAlphabet")?.value || "russian";
     res = window.KarmicEngine.getFullResult(day, month, year, name, alphabet);
   } catch (error) {
