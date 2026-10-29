@@ -2272,7 +2272,7 @@ async function makeMobilePdf(fullHtml, title, filename, htmlBody) {
     const blob = pdf.output("blob");
     const file = new File([blob], pdfName, { type: "application/pdf" });
     window._mobPdf = { blob: blob, file: file, name: pdfName };
-    saveMobilePdf();
+    deliverPdf();
   } catch (error) {
     console.error("PDF:", error);
     customAlert("Не удалось создать PDF. Попробуйте ещё раз.");
@@ -2283,19 +2283,77 @@ async function makeMobilePdf(fullHtml, title, filename, htmlBody) {
   }
 }
 
+// Готовый PDF.
+// Телефон — как раньше: файл сразу скачивается на телефон.
+// Компьютер — открываем окно «Сохранить как», чтобы выбрать папку (Загрузки, Рабочий стол и т. д.).
+// Если браузер не разрешил открыть окно сам (прошло много времени после нажатия «Скачать»),
+// показываем кнопку «Сохранить файл…» — по её нажатию окно выбора папки откроется.
+function closePdfReadyDialog() {
+  const ov = document.getElementById("mobPdfOverlay");
+  if (ov) ov.remove();
+}
+
+async function deliverPdf() {
+  const d = window._mobPdf; if (!d) return;
+  if (isPhoneDevice() || !window.showSaveFilePicker) { directDownloadPdf(); return; }
+  const r = await pickAndSavePdf();
+  if (r === "needClick") showPdfReadyDialog();
+}
+
+function showPdfReadyDialog() {
+  const d = window._mobPdf; if (!d) return;
+  const btn = "display:block;width:100%;padding:14px;margin:0 0 10px;border-radius:10px;font-size:16px;cursor:pointer;";
+  mobilePdfOverlay(`
+    <div style="font-family:PT Serif,Georgia,serif;font-size:21px;color:#f6d66c;margin-bottom:8px;">Файл готов</div>
+    <div style="font-size:14px;color:#e9dfc6;margin-bottom:18px;word-break:break-word;">${escapeHtml(d.name)}</div>
+    <button type="button" style="${btn}border:1px solid #d7aa31;background:linear-gradient(90deg,#713199,#5d2789);color:#f8d96d;" onclick="saveMobilePdf()">💾 Сохранить файл…</button>
+    <button type="button" style="${btn}margin-bottom:0;border:1px solid rgba(225,180,52,.5);background:rgba(0,0,0,.2);color:#f6d66c;" onclick="closePdfReadyDialog()">Закрыть</button>`);
+}
+
+// "saved" | "cancel" | "needClick" | "error"
+async function pickAndSavePdf() {
+  const d = window._mobPdf; if (!d) return "error";
+  try {
+    const handle = await window.showSaveFilePicker({
+      suggestedName: d.name,
+      types: [{ description: "PDF", accept: { "application/pdf": [".pdf"] } }],
+    });
+    const w = await handle.createWritable();
+    await w.write(d.blob);
+    await w.close();
+    closePdfReadyDialog();
+    return "saved";
+  } catch (e) {
+    if (e && e.name === "AbortError") { closePdfReadyDialog(); return "cancel"; }
+    if (e && (e.name === "SecurityError" || e.name === "NotAllowedError")) return "needClick";
+    console.error("Сохранение файла:", e);
+    return "error";
+  }
+}
+
 async function shareMobilePdf() {
   const d = window._mobPdf; if (!d) return;
   try { await navigator.share({ files: [d.file], title: d.name }); }
-  catch (e) { if (!e || e.name !== "AbortError") saveMobilePdf(); }
+  catch (e) { if (!e || e.name !== "AbortError") directDownloadPdf(); }
 }
 
-function saveMobilePdf() {
+// Кнопка «Сохранить файл…» в окне «Файл готов»
+async function saveMobilePdf() {
+  if (!isPhoneDevice() && window.showSaveFilePicker) {
+    const r = await pickAndSavePdf();
+    if (r !== "error") return;
+  }
+  directDownloadPdf();
+}
+
+function directDownloadPdf() {
   const d = window._mobPdf; if (!d) return;
   const url = URL.createObjectURL(d.blob);
   const a = document.createElement("a");
   a.href = url; a.download = d.name;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 60000);
+  closePdfReadyDialog();
 }
 
 function openMobilePrintWindow(fullHtml, title, filename, htmlBody) {
