@@ -146,7 +146,7 @@ function getKarmicResult(day, month, year, firstName, alphabet) {
   one('Проработка кармы', 'mission', r.karmaWork);
   blocks.push({
     title: 'Циклы жизни',
-    entries: r.cycles.map((c) => ({ number: 'Цикл ' + karmicPeriod(c.from, c.to) + ' лет: ' + c.value, text: t('cycles', c.value) })),
+    entries: r.cycles.map((c) => ({ number: 'Цикл ' + (c.to === null ? 'с ' + c.from + ' лет и далее' : 'от ' + c.from + ' до ' + c.to + ' лет') + ': аркан ' + c.value, text: t('cycles', c.value) })),
   });
   blocks.push({
     title: 'События по периодам жизни',
