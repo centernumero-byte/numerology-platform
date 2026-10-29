@@ -150,10 +150,13 @@ function getKarmicResult(day, month, year, firstName, alphabet) {
   });
   blocks.push({
     title: 'События по периодам жизни',
-    entries: r.events.flatMap((e) => [
-      { number: 'События «+» ' + karmicPeriod(e.from, e.to) + ': ' + e.plus, text: t('eventsPlus', e.plus) },
-      { number: 'События «−» ' + karmicPeriod(e.from, e.to) + ': ' + e.minus, text: t('eventsMinus', e.minus) },
-    ]),
+    entries: r.events.flatMap((e) => {
+      const when = e.from === null ? 'главное число событий на всю жизнь' : (e.to === null ? 'с ' + e.from + ' лет и далее' : 'от ' + e.from + ' до ' + e.to + ' лет');
+      return [
+        { number: 'События «+» (' + when + '): аркан ' + e.plus, text: t('eventsPlus', e.plus) },
+        { number: 'События «−» (' + when + '): аркан ' + e.minus, text: t('eventsMinus', e.minus) },
+      ];
+    }),
   });
   return { numbers: r, blocks };
 }
