@@ -4156,6 +4156,18 @@ async function deleteMaterialById(id) {
   }
 }
 
+// Если браузер заблокировал новую вкладку — показываем кнопку-ссылку:
+// по прямому нажатию на неё файл откроется в любом браузере.
+function showOpenFileLink(url, title) {
+  const ov = mobilePdfOverlay(`
+    <div style="font-family:PT Serif,Georgia,serif;font-size:21px;color:#f6d66c;margin-bottom:8px;">Материал готов</div>
+    <div style="font-size:14px;color:#e9dfc6;margin-bottom:18px;word-break:break-word;">${escapeHtml(title || "Файл")}</div>
+    <a href="${escapeHtml(url)}" target="_blank" rel="noopener" onclick="setTimeout(closePdfReadyDialog,300)"
+       style="display:block;padding:14px;margin:0 0 10px;border-radius:10px;font-size:16px;text-decoration:none;border:1px solid #d7aa31;background:linear-gradient(90deg,#713199,#5d2789);color:#f8d96d;">📄 Открыть</a>
+    <button type="button" onclick="closePdfReadyDialog()" style="display:block;width:100%;padding:14px;border-radius:10px;font-size:16px;cursor:pointer;border:1px solid rgba(225,180,52,.5);background:rgba(0,0,0,.2);color:#f6d66c;">Закрыть</button>`);
+  return ov;
+}
+
 async function openMaterialById(id) {
   const item = currentDirectionMaterials.find(m => String(m.id) === String(id));
   if (!item) return;
@@ -4182,7 +4194,7 @@ async function openMaterialById(id) {
 <style>html,body{margin:0;padding:0;height:100%;background:#000;display:flex;align-items:center;justify-content:center;}video{max-width:100%;max-height:100%;}</style>
 </head><body><video src="${data.signedUrl}" controls controlsList="nodownload noremoteplayback" disablePictureInPicture oncontextmenu="return false;" autoplay></video></body></html>`;
         if (newTab) { newTab.document.open(); newTab.document.write(videoWrapperHtml); newTab.document.close(); }
-        else window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+        else showOpenFileLink(data.signedUrl, item.title);
         return;
       }
 
@@ -4193,9 +4205,13 @@ async function openMaterialById(id) {
       // многостраничный PDF (виден только первый лист), поэтому там просто
       // открываем файл напрямую — родной просмотрщик телефона листает его правильно.
       const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-      if (isMobileDevice) {
-        if (newTab) newTab.location.href = data.signedUrl;
-        else window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+      // Safari на Mac (и Firefox) не показывают PDF внутри такой рамки — вкладка остаётся
+      // пустой, и кажется, что кнопка «не нажимается». Там тоже открываем файл напрямую.
+      const ua = navigator.userAgent;
+      const isChromium = /Chrome\/|Chromium\/|Edg\//.test(ua);
+      if (isMobileDevice || !isChromium) {
+        if (newTab) { newTab.location.href = data.signedUrl; return; }
+        showOpenFileLink(data.signedUrl, item.title);
         return;
       }
 
@@ -4210,7 +4226,7 @@ async function openMaterialById(id) {
         newTab.document.write(wrapperHtml);
         newTab.document.close();
       } else {
-        window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+        showOpenFileLink(data.signedUrl, item.title);
       }
     }
   } catch (error) {
