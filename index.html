@@ -2143,17 +2143,64 @@ function mobilePdfOverlay(html) {
   return ov;
 }
 
+function pdfSafeName(s) { return String(s || "").replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim(); }
+function isIOSDevice() { return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1); }
+// Окно «Сохранить как» (Chrome / Edge на компьютере). Вызывать сразу при нажатии.
+function requestPdfSaveHandle(name) {
+  if (isIOSDevice() || typeof window.showSaveFilePicker !== "function") return null;
+  try {
+    const p = window.showSaveFilePicker({ suggestedName: name, types: [{ description: "PDF", accept: { "application/pdf": [".pdf"] } }] });
+    p.catch(function () {});
+    return p;
+  } catch (e) { return null; }
+}
+// iPhone / iPad: после подготовки кнопка становится «Сохранить PDF», по нажатию — меню «Сохранить в Файлы / WhatsApp».
+function clearIosOffer() { if (window._iosOfferCleanup) window._iosOfferCleanup(); }
+function offerIosSave(el, restoreLabel) {
+  clearIosOffer();
+  if (!el) return;
+  el.innerHTML = "📄 Сохранить PDF";
+  el.disabled = false; if (el.dataset) el.dataset.busy = "";
+  const handler = function (e) {
+    if (!el.contains(e.target)) return;
+    e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+    cleanup();
+    shareMobilePdf();
+  };
+  const cleanup = function () {
+    document.removeEventListener("click", handler, true);
+    el.innerHTML = restoreLabel;
+    window._iosOfferCleanup = null;
+  };
+  document.addEventListener("click", handler, true);
+  window._iosOfferCleanup = cleanup;
+}
+
 async function makeMobilePdf(fullHtml, title, filename, htmlBody) {
-  const pdfName = filename.replace(/\.(html|pdf)$/i, "") + ".pdf";
+  const pdfName = pdfSafeName(filename.replace(/\.(html|pdf)$/i, "")) + ".pdf";
   const ev = window.event;
   let btn = ev && ev.target && ev.target.closest ? ev.target.closest("button") : null;
   if (!btn && document.activeElement && document.activeElement.tagName === "BUTTON") btn = document.activeElement;
   const btnLabel = btn ? btn.innerHTML : null;
   if (btn) { if (btn.dataset.busy === "1") return; btn.dataset.busy = "1"; btn.disabled = true; btn.innerHTML = "Скачивается…"; }
+  const fromList = window._pdfPresetHandle !== undefined;
+  const handleP = fromList ? window._pdfPresetHandle : requestPdfSaveHandle(pdfName);
+  window._pdfPresetHandle = undefined;
+  const ios = isIOSDevice();
+  const visibleBtn = window._pdfVisibleBtn || btn;
+  const visibleLabel = window._pdfVisibleBtn ? window._pdfVisibleLabel : btnLabel;
+  window._pdfVisibleBtn = null;
+  let iosOffered = false;
+  if (ios) clearIosOffer();
   const setStatus = function () {};
   let iframe = null;
   let jobDone; window._pdfJob = new Promise(function (r) { jobDone = r; });
   try {
+    let handle = null;
+    if (handleP) {
+      try { handle = await handleP; }
+      catch (e) { if (e && e.name === "AbortError") return; handle = null; }
+    }
     await loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js");
     await loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
 
@@ -2162,7 +2209,7 @@ async function makeMobilePdf(fullHtml, title, filename, htmlBody) {
     iframe.style.cssText = "position:fixed;left:-20000px;top:0;width:" + W + "px;height:1200px;border:0;visibility:hidden;";
     document.body.appendChild(iframe);
     const doc = iframe.contentWindow.document;
-    const extra = `<style>html,body{width:${W}px;margin:0;background:#fff;} .doc-wrap{max-width:${W}px !important;padding:24px 28px !important;}</style>`;
+    const extra = `<link href="https://fonts.googleapis.com/css2?family=Tinos:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet"><style>html,body{width:${W}px;margin:0;background:#fff;} .doc-wrap{max-width:${W}px !important;padding:24px 28px !important;} body, body *{font-family:"Times New Roman",Tinos,Times,serif !important;} p, li, td, .accordion-body{font-size:15px !important;}</style>`;
     await new Promise(function (resolve) {
       iframe.onload = resolve;
       doc.open(); doc.write(fullHtml.replace("</head>", extra + "</head>")); doc.close();
@@ -2272,13 +2319,23 @@ async function makeMobilePdf(fullHtml, title, filename, htmlBody) {
     const blob = pdf.output("blob");
     const file = new File([blob], pdfName, { type: "application/pdf" });
     window._mobPdf = { blob: blob, file: file, name: pdfName };
-    deliverPdf();
+    let saved = false;
+    if (handle) {
+      try { const w = await handle.createWritable(); await w.write(blob); await w.close(); saved = true; }
+      catch (e) { console.error("PDF save:", e); }
+    }
+    if (!saved) {
+      if (ios) { offerIosSave(visibleBtn, visibleLabel); iosOffered = true; }
+      else deliverPdf();
+    }
   } catch (error) {
     console.error("PDF:", error);
     customAlert("Не удалось создать PDF. Попробуйте ещё раз.");
   } finally {
     if (iframe && iframe.parentNode) iframe.parentNode.removeChild(iframe);
-    if (btn) { btn.innerHTML = btnLabel; btn.disabled = false; btn.dataset.busy = ""; }
+    if (btn && !(iosOffered && visibleBtn === btn)) { btn.innerHTML = btnLabel; }
+    if (btn) { btn.disabled = false; btn.dataset.busy = ""; }
+    window._pdfIosOffered = iosOffered;
     if (jobDone) jobDone();
   }
 }
@@ -2333,8 +2390,10 @@ async function pickAndSavePdf() {
 
 async function shareMobilePdf() {
   const d = window._mobPdf; if (!d) return;
-  try { await navigator.share({ files: [d.file], title: d.name }); }
-  catch (e) { if (!e || e.name !== "AbortError") directDownloadPdf(); }
+  if (navigator.canShare && navigator.share && navigator.canShare({ files: [d.file] })) {
+    try { await navigator.share({ files: [d.file] }); }
+    catch (e) { if (!e || e.name !== "AbortError") directDownloadPdf(); }
+  } else directDownloadPdf();
 }
 
 // Кнопка «Сохранить файл…» в окне «Файл готов»
@@ -4661,6 +4720,12 @@ async function reopenCalculation(r) {
   const link = (window.event && window.event.target && window.event.target.closest) ? window.event.target.closest("a,button") : null;
   const linkLabel = link ? link.innerHTML : null;
   if (link) link.innerHTML = "Скачивается…";
+  const listName = pdfSafeName([DIRECTION_NAMES[r.direction] || r.title || "",
+    r.person_name || [r.last_name, r.first_name, r.patronymic].filter(Boolean).join(" "),
+    [r.birth_date, r.birth_date2].filter(Boolean).join(" и ")].filter(Boolean).join(" - ")) + ".pdf";
+  window._pdfPresetHandle = requestPdfSaveHandle(listName);
+  window._pdfVisibleBtn = link; window._pdfVisibleLabel = linkLabel;
+  window._pdfIosOffered = false;
   const savedNodes = Array.from(document.body.childNodes);
   const savedScroll = window.scrollY;
   const host = document.createElement("div");
@@ -4709,7 +4774,8 @@ async function reopenCalculation(r) {
   } finally {
     window.scrollTo = realScrollTo;
     if (host.parentNode) host.parentNode.removeChild(host);
-    if (link) link.innerHTML = linkLabel;
+    if (link && !window._pdfIosOffered) link.innerHTML = linkLabel;
+    window._pdfPresetHandle = undefined; window._pdfVisibleBtn = null;
     window._skipHistorySave = false;
     window._reopenBusy = false;
   }
