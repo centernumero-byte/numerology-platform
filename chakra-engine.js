@@ -340,32 +340,22 @@ function monthBody(r, i) {
 }
 function secMonths(r) {
   let h = "";
-  const seen = {};
   r.months.forEach(function (m, i) {
-    const c = m.up + "/" + m.low;
-    h += `<h3 class="ch-h3${i === r.fMonth - 1 ? " ch-h3-hl" : ""}">${MONTHS[i]} ${r.fYear} — код ${c}</h3>`;
-    if (seen[c] !== undefined) h += `<p>Значение месяца совпадает с месяцем «${MONTHS[seen[c]]}» — смотрите расшифровку выше.</p>`;
-    else { seen[c] = i; h += monthBody(r, i); }
+    h += `<h3 class="ch-h3${i === r.fMonth - 1 ? " ch-h3-hl" : ""}">${MONTHS[i]} ${r.fYear} — код ${m.up}/${m.low}</h3>`;
+    h += monthBody(r, i);
   });
   return h;
 }
 function secDays(r) {
   const d = D();
   const mName = MONTHS[r.fMonth - 1];
-  let h = `<p>Код каждого дня месяца «${mName} ${r.fYear}». Ниже — расшифровка чисел, которые встречаются в этом месяце.</p>`;
-  h += `<table class="ch-t ch-days"><tr><th>День</th><th>Код</th><th>День</th><th>Код</th><th>День</th><th>Код</th><th>День</th><th>Код</th></tr>`;
-  const n = r.days.length, rows = Math.ceil(n / 4);
-  for (let i = 0; i < rows; i++) {
-    h += "<tr>";
-    for (let c = 0; c < 4; c++) { const x = r.days[c * rows + i]; h += x ? `<td>${x.day} ${MONTHS_GEN[r.fMonth - 1]}</td><td><b>${x.up}/${x.low}</b></td>` : "<td></td><td></td>"; }
-    h += "</tr>";
-  }
-  h += "</table>";
-  const ups = [...new Set(r.days.map(x => x.up))].sort(), lows = [...new Set(r.days.map(x => x.low))].sort();
-  h += sub("Верхнее число дня — события дня");
-  ups.forEach(u => { const t = d.day_up[String(u)]; h += `<p><b class="ch-lab">${u}.</b> <b>В плюсе:</b> ${esc(t[0])} <b>В минусе:</b> ${esc(t[1])} <b>Как проработать:</b> ${esc(t[2])}</p>`; });
-  h += sub("Нижнее число дня — выход в плюс");
-  lows.forEach(l => { h += `<p><b class="ch-lab">${l}.</b> ${esc(d.exit_[String(l)])}</p>`; });
+  let h = `<p>Прогноз на каждый день месяца «${mName} ${r.fYear}». Верхнее число кода показывает события дня, нижнее — что поможет прожить день в плюсе.</p>`;
+  r.days.forEach(function (x) {
+    const t = d.day_up[String(x.up)];
+    h += `<h3 class="ch-h3">${x.day} ${MONTHS_GEN[r.fMonth - 1]} — код ${x.up}/${x.low}</h3>`;
+    h += lab("В плюсе", t[0]) + lab("В минусе", t[1]) + lab("Как проработать", t[2]);
+    h += lab("Выход в плюс", d.exit_[String(x.low)]);
+  });
   return h;
 }
 

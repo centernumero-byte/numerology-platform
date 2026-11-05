@@ -2231,11 +2231,11 @@ async function makeMobilePdf(fullHtml, title, filename, htmlBody) {
   window._pdfVisibleBtn = null;
   let iosOffered = false;
   if (ios) clearIosOffer();
-  const setStatus = function () {};
+  const setStatus = function (t) { if (visibleBtn) visibleBtn.innerHTML = "Скачивается… " + t; };
   let iframe = null;
   let jobDone; window._pdfJob = new Promise(function (r) { jobDone = r; });
+  let handle = null;
   try {
-    let handle = null;
     if (handleP) {
       try { handle = await handleP; }
       catch (e) { if (e && e.name === "AbortError") return; handle = null; }
@@ -2369,6 +2369,7 @@ async function makeMobilePdf(fullHtml, title, filename, htmlBody) {
     }
   } catch (error) {
     console.error("PDF:", error);
+    if (handle && typeof handle.remove === "function") { try { await handle.remove(); } catch (e) { /* пустой файл не оставляем */ } }
     customAlert("Не удалось создать PDF. Попробуйте ещё раз.");
   } finally {
     if (iframe && iframe.parentNode) iframe.parentNode.removeChild(iframe);
