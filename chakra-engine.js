@@ -421,6 +421,10 @@ function render(name, birthDate, r, container) {
 }
 
 const PDF_CSS = `<style>
+.ch-pdf p,.ch-pdf li,.ch-pdf td,.ch-pdf th{font-size:17px !important;line-height:1.55 !important;}
+.ch-pdf h1{font-size:24px !important;} .ch-pdf h2{font-size:21px !important;}
+.ch-pdf .ch-h3{font-size:19px !important;} .ch-pdf .ch-h4{font-size:18px !important;}
+.ch-cap{text-align:center !important;font-size:19px !important;}
 .ch-t{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0;}
 .ch-t td,.ch-t th{border:1px solid #d9c38a;padding:5px 7px;text-align:left;color:#221733;}
 .ch-t th{background:#f5eee0;color:#5d2789;}
@@ -438,15 +442,28 @@ const PDF_CSS = `<style>
 .diagram-wrap .ch-svg text{fill:inherit;}
 </style>`;
 
+function pdfForecast(r) {
+  const yr = r.yearRow;
+  const rows = MONTHS.map((m, i) => `<tr${i === r.fMonth - 1 ? ' class="ch-hl"' : ""}><td>${m}</td><td>${code(r.months[i])}</td></tr>`).join("");
+  return `<table class="ch-t"><tr><th colspan="2" class="ch-cap">Прогноз</th></tr>
+      <tr><th>Период</th><th>Код</th></tr>
+      <tr class="ch-hl"><td>${r.fYear} год</td><td>${code(yr)}</td></tr>
+      <tr class="ch-hl"><td>${MONTHS[r.fMonth - 1]} ${r.fYear}</td><td>${code(r.months[r.fMonth - 1])}</td></tr></table>
+    <table class="ch-t"><tr><th colspan="2" class="ch-cap">Месяцы ${r.fYear} года</th></tr>${rows}</table>`;
+}
 function download() {
   const s = window._lastChakra; if (!s) return;
   const r = s.r;
   const secs = sections(r);
-  let body = PDF_CSS + `<h1>Чакроанализ — ${esc(s.name)} (${esc(s.birthDate)})</h1>`;
-  body += `<div style="text-align:center;margin:0 0 10px;break-inside:avoid;">${diagramSvg(r)}</div>`;
-  body += `<div style="break-inside:avoid;">${forecastCard(r).replace('class="ch-fc"', 'class="ch-fc-pdf"')}</div>`;
+  let body = PDF_CSS + `<div class="ch-pdf">`;
+  body += `<h1 style="text-align:center;">Чакроанализ — ${esc(s.name)} (${esc(s.birthDate)})</h1>`;
+  body += `<div style="text-align:center;margin:0 0 10px;">${diagramSvg(r)}</div>`;
+  body += `<div style="break-after:page;page-break-after:always;"></div>`;
+  body += pdfForecast(r);
   body += `<h2>Основные показатели</h2>` + mainTable(r);
+  body += `<div style="break-after:page;page-break-after:always;"></div>`;
   secs.forEach(x => { body += `<h2>${esc(x[0])}</h2>` + x[1]; });
+  body += `</div>`;
   downloadHtmlFile("Чакроанализ - " + s.name + " - " + s.birthDate + ".html", body);
 }
 
