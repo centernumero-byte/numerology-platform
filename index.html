@@ -524,6 +524,8 @@ body, body * { font-variant-numeric: lining-nums; }
 <script src="karmic-engine.js?v=20261029"></script>
 <script src="biorhythm-engine.js"></script>
 <script src="usin-engine.js"></script>
+<script src="chakra-data.js?v=20261104"></script>
+<script src="chakra-engine.js?v=20261104"></script>
 <script>
 
 /* ============================================================
@@ -606,7 +608,7 @@ const DIRECTIONS = [
 ];
 
 // Разделы, которые уже есть на платформе, но калькулятор ещё не готов
-const COMING_SOON_CALCULATORS = new Set(["chakra", "chakra_compat", "pyth_compat", "vedic_astro", "ki_star", "loshu", "personal_cycles", "human_design", "bazi", "western_astro", "lunar_day"]);
+const COMING_SOON_CALCULATORS = new Set(["chakra_compat", "pyth_compat", "vedic_astro", "ki_star", "loshu", "personal_cycles", "human_design", "bazi", "western_astro", "lunar_day"]);
 const DIRECTION_NAMES = Object.fromEntries(DIRECTIONS.map(d => [d.key, d.title.replace(/<br>/g, " ")]));
 const SECTION_LABELS = { manuals: "Методическое пособие", videos: "Видео", tests: "Тест" };
 const CONTENT_TYPES = [
@@ -949,6 +951,20 @@ async function openCalculator(type) {
           style="display:block;width:100%;padding:13px;margin:8px 0 5px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
         <div id="loveCardsPartnerDateError" style="color:#ff9b9b;min-height:22px;margin-bottom:10px;"></div>` : ""}
 
+        ${type === "chakra" ? `
+        <label>Ведущая рука</label>
+        <select id="chakraHand" style="display:block;width:100%;padding:13px;margin:8px 0 20px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
+          <option value="правша" selected style="background:#2a1b40;color:#fff;">Правша</option>
+          <option value="левша" style="background:#2a1b40;color:#fff;">Левша</option>
+        </select>
+        <label>Месяц прогноза</label>
+        <select id="chakraMonth" style="display:block;width:100%;padding:13px;margin:8px 0 20px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
+          ${["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"].map((m, i) => `<option value="${i + 1}"${i === new Date().getMonth() ? " selected" : ""} style="background:#2a1b40;color:#fff;">${m}</option>`).join("")}
+        </select>
+        <label>Год прогноза</label>
+        <input id="chakraYear" type="text" value="${new Date().getFullYear()}" maxlength="4" inputmode="numeric" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4)" style="display:block;width:100%;padding:13px;margin:8px 0 20px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
+        <div id="chakraYearError" style="color:#ff9b9b;min-height:22px;margin-bottom:10px;"></div>` : ""}
+
         ${type === "prognostika" ? `
         <label>Интересующий год</label>
         <input id="prognostikaYear" type="text" placeholder="ГГГГ, например ${new Date().getFullYear()}" maxlength="4" inputmode="numeric" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4)"
@@ -1094,6 +1110,23 @@ function calculate(type) {
     }
     prognostikaYear = Number(yearRaw);
   }
+  let chakraOpts = null;
+  if (type === "chakra") {
+    const yearInput = document.getElementById("chakraYear");
+    const yearError = document.getElementById("chakraYearError");
+    if (yearError) yearError.textContent = "";
+    const yearRaw = yearInput ? yearInput.value.trim() : String(new Date().getFullYear());
+    const by = Number(birthDate.split(".")[2]);
+    if (!/^\d{4}$/.test(yearRaw) || Number(yearRaw) < by || Number(yearRaw) > by + 99) {
+      if (yearError) yearError.textContent = "Введите год прогноза — 4 цифры, не раньше года рождения, например " + new Date().getFullYear() + ".";
+      return;
+    }
+    chakraOpts = {
+      hand: document.getElementById("chakraHand")?.value || "правша",
+      month: Number(document.getElementById("chakraMonth")?.value || (new Date().getMonth() + 1)),
+      year: Number(yearRaw),
+    };
+  }
   let bioStartDate = null;
   if (type === "biorhythms") {
     const startInput = document.getElementById("bioStartDate");
@@ -1131,7 +1164,7 @@ function calculate(type) {
 
   // Форма у всех калькуляторов одной ширины; для широких результатов расширяем блок после расчёта.
   const calcBox = document.getElementById("calcBox");
-  if (calcBox) calcBox.style.maxWidth = type === "moonsun" ? "1100px" : type === "adult" ? "900px" : "650px";
+  if (calcBox) calcBox.style.maxWidth = type === "moonsun" ? "1100px" : type === "chakra" ? "1000px" : type === "adult" ? "900px" : "650px";
 
   if (type === "adult" && window.AdultMatrixEngine) {
     renderAdultMatrixResult(name, birthDate, result);
@@ -1173,6 +1206,12 @@ function calculate(type) {
     if (renderKarmicResult(name, birthDate, result)) {
       saveCalculationHistory({ direction: "karmic", title: "Кармическая нумерология - " + name + " - " + birthDate, personName: name, birthDate });
     }
+    return;
+  }
+  if (type === "chakra" && window.ChakraEngine && window.ChakraView) {
+    const res = window.ChakraEngine.calculate(birthDate, chakraOpts.hand, chakraOpts.month, chakraOpts.year);
+    window.ChakraView.render(name, birthDate, res, result);
+    saveCalculationHistory({ direction: "chakra", title: "Чакроанализ - " + name + " - " + birthDate, personName: name, birthDate });
     return;
   }
   if (type === "biorhythms" && window.BiorhythmEngine) {
