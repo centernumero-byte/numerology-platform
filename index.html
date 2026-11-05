@@ -513,7 +513,7 @@ body, body * { font-variant-numeric: lining-nums; }
 <script src="forecast-data.js"></script>
 <script src="child-matrix-engine.js?v=20261029"></script>
 <script src="compat-engine.js"></script>
-<script src="pyth-book.js?v=20261105"></script>
+<script src="pyth-book.js?v=20261105b"></script>
 <script src="pyth-engine.js?v=20261105"></script>
 <script src="vedic-engine.js?v=20261029"></script>
 <script src="moon-sun-engine.js"></script>
@@ -3072,13 +3072,14 @@ function calculatePythCompat(prefill) {
     const [d, m, y] = dt.split(".").map(Number);
     window.PythagorasEngine.calculate(d, m, y, "А", "А", "А", "russian");
     const c = (k) => window.PythagorasEngine.cell("Расшифровка", k);
-    return { 1: c("C3"), 2: c("C4"), 3: c("C5"), 4: c("C6"), 5: c("C7"), 6: c("C8"), 7: c("C9"), 8: c("C10"), 9: c("C11") };
+    const w = ["BD7", "BE7", "BF7", "BG7"].map((k) => Number(window.PythagorasEngine.cell("Matr", k)));
+    return { 1: c("C3"), 2: c("C4"), 3: c("C5"), 4: c("C6"), 5: c("C7"), 6: c("C8"), 7: c("C9"), 8: c("C10"), 9: c("C11"), work: w };
   };
   let blocks;
   let s1, s2;
   try {
     s1 = sqOf(date1); s2 = sqOf(date2);
-    blocks = window.PythBook.compat({ name: name1, date: date1, square: s1 }, { name: name2, date: date2, square: s2 });
+    blocks = window.PythBook.compat({ name: name1, date: date1, square: s1, work: s1.work }, { name: name2, date: date2, square: s2, work: s2.work });
   } catch (error) {
     console.error("Ошибка расчёта совместимости по Пифагору:", error);
     result.innerHTML = `<div style="color:#ff9d9d;padding:16px;">Не удалось выполнить расчёт: ${escapeHtml(error.message || String(error))}</div>`;
