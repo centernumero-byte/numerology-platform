@@ -513,7 +513,8 @@ body, body * { font-variant-numeric: lining-nums; }
 <script src="forecast-data.js"></script>
 <script src="child-matrix-engine.js?v=20261029"></script>
 <script src="compat-engine.js"></script>
-<script src="pyth-engine.js"></script>
+<script src="pyth-book.js?v=20261105"></script>
+<script src="pyth-engine.js?v=20261105"></script>
 <script src="vedic-engine.js?v=20261029"></script>
 <script src="moon-sun-engine.js"></script>
 <script src="moon-sun-table.js"></script>
@@ -523,7 +524,7 @@ body, body * { font-variant-numeric: lining-nums; }
 <script src="karmic-data.js?v=20261029"></script>
 <script src="karmic-engine.js?v=20261029"></script>
 <script src="biorhythm-engine.js"></script>
-<script src="usin-engine.js"></script>
+<script src="usin-engine.js?v=20261105"></script>
 <script src="chakra-data.js?v=20261104"></script>
 <script src="chakra-engine.js?v=20261104"></script>
 <script>
@@ -608,7 +609,7 @@ const DIRECTIONS = [
 ];
 
 // Разделы, которые уже есть на платформе, но калькулятор ещё не готов
-const COMING_SOON_CALCULATORS = new Set(["chakra_compat", "pyth_compat", "vedic_astro", "ki_star", "loshu", "personal_cycles", "human_design", "bazi", "western_astro", "lunar_day"]);
+const COMING_SOON_CALCULATORS = new Set(["chakra_compat", "vedic_astro", "ki_star", "loshu", "personal_cycles", "human_design", "bazi", "western_astro", "lunar_day"]);
 const DIRECTION_NAMES = Object.fromEntries(DIRECTIONS.map(d => [d.key, d.title.replace(/<br>/g, " ")]));
 const SECTION_LABELS = { manuals: "Методическое пособие", videos: "Видео", tests: "Тест" };
 const CONTENT_TYPES = [
@@ -873,6 +874,28 @@ async function openCalculator(type) {
           <button onclick="${type === "codes" ? "calculateCodes()" : "calculatePythagoras()"}" style="width:100%;padding:14px;border:1px solid #d7aa31;border-radius:10px;background:linear-gradient(90deg,#713199,#5d2789);color:#f8d96d;font-size:16px;cursor:pointer;">Рассчитать</button>
           <button onclick="location.reload()" style="width:100%;padding:14px;margin-top:10px;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.15);color:#f5d46b;font-size:16px;cursor:pointer;">Назад</button>
 
+          <div id="result" style="margin-top:30px"></div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  if (type === "pyth_compat") {
+    document.body.innerHTML = `
+      <div style="min-height:100vh;padding:40px;background:linear-gradient(135deg,#17102f,#211443,#17102f);color:#f8e7a8;font-family:Arial,sans-serif;">
+        <div id="calcBox" style="max-width:650px;margin:0 auto;padding:35px;border:1px solid #d7aa31;border-radius:20px;background:linear-gradient(145deg,#302052,#21163d);">
+          <h1 style="margin-top:0;color:#f6d66c;font-family:PT Serif,Georgia,serif;font-weight:500;">${title}</h1>
+          <label>Имя мужчины</label>
+          <input id="pcName1" type="text" style="display:block;width:100%;padding:13px;margin:8px 0 16px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
+          <label>Дата рождения мужчины</label>
+          <input id="pcDate1" type="text" placeholder="ДД.ММ.ГГГГ" maxlength="10" inputmode="numeric" oninput="formatBirthDate(this)" style="display:block;width:100%;padding:13px;margin:8px 0 16px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
+          <label>Имя женщины</label>
+          <input id="pcName2" type="text" style="display:block;width:100%;padding:13px;margin:8px 0 16px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
+          <label>Дата рождения женщины</label>
+          <input id="pcDate2" type="text" placeholder="ДД.ММ.ГГГГ" maxlength="10" inputmode="numeric" oninput="formatBirthDate(this)" style="display:block;width:100%;padding:13px;margin:8px 0 16px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
+          <div id="dateError" style="color:#ff9b9b;min-height:22px;margin-bottom:15px;"></div>
+          <button onclick="calculatePythCompat()" style="width:100%;padding:14px;border:1px solid #d7aa31;border-radius:10px;background:linear-gradient(90deg,#713199,#5d2789);color:#f8d96d;font-size:16px;cursor:pointer;">Рассчитать</button>
+          <button onclick="location.reload()" style="width:100%;padding:14px;margin-top:10px;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.15);color:#f5d46b;font-size:16px;cursor:pointer;">Назад</button>
           <div id="result" style="margin-top:30px"></div>
         </div>
       </div>`;
@@ -3032,6 +3055,54 @@ function calculatePythagoras() {
   });
 }
 
+function calculatePythCompat(prefill) {
+  const v = (id) => (document.getElementById(id)?.value || "").trim();
+  const name1 = prefill ? prefill.name1 : v("pcName1"), date1 = prefill ? prefill.date1 : v("pcDate1");
+  const name2 = prefill ? prefill.name2 : v("pcName2"), date2 = prefill ? prefill.date2 : v("pcDate2");
+  const dateError = document.getElementById("dateError");
+  const result = document.getElementById("result");
+  if (dateError) dateError.textContent = "";
+  if (result) result.innerHTML = "";
+  if (!isValidBirthDate(date1) || !isValidBirthDate(date2)) {
+    if (dateError) dateError.textContent = "Введите обе даты рождения в формате ДД.ММ.ГГГГ.";
+    return;
+  }
+  if (!result || !window.PythagorasEngine || !window.PythBook) return;
+  const sqOf = (dt) => {
+    const [d, m, y] = dt.split(".").map(Number);
+    window.PythagorasEngine.calculate(d, m, y, "А", "А", "А", "russian");
+    const c = (k) => window.PythagorasEngine.cell("Расшифровка", k);
+    return { 1: c("C3"), 2: c("C4"), 3: c("C5"), 4: c("C6"), 5: c("C7"), 6: c("C8"), 7: c("C9"), 8: c("C10"), 9: c("C11") };
+  };
+  let blocks;
+  let s1, s2;
+  try {
+    s1 = sqOf(date1); s2 = sqOf(date2);
+    blocks = window.PythBook.compat({ name: name1, date: date1, square: s1 }, { name: name2, date: date2, square: s2 });
+  } catch (error) {
+    console.error("Ошибка расчёта совместимости по Пифагору:", error);
+    result.innerHTML = `<div style="color:#ff9d9d;padding:16px;">Не удалось выполнить расчёт: ${escapeHtml(error.message || String(error))}</div>`;
+    return;
+  }
+  const label = "Совместимость по Пифагору - " + (name1 || "Мужчина") + " " + date1 + " и " + (name2 || "Женщина") + " " + date2;
+  renderEditableResult(blocks, result, label, "", "pyth_compat");
+  const sqHtml = (title, sq) => `<div style="flex:1;min-width:0;max-width:260px;">
+      <div style="text-align:center;color:#c9bfa8;font-size:13px;margin-bottom:6px;">${escapeHtml(title)}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">${[1, 4, 7, 2, 5, 8, 3, 6, 9].map((d) => {
+        const raw = sq[d]; const t = (raw === undefined || raw === null || raw === "" || raw === "-") ? "—" : String(raw);
+        return `<div style="aspect-ratio:1;border:1px solid rgba(225,180,52,.5);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:PT Serif,Georgia,serif;font-size:18px;color:#f6d66c;word-break:break-all;padding:2px;text-align:center;">${escapeHtml(t)}</div>`;
+      }).join("")}</div></div>`;
+  const box = document.createElement("div");
+  box.style.cssText = "max-width:560px;margin:0 auto 26px;display:flex;gap:18px;justify-content:center;page-break-inside:avoid;break-inside:avoid;";
+  box.innerHTML = sqHtml((name1 || "Мужчина") + " · " + date1, s1) + sqHtml((name2 || "Женщина") + " · " + date2, s2);
+  result.insertBefore(box, result.firstChild);
+  if (!prefill) saveCalculationHistory({
+    direction: "pyth_compat", title: label,
+    personName: (name1 || "Мужчина") + " и " + (name2 || "Женщина"),
+    birthDate: date1, birthDate2: date2, lastName: name1, firstName: name2,
+  });
+}
+
 function renderPythDigitSquare(psychomatrix, container) {
   if (!psychomatrix) return;
   const digitSquare = psychomatrix.counts || psychomatrix;
@@ -4793,6 +4864,12 @@ async function reopenCalculation(r) {
       set("pythAlphabet", r.alphabet || "russian");
       set("birthDate", r.birth_date);
       if (r.direction === "codes") calculateCodes(); else calculatePythagoras();
+    } else if (r.direction === "pyth_compat") {
+      set("pcName1", r.last_name);
+      set("pcDate1", r.birth_date);
+      set("pcName2", r.first_name);
+      set("pcDate2", r.birth_date2);
+      calculatePythCompat();
     } else if (r.direction === "compatibility") {
       set("birthDate1", r.birth_date);
       set("birthDate2", r.birth_date2);
