@@ -53,10 +53,10 @@
     return `<ellipse cx="${cx}" cy="90" rx="23" ry="29"/>` + hair + `<path d="${sym(cx, WOMAN.start, WOMAN.segs)}"/>` + legs + `<path d="M${cx - 30} 256 C${cx - 10} 262 ${cx + 10} 262 ${cx + 30} 256" fill="none" stroke-width="2"/>`;
   }
 
-  const GIVES = { adj: "понимание", vis: "умение договариваться", ana: "любовь и заботу", man: "волю и достижения", sva: "радость и удовольствие", mul: "силу и опору" };
+  const GIVES = { adj: "понимание", vis: "умение договариваться", ana: "любовь и заботу", man: "волю и достижения", sva: "радость и удовольствие", mul: "жизненную силу" };
 
   function diagram(res) {
-    const W = 820, H = 640, xm = 170, xw = 650;
+    const W = 820, H = 640, xw = 170, xm = 650;
     const ys = { adj: 86, vis: 142, ana: 198, man: 252, sva: 304, mul: 354 };
     let defs = "", glow = "", dots = "", mid = "";
     function chakra(cx, c, pct, id) {
@@ -75,7 +75,7 @@
       if (a === b) {
         mid += `<line x1="${L}" y1="${y + 2}" x2="${Rr}" y2="${y + 2}" stroke="${c.glow}" stroke-width="2" stroke-dasharray="4 5" opacity=".85"/><text x="410" y="${y + 20}" text-anchor="middle" font-size="12" fill="#efe4ff" font-family="Arial, sans-serif">поровну: ${GIVES[c.k]}</text>`;
       } else {
-        const toW = a > b, x1 = toW ? L : Rr, x2 = toW ? Rr : L, dir = toW ? 1 : -1;
+        const toW = a > b, x1 = toW ? Rr : L, x2 = toW ? L : Rr, dir = toW ? -1 : 1;
         mid += `<line x1="${x1}" y1="${y + 2}" x2="${x2 - dir * 12}" y2="${y + 2}" stroke="${c.glow}" stroke-width="3" stroke-linecap="round"/><path d="M${x2} ${y + 2} L${x2 - dir * 15} ${y - 5} L${x2 - dir * 15} ${y + 9} Z" fill="${c.glow}"/><text x="410" y="${y + 20}" text-anchor="middle" font-size="12" fill="#efe4ff" font-family="Arial, sans-serif">${toW ? "Мужчина" : "Женщина"} даёт ${GIVES[c.k]}</text>`;
       }
     });
@@ -88,11 +88,11 @@
 <rect width="${W}" height="${H}" rx="22" fill="url(#ccBg)"/>
 ${Array.from({ length: 60 }, (_, k) => `<circle cx="${(k * 137) % W}" cy="${(k * 89) % H}" r="${k % 3 ? 0.8 : 1.4}" fill="#fff" opacity="${k % 2 ? .3 : .55}"/>`).join("")}
 <ellipse cx="${xm}" cy="300" rx="180" ry="290" fill="url(#ccAura)"/><ellipse cx="${xw}" cy="300" rx="180" ry="290" fill="url(#ccAura)"/>
-<g fill="url(#ccBody)" stroke="#e7c766" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round">${figure(xm, false)}${figure(xw, true)}</g>
+<g fill="url(#ccBody)" stroke="#e7c766" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round">${figure(xw, true)}${figure(xm, false)}</g>
 <line x1="${xm}" y1="60" x2="${xm}" y2="370" stroke="#f6d66c" stroke-width="2" opacity=".28"/><line x1="${xw}" y1="62" x2="${xw}" y2="370" stroke="#f6d66c" stroke-width="2" opacity=".28"/>
 ${glow}${dots}${mid}
 <text x="410" y="36" text-anchor="middle" font-size="15" fill="#f6d66c" font-family="Arial, sans-serif">Стрелка — от более сильной чакры к более слабой</text>
-${lbl(xm, "Мужчина", res.m.name, res.m.date)}${lbl(xw, "Женщина", res.w.name, res.w.date)}
+${lbl(xw, "Женщина", res.w.name, res.w.date)}${lbl(xm, "Мужчина", res.m.name, res.m.date)}
 </svg>`;
   }
 
@@ -101,72 +101,82 @@ ${lbl(xm, "Мужчина", res.m.name, res.m.date)}${lbl(xw, "Женщина", 
     const d = D(), M = res.m.name || "Мужчина", Wn = res.w.name || "Женщина";
     const rm = res.m.r, rw = res.w.r;
     const out = [];
-    out.push(["Как читать совместимость по чакрам", P(d.intro)]);
 
     // типологии
     const tm = rm.typ, tw = rw.typ, key = Math.min(tm, tw) + "+" + Math.max(tm, tw);
-    out.push(["Совместимость типологий: " + tm + " и " + tw,
-      H4(M + " — типология " + tm) + P(d.typ[tm] || "") + H4(Wn + " — типология " + tw) + P(d.typ[tw] || "") + H4("Союз " + key) + P(d.pair[key] || "")]);
+    let pairTxt = d.pair[key] || "";
+    if (key === "3+4") pairTxt = tm === 3
+      ? "Тройка — мужчина, четвёрка — женщина: это удачное сочетание. Он приносит идеи и творческий подход, она — практичность и умение воплотить задуманное; вы хорошо дополняете друг друга и у вас много общего. Важно, чтобы его увлечённость процессом не раздражала её стремление к результату."
+      : "Тройка — женщина, четвёрка — мужчина: это непростое сочетание. Её настораживают его практичность и расчёт, а его — то, что она живёт процессом, а не результатом; без усилий с обеих сторон возможен разлад. Паре важно уважать разный подход и находить общие цели.";
+    out.push(["Совместимость типологий: " + tw + " и " + tm,
+      P("Типология показывает базовый характер человека и то, как он строит отношения.") +
+      H4(Wn + " — типология " + tw) + P(d.typ[tw] || "") + H4(M + " — типология " + tm) + P(d.typ[tm] || "") + H4("Ваш союз " + tw + " и " + tm) + P(pairTxt)]);
 
     // чакры
-    let ch = "", mDon = 0, wDon = 0;
+    let ch = P("Сравнение ёмкости чакр показывает, как вы обмениваетесь энергией: тот, у кого чакра сильнее, делится её энергией с партнёром."), mDon = 0, wDon = 0;
     CHS.slice().reverse().forEach((c) => {
       const a = rm.chakras[c.k], b = rw.chakras[c.k], t = d.chakra[c.k];
       const cat = (d.lookup[c.k] || {})[a + "-" + b] || (a === b ? "eq" : a > b ? "m" : "w");
-      let txt = "";
       const hi = cat.indexOf("m") === 0 ? M : Wn, lo = cat.indexOf("m") === 0 ? Wn : M;
       if (cat.indexOf("m") === 0) mDon++; if (cat.indexOf("w") === 0) wDon++;
+      let txt;
       if (cat.indexOf("eq") === 0) txt = t.eq;
       else if (cat === "sim") txt = t.similar;
       else if (cat === "bw") txt = t.bothWeak;
       else txt = t.hi.replace(/\{HI\}/g, hi).replace(/\{LO\}/g, lo);
       if (cat.indexOf("+bw") > 0 && t.bothWeak) txt += " " + t.bothWeak;
-      ch += H4(c.name + ": " + M + " — " + a + "%, " + Wn + " — " + b + "%") + `<p class="ch-intro">${esc(t.about)}</p>` + P(txt);
-      if (c.k === "man") ch += P(t.normHigh) + P(t.note);
+      ch += H4(c.name + ": " + Wn + " — " + b + "%, " + M + " — " + a + "%") + `<p class="ch-intro">${esc(t.about)}</p>` + P(txt);
     });
     out.push(["Совместимость по чакрам", ch]);
 
-    // итог обмена
     let sum;
-    if (mDon > wDon) sum = `Больше чакр сильнее у мужчины (${mDon} из 6, у женщины — ${wDon}). Значит, в этой паре мужчина чаще выступает источником энергии, а женщина — получает её и может расти, глядя на его пример. Мужчине важно следить, чтобы отдача не истощала его самого, а женщине — тоже наполнять партнёра в тех сферах, где она сильнее.`;
-    else if (wDon > mDon) sum = `Больше чакр сильнее у женщины (${wDon} из 6, у мужчины — ${mDon}). Значит, в этой паре женщина чаще выступает источником энергии, а мужчина — получает её и может расти, глядя на её пример. Женщине важно следить, чтобы отдача не истощала её саму, а мужчине — тоже наполнять партнёршу в тех сферах, где он сильнее.`;
-    else sum = `По количеству сильных чакр партнёры уравновешены (по ${mDon} у каждого, остальные одинаковые): каждый что-то даёт другому и что-то получает от него. Это лучший вариант для взаимного развития.`;
-    out.push(["Баланс энергии в паре", P(sum) + P(d.vamp)]);
+    if (wDon > mDon) sum = `У женщины сильнее больше чакр (${wDon} из 6, у мужчины — ${mDon}): в вашей паре чаще она делится энергией, а мужчина получает её и растёт рядом с ней. ${Wn} важно следить, чтобы отдача не истощала её саму, а ${M} — наполнять партнёршу там, где сильнее он.`;
+    else if (mDon > wDon) sum = `У мужчины сильнее больше чакр (${mDon} из 6, у женщины — ${wDon}): в вашей паре чаще он делится энергией, а женщина получает её и растёт рядом с ним. ${M} важно следить, чтобы отдача не истощала его самого, а ${Wn} — наполнять партнёра там, где сильнее она.`;
+    else sum = `По количеству сильных чакр вы уравновешены (по ${mDon} у каждого, остальные одинаковые): каждый что-то даёт другому и что-то получает — это лучший вариант для взаимного развития.`;
+    out.push(["Баланс энергии в вашей паре", P(sum)]);
 
-    // супруг по роду
-    out.push(["Какой супруг предназначен по роду",
-      H4(M + " — род " + rm.rod.up) + P(d.spouse[rm.rod.up] || "") + H4(Wn + " — род " + rw.rod.up) + P(d.spouse[rw.rod.up] || "")]);
+    out.push(["Какой супруг предназначен по роду", P("Родовая отработка показывает, какого супруга человеку предназначено встретить по роду.") +
+      H4(Wn + " — род " + rw.rod.up) + P(d.spouse[rw.rod.up] || "") + H4(M + " — род " + rm.rod.up) + P(d.spouse[rm.rod.up] || "")]);
 
-    // показатели
     const row = (l, x, y) => `<tr><td>${esc(l)}</td><td>${esc(x)}</td><td>${esc(y)}</td></tr>`;
-    const tbl = `<table class="ch-t"><tr><th>Показатель</th><th>${esc(M)}</th><th>${esc(Wn)}</th></tr>` +
-      row("Инь (женская энергия)", rm.yin, rw.yin) + row("Ян (мужская энергия)", rm.yang, rw.yang) +
-      row("Хочу", rm.want, rw.want) + row("Могу", rm.can, rw.can) + row("Сексуальный потенциал (магнетизм)", rm.sex, rw.sex) +
-      row("Эмоциональный тип", rm.emoType.name, rw.emoType.name) + row("«Я» / «Мы»", rm.emoType.ya + " / " + rm.emoType.my, rw.emoType.ya + " / " + rw.emoType.my) + `</table>`;
+    const tbl = `<table class="ch-t"><tr><th>Показатель</th><th>${esc(Wn)}</th><th>${esc(M)}</th></tr>` +
+      row("Инь (женская энергия)", rw.yin, rm.yin) + row("Ян (мужская энергия)", rw.yang, rm.yang) +
+      row("Хочу", rw.want, rm.want) + row("Могу", rw.can, rm.can) + row("Сексуальный потенциал (магнетизм)", rw.sex, rm.sex) +
+      row("Эмоциональный тип", rw.emoType.name, rm.emoType.name) + row("«Я» / «Мы»", rw.emoType.ya + " / " + rw.emoType.my, rm.emoType.ya + " / " + rm.emoType.my) + `</table>`;
     const yinT = (r, n) => n + ": " + (Math.abs(r.yin - r.yang) <= 10 ? "женская и мужская энергии в балансе." : r.yin > r.yang ? "преобладает Инь — больше мягкости, деликатности, чувственности." : "преобладает Ян — больше твёрдости, решительности, стремления вести.");
-    const wcT = (r, n) => n + ": " + (r.want > r.can ? "«хочу» больше, чем «могу» — много идей и обещаний, но энтузиазм может быстро гаснуть; важны поэтапные шаги и отдых." : r.can > r.want ? "«могу» больше, чем «хочу» — сил больше, чем мотивации; убрав внутренние блоки, можно открыть много ресурсов." : "«хочу» и «могу» в равновесии.");
-    const yaT = (r, n) => n + ": " + (Math.abs(r.emoType.ya - r.emoType.my) <= 5 ? "есть задатки и лидера, и командного игрока." : r.emoType.ya > r.emoType.my ? "«Я» больше — лидерские наклонности." : "«Мы» больше — сильнее в команде, чем в роли лидера.");
+    const wcT = (r, n) => n + ": " + (r.want > r.can ? "желаний больше, чем сил — много идей и обещаний, но энтузиазм может быстро гаснуть; важны поэтапные шаги и отдых." : r.can > r.want ? "сил больше, чем мотивации — убрав внутренние блоки, можно открыть много ресурсов." : "желания и силы в равновесии.");
+    const sxT = (r, n) => n + ": " + r.sex + (r.sex >= 1000 ? " — высокий магнетизм, легко притягивает внимание." : " — харизму стоит развивать сознательно.");
+    const yaT = (r, n) => n + ": " + (Math.abs(r.emoType.ya - r.emoType.my) <= 5 ? "есть задатки и лидера, и командного игрока." : r.emoType.ya > r.emoType.my ? "лидерские наклонности." : "сильнее в команде, чем в роли лидера.");
     out.push(["Инь — Ян, хочу — могу, «Я» — «Мы»", tbl +
-      P("Инь — Ян показывают, какими качествами человек пользуется в жизни: при перевесе Инь больше мягкости и чувственности, при перевесе Ян — жёсткости и стремления доминировать. В идеале они в балансе. " + yinT(rm, M) + " " + yinT(rw, Wn)) +
-      P("«Хочу — могу» показывает, насколько желания соответствуют реальным силам. " + wcT(rm, M) + " " + wcT(rw, Wn)) +
-      P("Сексуальный потенциал (магнетизм) — это харизма, умение притягивать и удерживать внимание; от 1000 и выше человек редко остаётся незамеченным, а при меньших значениях над харизмой просто нужно работать усерднее. В паре: " + M + " — " + rm.sex + ", " + Wn + " — " + rw.sex + ".") +
-      P("«Я — Мы» показывает лидерский потенциал. " + yaT(rm, M) + " " + yaT(rw, Wn) + (rm.emoType.ya > rm.emoType.my && rw.emoType.ya > rw.emoType.my ? " Оба склонны к лидерству — важно заранее разделить сферы влияния." : ""))]);
-
-    out.push(["Сочетания чакр", P(d.combos)]);
+      P("Баланс Инь и Ян. " + yinT(rw, Wn) + " " + yinT(rm, M)) +
+      P("Хочу — могу. " + wcT(rw, Wn) + " " + wcT(rm, M)) +
+      P("Магнетизм. " + sxT(rw, Wn) + " " + sxT(rm, M)) +
+      P("«Я — Мы». " + yaT(rw, Wn) + " " + yaT(rm, M) + (rm.emoType.ya > rm.emoType.my && rw.emoType.ya > rw.emoType.my ? " Вы оба склонны к лидерству — заранее разделите сферы влияния." : ""))]);
     return out;
   }
 
-  const CSS = `<style>.cc-svg{width:100%;max-width:820px;height:auto;display:block;margin:0 auto 16px;}</style>`;
+  function summaryHtml(res) {
+    const M = res.m.name || "Мужчина", Wn = res.w.name || "Женщина";
+    const items = CHS.map((c) => {
+      const a = res.m.r.chakras[c.k], b = res.w.r.chakras[c.k];
+      const head = a === b ? "Поровну: " + GIVES[c.k] : (b > a ? Wn : M) + " даёт " + GIVES[c.k];
+      return `<div class="cc-row"><span class="cc-dot" style="background:${c.color};box-shadow:0 0 8px ${c.glow};"></span><div><div class="cc-head" style="color:${c.color};">${esc(head)}</div><div class="cc-sub">${c.name}: ${esc(Wn)} — ${b}%, ${esc(M)} — ${a}%</div></div></div>`;
+    }).join("");
+    return `<div class="cc-sum"><div class="cc-sum-title">Что даёт каждый в вашей паре</div>${items}</div>`;
+  }
+
+  const CSS = `<style>.cc-svg{width:100%;max-width:820px;height:auto;display:block;margin:0 auto 16px;}.cc-sum{max-width:820px;margin:0 auto 18px;padding:16px 20px;border:1px solid rgba(225,180,52,.55);border-radius:16px;background:rgba(0,0,0,.2);}.cc-sum-title{font-family:PT Serif,Georgia,serif;font-size:20px;color:#f6d66c;text-align:center;margin-bottom:10px;}.cc-row{display:flex;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(225,180,52,.18);}.cc-row:last-child{border-bottom:none;}.cc-dot{flex:0 0 16px;height:16px;border-radius:50%;}.cc-head{font-size:16px;font-weight:700;filter:brightness(1.5);}.cc-sub{font-size:13px;color:#e7dcff;margin-top:2px;}</style>`;
 
   function render(m, w, container) {
     const res = calc(m, w);
     window._lastChakraCompat = res;
     const secs = sections(res);
     const acc = secs.map((s, i) => `<div class="accordion-item"><button type="button" class="accordion-header" onclick="toggleAccordionBody('cc-acc-${i}')"><span>${esc(s[0])}</span><span>▾</span></button><div class="accordion-body hidden" id="cc-acc-${i}" style="white-space:normal;">${s[1]}</div></div>`).join("");
-    const title = "Совместимость по чакрам — " + (m.name || "Мужчина") + " и " + (w.name || "Женщина");
+    const title = "Совместимость по чакрам — " + (w.name || "Женщина") + " и " + (m.name || "Мужчина");
     container.innerHTML = CSS + `<div class="ch-wrap" style="max-width:820px;margin:0 auto;">
       <h2 style="font-family:PT Serif,Georgia,serif;color:#f6d66c;text-align:center;margin:0 0 12px;">${esc(title)}</h2>
       ${diagram(res)}
+      ${summaryHtml(res)}
       <div style="margin-top:10px;">${acc}</div>
       <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;">
         <button type="button" id="calcDownloadBtn" class="material-manager-button" style="width:auto;" onclick="ChakraCompat.download()">Скачать (диаграмма + текст)</button>
@@ -182,12 +192,12 @@ ${lbl(xm, "Мужчина", res.m.name, res.m.date)}${lbl(xw, "Женщина", 
 .ch-pdf h1{font-size:24px !important;} .ch-pdf h2{font-size:21px !important;color:#5d2789;font-family:PT Serif,Georgia,serif;border-bottom:1px solid #d7aa31;padding-bottom:4px;}
 .ch-h4{color:#5d2789;font-size:18px;margin:14px 0 6px;} .ch-intro{font-style:italic;color:#4a3d5c;}
 .ch-t{width:100%;border-collapse:collapse;margin:8px 0;} .ch-t td,.ch-t th{border:1px solid #d9c38a;padding:5px 7px;text-align:left;color:#221733;} .ch-t th{background:#f5eee0;color:#5d2789;}
-.cc-svg{width:760px;max-width:100%;height:auto;}</style><div class="ch-pdf">`;
-    body += `<h1 style="text-align:center;">Совместимость по чакрам — ${esc(M)} (${esc(res.m.date)}) и ${esc(Wn)} (${esc(res.w.date)})</h1>`;
-    body += `<div style="text-align:center;">${diagram(res)}</div><div style="break-after:page;page-break-after:always;"></div>`;
+.cc-svg{width:640px;max-width:100%;height:auto;} .cc-sum{margin:10px 0;padding:10px 16px;border:1px solid #d7aa31;border-radius:14px;} .cc-sum-title{font-size:20px;color:#5d2789;text-align:center;font-weight:700;margin-bottom:6px;} .cc-row{display:flex;gap:12px;align-items:center;padding:5px 0;border-bottom:1px solid #eadcb4;} .cc-dot{flex:0 0 14px;height:14px;border-radius:50%;} .cc-head{font-size:16px;font-weight:700;} .cc-sub{font-size:14px;color:#4a3d5c;}</style><div class="ch-pdf">`;
+    body += `<h1 style="text-align:center;">Совместимость по чакрам — ${esc(Wn)} (${esc(res.w.date)}) и ${esc(M)} (${esc(res.m.date)})</h1>`;
+    body += `<div style="text-align:center;">${diagram(res)}</div>` + summaryHtml(res) + `<div style="break-after:page;page-break-after:always;"></div>`;
     sections(res).forEach((s) => { body += `<h2>${esc(s[0])}</h2>` + s[1]; });
     body += `</div>`;
-    downloadHtmlFile("Совместимость по чакрам - " + M + " " + res.m.date + " и " + Wn + " " + res.w.date + ".html", body);
+    downloadHtmlFile("Совместимость по чакрам - " + Wn + " " + res.w.date + " и " + M + " " + res.m.date + ".html", body);
   }
 
   window.ChakraCompat = { render, download, calc, sections };
