@@ -125,6 +125,15 @@ ${lbl(xw, "Женщина", res.w.name, res.w.date)}${lbl(xm, "Мужчина", 
       else if (cat === "bw") txt = t.bothWeak;
       else txt = t.hi.replace(/\{HI\}/g, hi).replace(/\{LO\}/g, lo);
       if (cat.indexOf("+bw") > 0 && t.bothWeak) txt += " " + t.bothWeak;
+      const lowA = a < 45, lowB = b < 45;
+      let lv = "";
+      if (lowA && lowB) {
+        lv = a === b ? `${c.name} ниже нормы у обоих (по ${a}%).` : `${c.name} ниже нормы у обоих: ${a < b ? M : Wn} — ${Math.min(a, b)}% (ещё ниже), ${a < b ? Wn : M} — ${Math.max(a, b)}%.`;
+        if (t.bothWeak && txt.indexOf(t.bothWeak) < 0) txt += " " + t.bothWeak;
+      } else if (lowA || lowB) {
+        lv = `${c.name}: ${lowA ? M : Wn} — ${lowA ? a : b}%, ниже нормы; ${lowA ? Wn : M} — ${lowA ? b : a}%, в норме или выше.`;
+      }
+      if (lv) txt = lv + " " + txt;
       ch += H4(c.name + ": " + Wn + " — " + b + "%, " + M + " — " + a + "%") + `<p class="ch-intro">${esc(t.about)}</p>` + P(txt);
     });
     out.push(["Совместимость по чакрам", ch]);
@@ -160,7 +169,7 @@ ${lbl(xw, "Женщина", res.w.name, res.w.date)}${lbl(xm, "Мужчина", 
     const items = CHS.map((c) => {
       const a = res.m.r.chakras[c.k], b = res.w.r.chakras[c.k];
       const head = a === b ? "Поровну: " + GIVES[c.k] : (b > a ? Wn : M) + " даёт " + GIVES[c.k];
-      return `<div class="cc-row"><span class="cc-dot" style="background:${c.color};box-shadow:0 0 8px ${c.glow};"></span><div><div class="cc-head" style="color:${c.color};">${esc(head)}</div><div class="cc-sub">${c.name}: ${esc(Wn)} — ${b}%, ${esc(M)} — ${a}%</div></div></div>`;
+      return `<div class="cc-row"><span class="cc-dot" style="background:${c.color};box-shadow:0 0 8px ${c.glow};"></span><div><div class="cc-head" style="color:${c.color};">${esc(head)}</div><div class="cc-sub">${c.name}: ${esc(Wn)} — ${b}%${b < 45 ? " (ниже нормы)" : ""}, ${esc(M)} — ${a}%${a < 45 ? " (ниже нормы)" : ""}</div></div></div>`;
     }).join("");
     return `<div class="cc-sum"><div class="cc-sum-title">Что даёт каждый в вашей паре</div>${items}</div>`;
   }
