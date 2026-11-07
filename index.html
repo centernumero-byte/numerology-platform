@@ -118,7 +118,7 @@ body {
 
 .cards {
   display: grid;
-  grid-template-columns: repeat(5, minmax(180px, 1fr));
+  grid-template-columns: repeat(5, 180px);
   gap: 20px;
   justify-content: start;
   align-items: start;
@@ -127,7 +127,7 @@ body {
 }
 
 .cards .card, .method-card {
-  width: 100%; height: auto; min-height: 250px; max-height: 320px; aspect-ratio: 4 / 5; box-sizing: border-box;
+  width: 180px; height: 250px; min-height: 250px; box-sizing: border-box;
   padding: 18px 14px; border: 1px solid rgba(225, 180, 52, 0.9); border-radius: 18px;
   background:
     radial-gradient(circle at 50% 10%, rgba(130, 65, 169, 0.30), transparent 40%),
@@ -318,7 +318,7 @@ body {
 
 @media (max-width: 1200px) {
   .sidebar { width: 210px; }
-  .cards { grid-template-columns: repeat(3, minmax(180px, 1fr)); }
+  .cards { grid-template-columns: repeat(3, 180px); }
 }
 @media (max-width: 900px) {
 }
@@ -326,7 +326,7 @@ body {
   .platform { display: block; }
   .sidebar { width: 100%; min-height: auto; border-radius: 18px 18px 0 0; }
   .main { border-left: 1px solid rgba(220, 169, 42, 0.65); border-top: none; border-radius: 0 0 18px 18px; }
-  .cards { grid-template-columns: repeat(2, minmax(180px, 1fr)); }
+  .cards { grid-template-columns: repeat(2, 180px); }
   .top { display: block; }
   .account { margin-top: 20px; }
   .auth-grid { grid-template-columns: 1fr; }
@@ -335,7 +335,7 @@ body {
   .main { padding: 28px 15px 25px; }
   .welcome h1 { font-size: 31px; }
   .cards { grid-template-columns: 1fr; justify-items: center; }
-  .cards .card, .method-card { width: 100%; max-width: 320px; aspect-ratio: auto; height: 250px; }
+  .cards .card, .method-card { width: 100%; max-width: 320px; height: 250px; }
   .material-row { flex-wrap: wrap; }
   .material-row-body { flex-basis: 100%; order: 1; }
   .material-row-icon { order: 0; }
@@ -5086,12 +5086,19 @@ function runHDRectification() {
     }
     const qs = window.HumanDesign.questionsFor(groups);
     html += `<h2 style="color:#f6d66c;font-family:PT Serif,Georgia,serif;font-weight:500;margin-top:24px;">Вопросы</h2>
-      <p style="color:#c9bfa8;font-size:14px;line-height:1.5;margin-top:0;">Отвечайте честно, о себе в обычной жизни. Если сомневаетесь — выберите «Не знаю».</p>`;
-    html += qs.map((q, n) => `
-      <div style="margin-bottom:14px;padding:12px 14px;border-radius:10px;background:rgba(255,255,255,.04);">
+      <p style="color:#c9bfa8;font-size:14px;line-height:1.5;margin-top:0;">Отвечайте честно, о себе в обычной жизни (особенно о том, каким вы были всегда, а не в последнее время). Вопросы подобраны только про то, чем варианты отличаются друг от друга. Чем больше ответов, тем точнее результат. Если сомневаетесь — выберите «Не знаю».</p>`;
+    let lastG = "";
+    html += qs.map((q, n) => {
+      const head = q.g !== lastG ? `<h3 style="color:#f6d66c;font-family:PT Serif,Georgia,serif;font-weight:500;margin:22px 0 10px;">${escapeHtml(q.g)}</h3>` : "";
+      lastG = q.g;
+      return head + `
+      <div style="margin-bottom:12px;padding:12px 14px;border-radius:10px;background:rgba(255,255,255,.04);">
         <div style="color:#f8e7a8;line-height:1.45;margin-bottom:8px;">${n + 1}. ${escapeHtml(q.q)}</div>
-        ${[["1", "Да"], ["0", "Нет"], ["", "Не знаю"]].map(o => `<label style="margin-right:16px;color:#e9dfc6;cursor:pointer;"><input type="radio" name="hdq${q.i}" value="${o[0]}"${o[0] === "" ? " checked" : ""}> ${o[1]}</label>`).join("")}
-      </div>`).join("");
+        <div style="display:flex;flex-wrap:wrap;gap:6px 16px;">
+        ${[["2", "Да, точно"], ["1", "Скорее да"], ["-1", "Скорее нет"], ["-2", "Нет"], ["", "Не знаю"]].map(o => `<label style="color:#e9dfc6;cursor:pointer;white-space:nowrap;"><input type="radio" name="hdq${q.i}" value="${o[0]}"${o[0] === "" ? " checked" : ""}> ${o[1]}</label>`).join("")}
+        </div>
+      </div>`;
+    }).join("");
     html += `<button onclick="scoreHDRectification()" style="${HD_BTN}">Определить вариант</button><div id="hdRectRes" style="margin-top:24px;"></div>`;
     result.innerHTML = html;
   }, 30);
@@ -5102,7 +5109,7 @@ function scoreHDRectification() {
   const answers = {};
   window.HumanDesign.questionsFor(R.groups).forEach(q => {
     const v = (document.querySelector(`input[name="hdq${q.i}"]:checked`) || {}).value;
-    if (v === "1") answers[q.i] = true; else if (v === "0") answers[q.i] = false;
+    if (v) answers[q.i] = v;
   });
   const box = document.getElementById("hdRectRes");
   if (!Object.keys(answers).length) { box.innerHTML = `<div style="color:#ff9b9b;">Ответьте хотя бы на несколько вопросов.</div>`; return; }
@@ -7221,6 +7228,26 @@ async function checkAuth() {
 }
 
 document.addEventListener("DOMContentLoaded", checkAuth);
+
+// Плитки калькуляторов: 5 столбцов, последний заканчивается по центру значка аккаунта
+function fitCardTiles() {
+  const cards = document.getElementById("contentCards");
+  const icon = document.querySelector(".account-icon");
+  if (!cards || !icon) return;
+  cards.style.zoom = "";
+  if (window.innerWidth <= 1200 || !cards.classList.contains("cards")) return;
+  const ir = icon.getBoundingClientRect(), cr = cards.getBoundingClientRect();
+  if (!ir.width || !cr.width) return;
+  const span = ir.left + ir.width / 2 - cr.left;   // до центра значка аккаунта
+  const k = Math.max(0.9, Math.min(1.6, span / (5 * 180 + 4 * 20)));
+  cards.style.zoom = k.toFixed(3);
+}
+window.addEventListener("resize", fitCardTiles);
+document.addEventListener("DOMContentLoaded", () => {
+  const cards = document.getElementById("contentCards");
+  if (cards && window.MutationObserver) new MutationObserver(() => requestAnimationFrame(fitCardTiles)).observe(cards, { childList: true });
+  fitCardTiles();
+});
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
