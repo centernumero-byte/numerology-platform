@@ -513,9 +513,9 @@ body, body * { font-variant-numeric: lining-nums; }
 <script src="forecast-data.js"></script>
 <script src="child-matrix-engine.js?v=20261029"></script>
 <script src="compat-engine.js"></script>
-<script src="pyth-book.js?v=20261106"></script>
+<script src="pyth-book.js?v=20261107"></script>
 <script src="pyth-engine.js?v=20261105"></script>
-<script src="vedic-engine.js?v=20261029"></script>
+<script src="vedic-engine.js?v=20261110"></script>
 <script src="moon-sun-engine.js"></script>
 <script src="moon-sun-table.js"></script>
 <script src="love-cards-engine.js"></script>
@@ -965,16 +965,13 @@ async function openCalculator(type) {
 
         ${type === "vedic" ? `
         <label>Интересующий год</label>
-        <input id="vedicYear" type="text" placeholder="ГГГГ" maxlength="4" inputmode="numeric" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4)"
+        <input id="vedicYear" type="text" placeholder="ГГГГ" value="${new Date().getFullYear()}" maxlength="4" inputmode="numeric" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4)"
           style="display:block;width:100%;padding:13px;margin:8px 0 5px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
         <div id="vedicYearError" style="color:#ff9b9b;min-height:22px;margin-bottom:10px;"></div>
 
         <label>Интересующий месяц</label>
         <select id="vedicMonth" style="display:block;width:100%;padding:13px;margin:8px 0 20px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
-          <option value="1">Январь</option><option value="2">Февраль</option><option value="3">Март</option>
-          <option value="4">Апрель</option><option value="5">Май</option><option value="6">Июнь</option>
-          <option value="7">Июль</option><option value="8">Август</option><option value="9">Сентябрь</option>
-          <option value="10">Октябрь</option><option value="11">Ноябрь</option><option value="12">Декабрь</option>
+          ${["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"].map((m, i) => `<option value="${i + 1}"${i === new Date().getMonth() ? " selected" : ""}>${m}</option>`).join("")}
         </select>` : ""}
 
         ${type === "moonsun" ? `
@@ -1224,7 +1221,7 @@ function calculate(type) {
     return;
   }
   if (type === "vedic" && window.VedicEngine) {
-    renderVedicResult(name, birthDate, result);
+    renderVedicResult(name, birthDate, result, interestYear, interestMonth);
     saveCalculationHistory({ direction: "vedic", title: "Ведическая нумерология - " + name + " - " + birthDate, personName: name, birthDate });
     return;
   }
@@ -2076,6 +2073,9 @@ function downloadHtmlFile(filename, htmlBody) {
       .accordion-header { background: #f5eee0; color: #5d2789; border: none; padding: 10px 12px; font-family: PT Serif, Georgia, serif; font-size: 16px; display:block !important; line-height:1.3; }
       .accordion-body { color: #221733; padding: 10px 12px; line-height: 1.5; white-space: normal; display: block !important; height:auto !important; max-height:none !important; overflow:visible !important; }
       .editable-text { color: #221733 !important; }
+      .lc-card { background: #fbf7ee !important; border-color: #d7aa31 !important; }
+      .lc-card, .lc-card * { color: #221733 !important; }
+      .lc-card .lc-big { color: #5d2789 !important; }
       tr, td, img { break-inside: avoid; }
       svg { max-width: 100%; height: auto; }
       /* Диаграмма матрицы с кольцом прогноза: без прокрутки, тёмные цвета на белом */
@@ -3578,9 +3578,9 @@ function renderLoveCardsResult(name, birthDate, targetYear, container) {
   }
 
   const birthCardHtml = `
-    <div style="max-width:720px;margin:0 auto 20px;text-align:center;padding:22px;border:1px solid #d7aa31;border-radius:14px;background:linear-gradient(145deg,#302052,#21163d);">
+    <div class="lc-card" style="max-width:720px;margin:0 auto 20px;text-align:center;padding:22px;border:1px solid #d7aa31;border-radius:14px;background:linear-gradient(145deg,#302052,#21163d);">
       <div style="color:#8a8098;font-size:13px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Ваша карта рождения</div>
-      <div style="color:#f6d66c;font-family:PT Serif,Georgia,serif;font-size:42px;margin-bottom:10px;">${escapeHtml(res.birthCard.card)}</div>
+      <div class="lc-big" style="color:#f6d66c;font-family:PT Serif,Georgia,serif;font-size:42px;margin-bottom:10px;">${escapeHtml(res.birthCard.card)}</div>
       <div style="color:#f8e7a8;font-size:15px;line-height:1.5;text-align:left;white-space:pre-line;">${escapeHtml(res.birthCard.text)}</div>
       ${res.birthCard.suitText ? `
       <div style="color:#f6d66c;font-family:PT Serif,Georgia,serif;font-size:18px;margin:18px 0 6px;text-align:left;">Основное направление: ${escapeHtml(res.birthCard.suit)}</div>
@@ -3605,9 +3605,9 @@ function renderLoveCardsResult(name, birthDate, targetYear, container) {
     const row = dayRows.find(function (r) { return r.date === cdLabel; });
     if (row) {
       dayHtml = `
-    <div style="max-width:720px;margin:0 auto 20px;padding:22px;border:1px solid #d7aa31;border-radius:14px;background:linear-gradient(145deg,#3a2560,#21163d);">
+    <div class="lc-card" style="max-width:720px;margin:0 auto 20px;padding:22px;border:1px solid #d7aa31;border-radius:14px;background:linear-gradient(145deg,#3a2560,#21163d);">
       <div style="color:#8a8098;font-size:13px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;text-align:center;">Ваша энергия на ${cdLabel}</div>
-      <div style="color:#f6d66c;font-family:PT Serif,Georgia,serif;font-size:36px;margin-bottom:10px;text-align:center;">${escapeHtml(row.card)}</div>
+      <div class="lc-big" style="color:#f6d66c;font-family:PT Serif,Georgia,serif;font-size:36px;margin-bottom:10px;text-align:center;">${escapeHtml(row.card)}</div>
       <div style="color:#f8e7a8;font-size:15px;line-height:1.5;white-space:pre-line;">${escapeHtml(row.text)}</div>
     </div>`;
     }
@@ -3629,7 +3629,7 @@ function renderLoveCardsResult(name, birthDate, targetYear, container) {
         </div>`;
       };
       relHtml = `
-    <div style="max-width:720px;margin:0 auto 20px;padding:22px;border:1px solid #d7aa31;border-radius:14px;background:linear-gradient(145deg,#302052,#21163d);">
+    <div class="lc-card" style="max-width:720px;margin:0 auto 20px;padding:22px;border:1px solid #d7aa31;border-radius:14px;background:linear-gradient(145deg,#302052,#21163d);">
       <div style="color:#8a8098;font-size:13px;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;text-align:center;">Отношения: ${escapeHtml(name)} и ${escapeHtml(pName)}</div>
       <div style="color:#e9dfc6;font-size:14px;margin-bottom:14px;text-align:center;">Карты рождения: ${escapeHtml(name)} — ${escapeHtml(rel.card1.card)} (${rel.card1.code}), ${escapeHtml(pName)} — ${escapeHtml(rel.card2.card)} (${rel.card2.code})</div>
       ${line("Общий урок пары", rel.common)}
@@ -3935,12 +3935,12 @@ function renderUsinResult(name, birthDate, container) {
   return true;
 }
 
-function renderVedicResult(name, birthDate, container) {
+function renderVedicResult(name, birthDate, container, interestYear, interestMonth) {
   const [day, month, year] = birthDate.split(".").map(Number);
 
   let res;
   try {
-    res = window.VedicEngine.getFullResult(day, month, year, name);
+    res = window.VedicEngine.getFullResult(day, month, year, name, interestYear, interestMonth);
   } catch (error) {
     console.error("Ошибка расчёта ведической нумерологии:", error);
     container.innerHTML = `<div style="color:#ff9d9d;padding:16px;">Не удалось выполнить расчёт: ${escapeHtml(error.message || String(error))}</div>`;
@@ -4341,7 +4341,7 @@ async function loadDirectionMaterialsList() {
       const icon = isLink ? "🔗" : (section === "videos" ? "▶" : "📄");
       const label = isLink ? "Ссылка" : (item.title || (section === "videos" ? "Видеофайл" : "Файл"));
       const meta = isLink ? escapeHtml(item.url || "") : "";
-      const date = item.created_at ? new Date(item.created_at).toLocaleDateString("ru-RU") : "";
+      const date = (item.created_at && (section !== "manuals" || window.currentUserRole === "admin")) ? new Date(item.created_at).toLocaleDateString("ru-RU") : "";
       return `
         <div class="material-row">
           <div class="material-row-icon">${icon}</div>
