@@ -817,6 +817,9 @@ async function showSection(section) {
 function renderCalculators() {
   const contentCards = document.getElementById("contentCards");
   if (!contentCards) return;
+  let hdFlag = null;
+  try { hdFlag = sessionStorage.getItem("openHumanDesign"); sessionStorage.removeItem("openHumanDesign"); } catch (e) {}
+  if (hdFlag) { openHumanDesignHome(); return; }
   contentCards.className = "cards";
   contentCards.innerHTML = renderDirectionCards("calculators", "calculator");
 }
@@ -4899,18 +4902,25 @@ function hdPage(inner, wide) {
 }
 
 function openHumanDesignHome() {
+  const contentCards = document.getElementById("contentCards");
+  if (window._reopenBusy) { hdPage(`<div></div>`); return; }
+  if (!contentCards) {
+    // мы внутри калькулятора — возвращаемся на платформу и сразу открываем «Дизайн Человека»
+    try { sessionStorage.setItem("openHumanDesign", "1"); } catch (e) {}
+    location.reload();
+    return;
+  }
+  showWelcome && showWelcome();
+  setActiveSection("calculators");
   const card = (icon, title, sub, fn) => `
-    <div class="card method-card" onclick="${fn}" role="button" tabindex="0" style="cursor:pointer;width:100%;max-width:240px;">
-      <div class="card-icon">${icon}</div>
-      <div class="card-content"><h3>${title}</h3><p>${sub}</p></div>
-    </div>`;
-  hdPage(`
-    <h1 style="margin-top:0;color:#f6d66c;font-family:PT Serif,Georgia,serif;font-weight:500;">Дизайн Человека</h1>
-    <div class="cards" style="grid-template-columns:repeat(2,minmax(160px,1fr));">
-      ${card("🧬", "Калькулятор", "Бодиграф и расшифровка", "openHDCalculator()")}
-      ${card("🕰️", "Ректификация", "Если время рождения неизвестно", "openHDRectification()")}
-    </div>
-    <button onclick="location.reload()" style="${HD_BTN2}">Назад</button>`);
+      <div class="card method-card" onclick="${fn}" role="button" tabindex="0">
+        <div class="card-icon">${icon}</div>
+        <div class="card-content"><h3>${title}</h3><p>${sub}</p></div>
+      </div>`;
+  contentCards.className = "cards";
+  contentCards.innerHTML =
+    card("🧬", "Дизайн Человека<br>Калькулятор", "Бодиграф и расшифровка", "openHDCalculator()") +
+    card("🕰️", "Дизайн Человека<br>Ректификация", "Если время рождения неизвестно", "openHDRectification()");
 }
 
 function hdPlaceOptions(selected) {
