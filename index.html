@@ -118,7 +118,7 @@ body {
 
 .cards {
   display: grid;
-  grid-template-columns: repeat(5, 180px);
+  grid-template-columns: repeat(5, minmax(180px, 1fr));
   gap: 20px;
   justify-content: start;
   align-items: start;
@@ -127,7 +127,7 @@ body {
 }
 
 .cards .card, .method-card {
-  width: 180px; height: 250px; min-height: 250px; box-sizing: border-box;
+  width: 100%; height: auto; min-height: 250px; max-height: 320px; aspect-ratio: 4 / 5; box-sizing: border-box;
   padding: 18px 14px; border: 1px solid rgba(225, 180, 52, 0.9); border-radius: 18px;
   background:
     radial-gradient(circle at 50% 10%, rgba(130, 65, 169, 0.30), transparent 40%),
@@ -318,7 +318,7 @@ body {
 
 @media (max-width: 1200px) {
   .sidebar { width: 210px; }
-  .cards { grid-template-columns: repeat(3, 180px); }
+  .cards { grid-template-columns: repeat(3, minmax(180px, 1fr)); }
 }
 @media (max-width: 900px) {
 }
@@ -326,7 +326,7 @@ body {
   .platform { display: block; }
   .sidebar { width: 100%; min-height: auto; border-radius: 18px 18px 0 0; }
   .main { border-left: 1px solid rgba(220, 169, 42, 0.65); border-top: none; border-radius: 0 0 18px 18px; }
-  .cards { grid-template-columns: repeat(2, 180px); }
+  .cards { grid-template-columns: repeat(2, minmax(180px, 1fr)); }
   .top { display: block; }
   .account { margin-top: 20px; }
   .auth-grid { grid-template-columns: 1fr; }
@@ -335,7 +335,7 @@ body {
   .main { padding: 28px 15px 25px; }
   .welcome h1 { font-size: 31px; }
   .cards { grid-template-columns: 1fr; justify-items: center; }
-  .cards .card, .method-card { width: 100%; max-width: 320px; }
+  .cards .card, .method-card { width: 100%; max-width: 320px; aspect-ratio: auto; height: 250px; }
   .material-row { flex-wrap: wrap; }
   .material-row-body { flex-basis: 100%; order: 1; }
   .material-row-icon { order: 0; }
@@ -529,6 +529,7 @@ body, body * { font-variant-numeric: lining-nums; }
 <script src="chakra-engine.js?v=20261104"></script>
 <script src="chakra-compat-data.js?v=20261106"></script>
 <script src="chakra-compat.js?v=20261106"></script>
+<script src="human-design-engine.js?v=20261107"></script>
 <script>
 
 /* ============================================================
@@ -611,7 +612,7 @@ const DIRECTIONS = [
 ];
 
 // Разделы, которые уже есть на платформе, но калькулятор ещё не готов
-const COMING_SOON_CALCULATORS = new Set(["vedic_astro", "ki_star", "loshu", "personal_cycles", "human_design", "bazi", "western_astro", "lunar_day"]);
+const COMING_SOON_CALCULATORS = new Set(["vedic_astro", "ki_star", "loshu", "personal_cycles", "bazi", "western_astro", "lunar_day"]);
 const DIRECTION_NAMES = Object.fromEntries(DIRECTIONS.map(d => [d.key, d.title.replace(/<br>/g, " ")]));
 const SECTION_LABELS = { manuals: "Методическое пособие", videos: "Видео", tests: "Тест" };
 const CONTENT_TYPES = [
@@ -841,6 +842,8 @@ async function openCalculator(type) {
       </div>`;
     return;
   }
+
+  if (type === "human_design") { openHumanDesignHome(); return; }
 
   if (type === "pythagoras" || type === "codes") {
     document.body.innerHTML = `
@@ -4876,6 +4879,253 @@ async function renderMyCalculations() {
   }
 }
 
+/* ============================================================
+   ДИЗАЙН ЧЕЛОВЕКА: калькулятор и ректификация
+   ============================================================ */
+
+const HD_INPUT = "display:block;width:100%;padding:13px;margin:8px 0 16px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;";
+const HD_BTN = "width:100%;padding:14px;border:1px solid #d7aa31;border-radius:10px;background:linear-gradient(90deg,#713199,#5d2789);color:#f8d96d;font-size:16px;cursor:pointer;";
+const HD_BTN2 = "width:100%;padding:14px;margin-top:10px;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.15);color:#f5d46b;font-size:16px;cursor:pointer;";
+
+function hdPage(inner, wide) {
+  const bgHost = document.getElementById("bgCalcHost");
+  (bgHost || document.body).innerHTML = `
+    <div style="min-height:100vh;padding:40px 16px;background:linear-gradient(135deg,#17102f,#211443,#17102f);color:#f8e7a8;font-family:Arial,sans-serif;">
+      <div id="calcBox" style="max-width:${wide ? 760 : 650}px;margin:0 auto;padding:35px;border:1px solid #d7aa31;border-radius:20px;background:linear-gradient(145deg,#302052,#21163d);">
+        ${inner}
+      </div>
+    </div>`;
+  if (!bgHost) window.scrollTo(0, 0);
+}
+
+function openHumanDesignHome() {
+  const card = (icon, title, sub, fn) => `
+    <div class="card method-card" onclick="${fn}" role="button" tabindex="0" style="cursor:pointer;width:100%;max-width:240px;">
+      <div class="card-icon">${icon}</div>
+      <div class="card-content"><h3>${title}</h3><p>${sub}</p></div>
+    </div>`;
+  hdPage(`
+    <h1 style="margin-top:0;color:#f6d66c;font-family:PT Serif,Georgia,serif;font-weight:500;">Дизайн Человека</h1>
+    <div class="cards" style="grid-template-columns:repeat(2,minmax(160px,1fr));">
+      ${card("🧬", "Калькулятор", "Бодиграф и расшифровка", "openHDCalculator()")}
+      ${card("🕰️", "Ректификация", "Если время рождения неизвестно", "openHDRectification()")}
+    </div>
+    <button onclick="location.reload()" style="${HD_BTN2}">Назад</button>`);
+}
+
+function hdPlaceOptions(selected) {
+  const cities = window.HumanDesign.data.cities;
+  const groups = {};
+  cities.forEach(c => { (groups[c[0]] = groups[c[0]] || []).push(c); });
+  let html = `<option value="" style="background:#2a1b40;">— выберите город —</option>`;
+  Object.keys(groups).forEach(country => {
+    html += `<optgroup label="${escapeHtml(country)}" style="background:#2a1b40;color:#f6d66c;">` +
+      groups[country].map(c => {
+        const v = c[0] + "|" + c[1];
+        return `<option value="${escapeHtml(v)}"${v === selected ? " selected" : ""} style="background:#2a1b40;color:#fff;">${escapeHtml(c[1])}</option>`;
+      }).join("") + `</optgroup>`;
+  });
+  html += `<option value="other"${selected && selected.indexOf("UTC") === 0 ? " selected" : ""} style="background:#2a1b40;color:#fff;">Другой город — указать часовой пояс</option>`;
+  return html;
+}
+function hdOffsetOptions(selected) {
+  const out = [];
+  for (let m = -12 * 60; m <= 14 * 60; m += 30) {
+    const sign = m < 0 ? "-" : "+", a = Math.abs(m);
+    const v = "UTC" + sign + String(Math.floor(a / 60)).padStart(2, "0") + ":" + String(a % 60).padStart(2, "0");
+    out.push(`<option value="${v}"${v === (selected || "UTC+05:00") ? " selected" : ""} style="background:#2a1b40;color:#fff;">${v}</option>`);
+  }
+  return out.join("");
+}
+function hdPlaceFields(prefix, place) {
+  const isOther = place && place.indexOf("UTC") === 0;
+  return `
+    <label>Место рождения</label>
+    <select id="${prefix}Place" style="${HD_INPUT}" onchange="document.getElementById('${prefix}OffsetBox').style.display=this.value==='other'?'block':'none'">${hdPlaceOptions(place)}</select>
+    <div id="${prefix}OffsetBox" style="display:${isOther ? "block" : "none"};">
+      <label>Часовой пояс места рождения (на момент рождения)</label>
+      <select id="${prefix}Offset" style="${HD_INPUT}">${hdOffsetOptions(isOther ? place : "")}</select>
+    </div>`;
+}
+function hdReadPlace(prefix) {
+  const v = document.getElementById(prefix + "Place")?.value || "";
+  if (!v) return null;
+  if (v === "other") {
+    const off = document.getElementById(prefix + "Offset")?.value;
+    return { key: off, tz: off, label: off };
+  }
+  const c = window.HumanDesign.data.cities.find(x => x[0] + "|" + x[1] === v);
+  return c ? { key: v, tz: c[2], label: c[1] + " (" + c[0] + ")" } : null;
+}
+function hdFormatTime(input) {
+  let v = input.value.replace(/\D/g, "").slice(0, 4);
+  if (v.length > 2) v = v.slice(0, 2) + ":" + v.slice(2);
+  input.value = v;
+}
+
+function openHDCalculator(prefill) {
+  prefill = prefill || {};
+  hdPage(`
+    <h1 style="margin-top:0;color:#f6d66c;font-family:PT Serif,Georgia,serif;font-weight:500;">Дизайн Человека</h1>
+    <label>Имя</label>
+    <input id="name" type="text" value="${escapeHtml(prefill.name || "")}" style="${HD_INPUT}">
+    <label>Дата рождения</label>
+    <input id="birthDate" type="text" placeholder="ДД.ММ.ГГГГ" maxlength="10" inputmode="numeric" oninput="formatBirthDate(this)" value="${escapeHtml(prefill.date || "")}" style="${HD_INPUT}">
+    <label>Время рождения (местное)</label>
+    <input id="hdTime" type="text" placeholder="ЧЧ:ММ" maxlength="5" inputmode="numeric" oninput="hdFormatTime(this)" value="${escapeHtml(prefill.time || "")}" style="${HD_INPUT}">
+    ${hdPlaceFields("hd", prefill.place || "")}
+    <div style="color:#c9bfa8;font-size:13px;margin:-6px 0 14px;line-height:1.4;">Если время рождения неизвестно, сначала пройдите «Ректификацию».</div>
+    <div id="dateError" style="color:#ff9b9b;min-height:22px;margin-bottom:15px;"></div>
+    <button onclick="calculateHumanDesign()" style="${HD_BTN}">Рассчитать</button>
+    <button onclick="openHumanDesignHome()" style="${HD_BTN2}">Назад</button>
+    <div id="result" style="margin-top:30px"></div>`, true);
+}
+
+function calculateHumanDesign() {
+  const name = document.getElementById("name")?.value.trim();
+  const birthDate = document.getElementById("birthDate")?.value.trim();
+  const time = document.getElementById("hdTime")?.value.trim();
+  const place = hdReadPlace("hd");
+  const err = document.getElementById("dateError");
+  const result = document.getElementById("result");
+  if (err) err.textContent = "";
+  if (result) result.innerHTML = "";
+  if (!name) { err.textContent = "Введите имя."; return; }
+  if (!isValidBirthDate(birthDate)) { err.textContent = "Введите корректную дату рождения в формате ДД.ММ.ГГГГ."; return; }
+  const tm = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(time || "");
+  if (!tm) { err.textContent = "Введите время рождения в формате ЧЧ:ММ, например 07:45."; return; }
+  if (!place) { err.textContent = "Выберите место рождения."; return; }
+  const [d, m, y] = birthDate.split(".").map(Number);
+  let c;
+  try {
+    c = window.HumanDesign.chart(y, m, d, +tm[1], +tm[2], place.tz);
+  } catch (e) {
+    console.error(e);
+    result.innerHTML = `<div style="color:#ff9d9d;padding:16px;">Не удалось выполнить расчёт: ${escapeHtml(e.message || String(e))}</div>`;
+    return;
+  }
+  const blocks = window.HumanDesign.buildBlocks(c);
+  const dateLabel = birthDate + " " + time;
+  renderEditableResult(blocks, result, "Дизайн Человека - " + name, dateLabel, "human_design");
+  const box = document.createElement("div");
+  box.style.cssText = "max-width:700px;margin:0 auto 24px;text-align:center;";
+  const T = window.HumanDesign.data.types[c.type], AU = window.HumanDesign.data.auth[c.authority];
+  box.innerHTML = `
+    <div style="color:#f6d66c;font-family:PT Serif,Georgia,serif;font-size:20px;margin-bottom:6px;">Бодиграф: ${escapeHtml(name)}</div>
+    <div style="color:#e9dfc6;font-size:14px;margin-bottom:12px;">${escapeHtml(birthDate)}, ${escapeHtml(time)}, ${escapeHtml(place.label)}</div>
+    ${window.HumanDesign.bodygraphSVG(c)}
+    <div style="color:#f8e7a8;font-size:15px;margin-top:12px;line-height:1.6;">
+      Тип: <b>${escapeHtml(T.name)}</b> · Стратегия: <b>${escapeHtml(T.strategy)}</b><br>
+      Авторитет: <b>${escapeHtml(AU.name)}</b> · Профиль: <b>${escapeHtml(c.profile)}</b>
+    </div>`;
+  result.insertBefore(box, result.firstChild);
+  saveCalculationHistory({ direction: "human_design", title: "Дизайн Человека - " + name + " - " + birthDate, personName: name, birthDate, birthDate2: time, alphabet: place.key });
+}
+
+/* ---------- Ректификация ---------- */
+function openHDRectification() {
+  hdPage(`
+    <h1 style="margin-top:0;color:#f6d66c;font-family:PT Serif,Georgia,serif;font-weight:500;">Ректификация времени рождения</h1>
+    <p style="color:#e9dfc6;line-height:1.5;margin-top:0;">Если время рождения неизвестно, калькулятор проверит все минуты суток и покажет, какие варианты дизайна возможны в этот день. Затем ответьте на вопросы — по ответам будет подобран наиболее подходящий вариант и примерное время рождения.</p>
+    <label>Имя (по желанию)</label>
+    <input id="hdrName" type="text" style="${HD_INPUT}">
+    <label>Дата рождения</label>
+    <input id="hdrDate" type="text" placeholder="ДД.ММ.ГГГГ" maxlength="10" inputmode="numeric" oninput="formatBirthDate(this)" style="${HD_INPUT}">
+    ${hdPlaceFields("hdr", "")}
+    <label>Примерное время (если известно хоть что-то)</label>
+    <select id="hdrPart" style="${HD_INPUT}">
+      <option value="0-1439" style="background:#2a1b40;color:#fff;">Совсем неизвестно (весь день)</option>
+      <option value="0-359" style="background:#2a1b40;color:#fff;">Ночью (00:00–05:59)</option>
+      <option value="360-719" style="background:#2a1b40;color:#fff;">Утром (06:00–11:59)</option>
+      <option value="720-1079" style="background:#2a1b40;color:#fff;">Днём (12:00–17:59)</option>
+      <option value="1080-1439" style="background:#2a1b40;color:#fff;">Вечером (18:00–23:59)</option>
+    </select>
+    <div id="dateError" style="color:#ff9b9b;min-height:22px;margin-bottom:15px;"></div>
+    <button onclick="runHDRectification()" style="${HD_BTN}">Найти варианты</button>
+    <button onclick="openHumanDesignHome()" style="${HD_BTN2}">Назад</button>
+    <div id="result" style="margin-top:30px"></div>`, true);
+}
+
+function hdCentersText(c) {
+  const D = window.HumanDesign.data;
+  const list = window.HumanDesign.core.CENTER_ORDER.filter(k => c.defined[k]).map(k => D.centers[k].name);
+  return list.length ? list.join(", ") : "нет (все центры открыты)";
+}
+function hdRangesText(g) {
+  return g.ranges.map(r => window.HumanDesign.fmt(r[0]) + "–" + window.HumanDesign.fmt(r[1])).join(", ");
+}
+
+function runHDRectification() {
+  const date = document.getElementById("hdrDate")?.value.trim();
+  const place = hdReadPlace("hdr");
+  const err = document.getElementById("dateError");
+  const result = document.getElementById("result");
+  err.textContent = ""; result.innerHTML = "";
+  if (!isValidBirthDate(date)) { err.textContent = "Введите корректную дату рождения в формате ДД.ММ.ГГГГ."; return; }
+  if (!place) { err.textContent = "Выберите место рождения."; return; }
+  const [from, to] = document.getElementById("hdrPart").value.split("-").map(Number);
+  const [d, m, y] = date.split(".").map(Number);
+  result.innerHTML = `<div style="color:#e9dfc6;">Считаю варианты…</div>`;
+  setTimeout(() => {
+    let groups;
+    try { groups = window.HumanDesign.rectify(y, m, d, place.tz, 4, from, to); }
+    catch (e) { console.error(e); result.innerHTML = `<div style="color:#ff9d9d;">Не удалось выполнить расчёт: ${escapeHtml(e.message || String(e))}</div>`; return; }
+    window._hdRect = { groups, date, place, name: document.getElementById("hdrName")?.value.trim() || "" };
+    const D = window.HumanDesign.data;
+    let html = `<h2 style="color:#f6d66c;font-family:PT Serif,Georgia,serif;font-weight:500;">Возможные варианты (${groups.length})</h2>`;
+    html += groups.map((g, i) => `
+      <div style="border:1px solid rgba(215,170,49,.5);border-radius:12px;padding:14px 16px;margin-bottom:10px;background:rgba(0,0,0,.15);">
+        <div style="color:#f6d66c;font-size:16px;margin-bottom:6px;">Вариант ${i + 1}: ${escapeHtml(window.HumanDesign.variantTitle(g.chart))}</div>
+        <div style="color:#e9dfc6;font-size:14px;line-height:1.5;">Время: ${hdRangesText(g)}<br>Определённые центры: ${escapeHtml(hdCentersText(g.chart))}</div>
+      </div>`).join("");
+    if (groups.length === 1) {
+      html += `<p style="color:#8fe3a1;line-height:1.5;">В этот день в выбранном промежутке времени тип, авторитет, профиль и центры не меняются — их можно рассчитать даже без точного времени.</p>
+        <button onclick="hdRectGo(0)" style="${HD_BTN}">Рассчитать Дизайн Человека</button>`;
+      result.innerHTML = html;
+      return;
+    }
+    const qs = window.HumanDesign.questionsFor(groups);
+    html += `<h2 style="color:#f6d66c;font-family:PT Serif,Georgia,serif;font-weight:500;margin-top:24px;">Вопросы</h2>
+      <p style="color:#c9bfa8;font-size:14px;line-height:1.5;margin-top:0;">Отвечайте честно, о себе в обычной жизни. Если сомневаетесь — выберите «Не знаю».</p>`;
+    html += qs.map((q, n) => `
+      <div style="margin-bottom:14px;padding:12px 14px;border-radius:10px;background:rgba(255,255,255,.04);">
+        <div style="color:#f8e7a8;line-height:1.45;margin-bottom:8px;">${n + 1}. ${escapeHtml(q.q)}</div>
+        ${[["1", "Да"], ["0", "Нет"], ["", "Не знаю"]].map(o => `<label style="margin-right:16px;color:#e9dfc6;cursor:pointer;"><input type="radio" name="hdq${q.i}" value="${o[0]}"${o[0] === "" ? " checked" : ""}> ${o[1]}</label>`).join("")}
+      </div>`).join("");
+    html += `<button onclick="scoreHDRectification()" style="${HD_BTN}">Определить вариант</button><div id="hdRectRes" style="margin-top:24px;"></div>`;
+    result.innerHTML = html;
+  }, 30);
+}
+
+function scoreHDRectification() {
+  const R = window._hdRect; if (!R) return;
+  const answers = {};
+  window.HumanDesign.questionsFor(R.groups).forEach(q => {
+    const v = (document.querySelector(`input[name="hdq${q.i}"]:checked`) || {}).value;
+    if (v === "1") answers[q.i] = true; else if (v === "0") answers[q.i] = false;
+  });
+  const box = document.getElementById("hdRectRes");
+  if (!Object.keys(answers).length) { box.innerHTML = `<div style="color:#ff9b9b;">Ответьте хотя бы на несколько вопросов.</div>`; return; }
+  const ranked = window.HumanDesign.score(R.groups, answers);
+  R.ranked = ranked;
+  box.innerHTML = `<h2 style="color:#f6d66c;font-family:PT Serif,Georgia,serif;font-weight:500;">Результат</h2>` + ranked.map((r, i) => {
+    const g = r.group, idx = R.groups.indexOf(g);
+    return `
+      <div style="border:1px solid ${i === 0 ? "#8fe3a1" : "rgba(215,170,49,.5)"};border-radius:12px;padding:14px 16px;margin-bottom:10px;background:rgba(0,0,0,.15);">
+        <div style="color:${i === 0 ? "#8fe3a1" : "#f6d66c"};font-size:16px;margin-bottom:6px;">${i === 0 ? "Наиболее подходящий: " : ""}${escapeHtml(window.HumanDesign.variantTitle(g.chart))} — совпадение ${r.pct}%</div>
+        <div style="color:#e9dfc6;font-size:14px;line-height:1.5;">Время: ${hdRangesText(g)}<br>Определённые центры: ${escapeHtml(hdCentersText(g.chart))}</div>
+        <button onclick="hdRectGo(${idx})" style="${HD_BTN2}">Рассчитать дизайн для этого варианта</button>
+      </div>`;
+  }).join("") + `<p style="color:#c9bfa8;font-size:13px;line-height:1.5;">Ректификация по вопросам даёт примерный результат. Для расчёта берётся середина самого длинного промежутка времени этого варианта; при желании время можно уточнить в калькуляторе.</p>`;
+}
+
+function hdRectGo(idx) {
+  const R = window._hdRect; const g = R.groups[idx];
+  const best = g.ranges.slice().sort((a, b) => (b[1] - b[0]) - (a[1] - a[0]))[0];
+  const mid = Math.round((best[0] + best[1]) / 2);
+  openHDCalculator({ name: R.name, date: R.date, time: window.HumanDesign.fmt(mid), place: R.place.key });
+}
+
 async function reopenCalculation(r) {
   // Скачивание из «Моих расчётов»: расчёт собирается незаметно в фоне,
   // на экране остаётся список расчётов — сразу появляется окно сохранения файла.
@@ -4887,7 +5137,7 @@ async function reopenCalculation(r) {
   if (link) link.innerHTML = "Скачивается…";
   const listName = pdfSafeName([DIRECTION_NAMES[r.direction] || r.title || "",
     r.person_name || [r.last_name, r.first_name, r.patronymic].filter(Boolean).join(" "),
-    [r.birth_date, r.birth_date2].filter(Boolean).join(" и ")].filter(Boolean).join(" - ")) + ".pdf";
+    [r.birth_date, r.birth_date2].filter(Boolean).join(r.direction === "human_design" ? " " : " и ")].filter(Boolean).join(" - ")) + ".pdf";
   window._pdfPresetHandle = requestPdfSaveHandle(listName);
   window._pdfVisibleBtn = link; window._pdfVisibleLabel = linkLabel;
   window._pdfIosOffered = false;
@@ -4930,6 +5180,9 @@ async function reopenCalculation(r) {
       set("pcName2", r.first_name);
       set("pcDate2", r.birth_date2);
       calculatePythCompat();
+    } else if (r.direction === "human_design") {
+      openHDCalculator({ name: r.person_name, date: r.birth_date, time: r.birth_date2, place: r.alphabet });
+      calculateHumanDesign();
     } else if (r.direction === "compatibility") {
       set("birthDate1", r.birth_date);
       set("birthDate2", r.birth_date2);
