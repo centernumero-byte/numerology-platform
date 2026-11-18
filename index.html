@@ -507,6 +507,8 @@ body, body * { font-variant-numeric: lining-nums; }
 
 </div>
 
+<script src="i18n-uz-ui.js?v=20261118"></script>
+<script src="i18n-uz.js?v=20261118"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="adult-matrix-engine.js?v=20261029"></script>
@@ -2059,6 +2061,11 @@ function svgElementToPngDataUrl(svgEl) {
 }
 
 function downloadHtmlFile(filename, htmlBody) {
+  // Если выбран узбекский — отчёт формируется на выбранном языке (кириллица или латиница)
+  if (window.NP_I18N && NP_I18N.isUz()) {
+    htmlBody = NP_I18N.html(htmlBody);
+    filename = NP_I18N.t(filename.replace(/\.(html|pdf)$/i, "")) + ".html";
+  }
   const title = filename.replace(/\.(html|pdf)$/i, "");
   const printCss = `
       @page { margin: 18mm 14mm; }
@@ -5350,6 +5357,7 @@ async function renderAccess() {
             <tr><td>Мои расчёты</td><td>${itemStatus(scope.my_calculations)}</td></tr>
             <tr><td>Доступы</td><td>${itemStatus(scope.access)}</td></tr>
             <tr><td>Отчёты и статистика</td><td>${itemStatus(scope.statistics)}</td></tr>
+            ${scope.uz_lang && scope.uz_lang.granted ? `<tr><td>Узбекский язык</td><td>${itemStatus(scope.uz_lang)}</td></tr>` : ""}
           </tbody>
         </table>
         </div>`;
@@ -5453,6 +5461,13 @@ async function renderAccess() {
             </label>
             ${termSelectHtml("", 'id="scopeStatisticsTerm"')}
           </div>
+          ${isRealAdmin ? `
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;min-width:220px;">
+              <input type="checkbox" id="scopeUzLang" class="scope-lang"> Узбекский язык (кириллица и латиница)
+            </label>
+            ${termSelectHtml("", 'id="scopeUzLangTerm"')}
+          </div>` : ""}
         </div>
 
         <button class="material-manager-button" style="width:auto;" onclick="grantPlatformAccess()">Выдать доступ</button>
@@ -6052,6 +6067,8 @@ function fillScopeCheckboxes(scope) {
   setFlag("scopeMyCalc", "scopeMyCalcTerm", scope.my_calculations);
   setFlag("scopeAccess", "scopeAccessTerm", scope.access);
   setFlag("scopeStatistics", "scopeStatisticsTerm", scope.statistics);
+  setFlag("scopeUzLang", "scopeUzLangTerm", scope.uz_lang);
+  window._loadedUserScope = scope;
   document.querySelectorAll(".scope-visible").forEach(function (el) {
     const dirScope = scope[el.dataset.direction] || {};
     const vt = dirScope.visible_types;
@@ -6063,7 +6080,8 @@ function fillScopeCheckboxes(scope) {
 
 async function loadScopeForSelectedUser() {
   const userId = document.getElementById("accessUserSelect")?.value || "";
-  document.querySelectorAll(".scope-cell, .scope-flag, .scope-visible").forEach(function (el) { el.checked = false; });
+  document.querySelectorAll(".scope-cell, .scope-flag, .scope-visible, .scope-lang").forEach(function (el) { el.checked = false; });
+  window._loadedUserScope = null;
   if (!userId) return;
   const { data, error } = await supabaseClient
     .from("access_periods")
@@ -6112,12 +6130,21 @@ function collectScope() {
   const statsTerm = document.getElementById("scopeStatisticsTerm")?.value || "unlimited";
   scope.statistics = statsChecked ? Object.assign({ granted: true }, computeEndsAt(statsTerm)) : { granted: false };
 
+  // Узбекский язык выдаёт только администратор; учитель при выдаче доступа его не сбрасывает
+  const uzBox = document.getElementById("scopeUzLang");
+  if (uzBox) {
+    const uzTerm = document.getElementById("scopeUzLangTerm")?.value || "unlimited";
+    scope.uz_lang = uzBox.checked ? Object.assign({ granted: true }, computeEndsAt(uzTerm)) : { granted: false };
+  } else if (window._loadedUserScope && window._loadedUserScope.uz_lang) {
+    scope.uz_lang = window._loadedUserScope.uz_lang;
+  }
+
   return scope;
 }
 
 function scopeHasAnything(scope) {
   return Object.keys(scope).some(function (key) {
-    if (key === "library" || key === "my_calculations" || key === "access" || key === "statistics") return !!scope[key]?.granted;
+    if (key === "library" || key === "my_calculations" || key === "access" || key === "statistics" || key === "uz_lang") return !!scope[key]?.granted;
     if (scope[key] && scope[key].visible === true) return true;
     return Object.values(scope[key] || {}).some(function (item) { return item && item.granted; });
   });
@@ -7198,6 +7225,8 @@ async function checkAuth() {
     window.currentUserIsManager = isManager;
     window.currentUserHasAccess = hasAccess;
     window.currentUserGrant = currentGrant;
+    // Узбекский язык: виден администратору и тем, кому открыт пункт «Узбекский язык» в «Доступах»
+    try { if (window.NP_I18N) NP_I18N.init(window.currentUserRole === "admin" || itemGrantActive(currentGrant.uz_lang)); } catch (e) { console.warn("i18n:", e); }
     window.currentUserAccessMeta = {
       hasAnyPeriod: !!latestPeriod,
       isExpired: !!latestPeriod && !latestPeriod.is_unlimited && !hasActivePlatformAccess(latestPeriod),
