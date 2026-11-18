@@ -68,8 +68,18 @@
     var t = norm(raw);
     if (!t || !/[А-Яа-яЁё]/.test(t)) return null;
     if (dict.has(t)) return out(dict.get(t));
+    // Бир нечта қаторли матн: ҳар бир қаторни алоҳида таржима қиламиз
+    var lines = String(raw).split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean);
+    if (lines.length > 1) {
+      var okAll = true, res = lines.map(function (ln) {
+        if (!/[А-Яа-яЁё]/.test(ln)) return ln;
+        var r = translate(ln); if (r == null) okAll = false; return r == null ? ln : r;
+      });
+      if (okAll) return res.join("\n");
+    }
     var m;
-    if ((m = t.match(/^(\d+)\s*лет$/))) return out(m[1] + " ёш");
+    if ((m = t.match(/^(\d{4})\s*(года|год|г\.?)$/))) return out(m[1] + " йил");
+    if ((m = t.match(/^(\d[\d,.\s\-–—]*)\s*(лет|года|год)$/))) return out(m[1].trim() + " ёш");
     if ((m = t.match(/^(\d+)\s*(года|год)$/))) return out(m[1] + " йил");
     if ((m = t.match(/^(\d{1,2})\s+(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)(\s+\d{4})?(\s*г\.?)?$/))) {
       return out(m[1] + " " + MONTHS_GEN[m[2]] + (m[3] || ""));
@@ -244,7 +254,7 @@
 
   // Калькуляторлар матнлари таржимаси (фақат ўзбек тили танланганда юкланади)
   var PACKS = ["uz/adult.js"];
-  var VER = "20261118";
+  var VER = "20261118b";
   function loadPacks() {
     PACKS.forEach(function (src) {
       var s = document.createElement("script");
