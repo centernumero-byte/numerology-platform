@@ -67,6 +67,33 @@
 
   var MONTHS_GEN = { "января": "январ", "февраля": "феврал", "марта": "март", "апреля": "апрел", "мая": "май", "июня": "июн", "июля": "июл", "августа": "август", "сентября": "сентябр", "октября": "октябр", "ноября": "ноябр", "декабря": "декабр" };
 
+  // Гаплар чегараси бўйича бўлиб, ҳар бир бўлакни луғатдан топишга уринамиз
+  function translateSegments(t) {
+    if (t.length > 6000) return null;
+    var cuts = [], re = /[.!?;»)](?= )/g, mm;
+    while ((mm = re.exec(t))) cuts.push(mm.index + 1);
+    if (!cuts.length) return null;
+    cuts.push(t.length);
+    var best = {}; best[0] = [];
+    var starts = [0];
+    for (var si = 0; si < starts.length; si++) {
+      var s = starts[si];
+      for (var ci = 0; ci < cuts.length; ci++) {
+        var e = cuts[ci];
+        if (e <= s || best[e]) continue;
+        var piece = t.slice(s, e).trim();
+        if (!piece) continue;
+        if (dict.has(piece)) {
+          best[e] = best[s].concat([piece]);
+          starts.push(e);
+        }
+      }
+    }
+    var res = best[t.length];
+    if (!res || res.length < 2) return null;
+    return res.map(function (p) { return out(dict.get(p)); }).join(" ");
+  }
+
   // Матнни таржима қилиш. Топилмаса — null.
   function translate(raw) {
     if (!dict) buildDict();
@@ -96,6 +123,28 @@
       Object.keys(TERMS).forEach(function (k) { if (f.indexOf(k) >= 0) { f = f.split(k).join(TERMS[k]); hit = true; } });
       if (hit) return out(f);
     }
+    // «3-я строка (3, 6, 9) — стабильность — 6 цифр»
+    if ((m = t.match(/^(.+?) — (\d+) (цифр|цифра|цифры)$/))) {
+      var h1 = translate(m[1]);
+      if (h1 != null) return h1 + " — " + m[2] + out(" та рақам");
+    }
+    // ««55» — логика дополняет память»
+    if ((m = t.match(/^(«\d+») — (.+)$/))) {
+      var r1 = translate(m[2]);
+      if (r1 != null) return m[1] + " — " + r1;
+    }
+    // «…цифру: 1 (характер), или 4 (здоровье), или 7 (везение, талант). Не стоит…»
+    if (t.length < 2000 && t.indexOf(", или ") > 0 && (m = t.match(/^([^:]{1,120}:) (\d \([^)]*\)(?:, или \d \([^)]*\))*)\. (.+)$/))) {
+      var hd = translate(m[1]), tl = translate(m[3]);
+      var its = m[2].split(", или ").map(function (it) {
+        var mm = it.match(/^(\d) \((.*)\)$/), tr = mm && translate(mm[2]);
+        return tr == null ? null : mm[1] + " (" + tr + ")";
+      });
+      if (hd != null && tl != null && its.every(Boolean)) return hd + " " + its.join(out(", ёки ")) + ". " + tl;
+    }
+    // Бир нечта гапдан йиғилган матн: ҳар бир бўлак луғатда бўлса, бўлакларга ажратиб таржима қиламиз
+    var seg = translateSegments(t);
+    if (seg != null) return seg;
     // Ёрлиқ + давоми: «Взрослая матрица - Ivanova (01.01.1990)», «Доступ открыт до 12.12.2026»
     for (var i = 0; i < prefixKeys.length; i++) {
       var k = prefixKeys[i];
@@ -258,8 +307,8 @@
   }
 
   // Калькуляторлар матнлари таржимаси (фақат ўзбек тили танланганда юкланади)
-  var PACKS = ["uz/adult.js", "uz/child.js", "uz/compat.js", "uz/vedic.js"];
-  var VER = "20261118f";
+  var PACKS = ["uz/adult.js", "uz/child.js", "uz/compat.js", "uz/vedic.js", "uz/pyth.js", "uz/pythb.js"];
+  var VER = "20261118h";
   function loadPacks() {
     PACKS.forEach(function (src) {
       var s = document.createElement("script");
