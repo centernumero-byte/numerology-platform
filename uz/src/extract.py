@@ -4,6 +4,14 @@ src, name = sys.argv[1], sys.argv[2]
 limit = int(sys.argv[3]) if len(sys.argv) > 3 else 9000
 s = open(src, encoding='utf-8').read()
 seen, lines = set(), []
+# Бошқа пакетларда ва UI луғатида аллақачон бор қаторларни ўтказиб юборамиз
+import glob
+base = os.path.dirname(os.path.abspath(__file__))
+for f in glob.glob(os.path.join(base, '*', 'ru*.json')):
+    if os.path.basename(os.path.dirname(f)) != name:
+        seen.update(json.load(open(f, encoding='utf-8')))
+ui = open(os.path.join(base, '..', '..', 'i18n-uz-ui.js'), encoding='utf-8').read()
+seen.update(json.loads('"' + k + '"') for k in re.findall(r'^\s*"((?:[^"\\]|\\.)*)"\s*:', ui, re.M))
 for l in re.findall(r'"((?:[^"\\]|\\.)*)"|`((?:[^`\\]|\\.)*)`|\'((?:[^\'\\\n]|\\.)*)\'', s):
     l = next(x for x in l if x is not None) if any(l) else ''
     if not re.search('[А-Яа-яЁё]', l): continue
