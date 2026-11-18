@@ -52,7 +52,12 @@
     var sources = [window.NP_UZ_UI || {}];
     (window.NP_UZ_EXTRA || []).forEach(function (x) { sources.push(x); });
     sources.forEach(function (src) {
-      Object.keys(src).forEach(function (k) { dict.set(norm(k), src[k]); });
+      Object.keys(src).forEach(function (k) {
+        var nk = norm(k);
+        // Айнан бир хил жуфтлик («интуиция» → «интуиция») мавжуд таржимани ўчирмасин
+        if (norm(src[k]) === nk && dict.has(nk)) return;
+        dict.set(nk, src[k]);
+      });
     });
     // Префикс сифатида фақат интерфейс луғати ишлатилади
     prefixKeys = Object.keys(window.NP_UZ_UI || {}).map(norm).filter(function (k) { return k.length >= 3; })
@@ -253,8 +258,8 @@
   }
 
   // Калькуляторлар матнлари таржимаси (фақат ўзбек тили танланганда юкланади)
-  var PACKS = ["uz/adult.js", "uz/child.js", "uz/compat.js"];
-  var VER = "20261118d";
+  var PACKS = ["uz/adult.js", "uz/child.js", "uz/compat.js", "uz/vedic.js"];
+  var VER = "20261118f";
   function loadPacks() {
     PACKS.forEach(function (src) {
       var s = document.createElement("script");
