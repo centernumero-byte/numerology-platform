@@ -54,8 +54,8 @@
     sources.forEach(function (src) {
       Object.keys(src).forEach(function (k) { dict.set(norm(k), src[k]); });
     });
-    // Префикс сифатида фақат белгилар билан тугайдиган ёрлиқлар ишлатилади
-    prefixKeys = Array.from(dict.keys()).filter(function (k) { return k.length >= 3; })
+    // Префикс сифатида фақат интерфейс луғати ишлатилади
+    prefixKeys = Object.keys(window.NP_UZ_UI || {}).map(norm).filter(function (k) { return k.length >= 3; })
       .sort(function (a, b) { return b.length - a.length; });
   }
   function out(uz) { return state.lang === "uzl" ? translit(uz) : uz; }
@@ -84,7 +84,7 @@
     // Ёрлиқ + давоми: «Взрослая матрица - Ivanova (01.01.1990)», «Доступ открыт до 12.12.2026»
     for (var i = 0; i < prefixKeys.length; i++) {
       var k = prefixKeys[i];
-      if (t.length <= k.length || t.indexOf(k) !== 0) continue;
+      if (t.length <= k.length || !t.startsWith(k)) continue;
       var rest = t.slice(k.length);
       var endsWithSep = /[-—:,(]$/.test(k);
       var boundary = /^[\s\d.,:;()\-—«»"'!?/]/.test(rest);
@@ -242,6 +242,18 @@
     location.reload();
   }
 
+  // Калькуляторлар матнлари таржимаси (фақат ўзбек тили танланганда юкланади)
+  var PACKS = ["uz/adult.js"];
+  var VER = "20261118";
+  function loadPacks() {
+    PACKS.forEach(function (src) {
+      var s = document.createElement("script");
+      s.src = src + "?v=" + VER;
+      s.onload = function () { dict = null; translateNode(document.body); };
+      document.head.appendChild(s);
+    });
+  }
+
   // checkAuth рухсатни аниқлагач чақирилади
   function init(allowed) {
     state.allowed = !!allowed;
@@ -251,6 +263,7 @@
     if (state.lang !== "ru") {
       document.documentElement.lang = state.lang === "uzl" ? "uz-Latn" : "uz-Cyrl";
       startObserver();
+      if (!state.packsLoaded) { state.packsLoaded = true; loadPacks(); }
     }
     renderSwitch();
   }
