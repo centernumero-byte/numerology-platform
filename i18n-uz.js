@@ -123,6 +123,11 @@
       Object.keys(TERMS).forEach(function (k) { if (f.indexOf(k) >= 0) { f = f.split(k).join(TERMS[k]); hit = true; } });
       if (hit) return out(f);
     }
+    // «↘ Февраль, -5» — ой номи + сон
+    if ((m = t.match(/^([^А-Яа-яЁё]*)(Январь|Февраль|Март|Апрель|Май|Июнь|Июль|Август|Сентябрь|Октябрь|Ноябрь|Декабрь)([^А-Яа-яЁё]*)$/))) {
+      var mo = translate(m[2]);
+      if (mo != null) return m[1] + mo + m[3];
+    }
     // «3-я строка (3, 6, 9) — стабильность — 6 цифр»
     if ((m = t.match(/^(.+?) — (\d+) (цифр|цифра|цифры)$/))) {
       var h1 = translate(m[1]);
@@ -307,8 +312,8 @@
   }
 
   // Калькуляторлар матнлари таржимаси (фақат ўзбек тили танланганда юкланади)
-  var PACKS = ["uz/adult.js", "uz/child.js", "uz/compat.js", "uz/vedic.js", "uz/pyth.js", "uz/pythb.js"];
-  var VER = "20261118h";
+  var PACKS = ["uz/adult.js", "uz/child.js", "uz/compat.js", "uz/vedic.js", "uz/pyth.js", "uz/pythb.js", "uz/moonsun.js"];
+  var VER = "20261118i";
   function loadPacks() {
     PACKS.forEach(function (src) {
       var s = document.createElement("script");
