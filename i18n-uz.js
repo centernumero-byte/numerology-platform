@@ -47,6 +47,9 @@
   /* ---------- Луғат ---------- */
   var dict = null, prefixKeys = null;
   function norm(s) { return String(s).replace(/\s+/g, " ").trim(); }
+  function tidy(s) {
+    return s.replace(/ +([.,;:!?»)])/g, "$1").replace(/([«(]) +/g, "$1").replace(/([,;])(?=[А-Яа-яЁёA-Za-z])/g, "$1 ").replace(/([.!?])(?=[А-ЯЁ])/g, "$1 ").replace(/ {2,}/g, " ");
+  }
   function buildDict() {
     dict = new Map();
     var sources = [window.NP_UZ_UI || {}];
@@ -57,6 +60,9 @@
         // Айнан бир хил жуфтлик («интуиция» → «интуиция») мавжуд таржимани ўчирмасин
         if (norm(src[k]) === nk && dict.has(nk)) return;
         dict.set(nk, src[k]);
+        // Натижа матни «tidyResultText» орқали тозаланади (« 6♠ .» → « 6♠.») — тозаланган вариантни ҳам қўшамиз
+        var tk = tidy(nk);
+        if (tk !== nk && !dict.has(tk)) dict.set(tk, src[k]);
       });
     });
     // Префикс сифатида фақат интерфейс луғати ишлатилади
@@ -146,6 +152,17 @@
         return tr == null ? null : mm[1] + " (" + tr + ")";
       });
       if (hd != null && tl != null && its.every(Boolean)) return hd + " " + its.join(out(", ёки ")) + ". " + tl;
+    }
+    // Севги карталари: «Основное направление: Бубны», «Отношения: A и B», «Урок отношений для A: K ♠ (52)»
+    var nm = function (s) { return state.lang === "uzl" ? translit(s) : s; };
+    if ((m = t.match(/^Основное направление: (.+)$/))) {
+      var su = translate(m[1]);
+      if (su != null) return out("Асосий йўналиш: ") + su;
+    }
+    if ((m = t.match(/^Отношения: (.+) и (.+)$/))) return out("Муносабатлар: ") + nm(m[1]) + out(" ва ") + nm(m[2]);
+    if ((m = t.match(/^Урок отношений для (.+?): (.+)$/))) {
+      var rr = /[А-Яа-яЁё]/.test(m[2]) ? translate(m[2]) : m[2];
+      if (rr != null) return nm(m[1]) + out(" учун муносабатлар сабоғи: ") + rr;
     }
     // Бир нечта гапдан йиғилган матн: ҳар бир бўлак луғатда бўлса, бўлакларга ажратиб таржима қиламиз
     var seg = translateSegments(t);
@@ -312,8 +329,8 @@
   }
 
   // Калькуляторлар матнлари таржимаси (фақат ўзбек тили танланганда юкланади)
-  var PACKS = ["uz/adult.js", "uz/child.js", "uz/compat.js", "uz/vedic.js", "uz/pyth.js", "uz/pythb.js", "uz/moonsun.js"];
-  var VER = "20261118i";
+  var PACKS = ["uz/adult.js", "uz/child.js", "uz/compat.js", "uz/vedic.js", "uz/pyth.js", "uz/pythb.js", "uz/moonsun.js", "uz/lovecards.js"];
+  var VER = "20261119a";
   function loadPacks() {
     PACKS.forEach(function (src) {
       var s = document.createElement("script");
