@@ -178,6 +178,17 @@
       var wd2 = translate(m[2]); if (wd2 != null) return out("Бугунги башорат, " + m[1] + " (") + wd2 + out(") — кун сони ") + m[3];
     }
     if ((m = t.match(/^Прогноз на 365 дней \(([\d.]+ — [\d.]+)\): числа дней повторяются циклом каждые 9 дней$/))) return out("365 кунлик башорат (" + m[1] + "): кун сонлари ҳар 9 кунда такрорланади");
+    // Кармик: «Цикл от 0 до 33 лет: аркан 14», «События «+» (от 0 до 30 лет): аркан 17», «Зона комфорта — 1», «Число кармы 1: 17»
+    var ageSpan = function (s) {
+      var a;
+      if ((a = s.match(/^от (\d+) до (\d+) лет$/))) return out(a[1] + " ёшдан " + a[2] + " ёшгача");
+      if ((a = s.match(/^с (\d+) лет и далее$/))) return out(a[1] + " ёшдан бошлаб");
+      if (s === "главное число событий на всю жизнь") return out("бутун ҳаёт учун асосий воқеалар сони");
+      return null;
+    };
+    if ((m = t.match(/^Цикл (.+): аркан (\d+)$/))) { var sp = ageSpan(m[1]); if (sp != null) return out("Цикл ") + sp + out(": аркан ") + m[2]; }
+    if ((m = t.match(/^События «([+−])» \((.+)\): аркан (\d+)$/))) { var sp2 = ageSpan(m[2]); if (sp2 != null) return out("Воқеалар «") + m[1] + "» (" + sp2 + out("): аркан ") + m[3]; }
+    if ((m = t.match(/^(.{2,60}?)( — |: )(\d+)$/)) && /[А-Яа-яЁё]/.test(m[1])) { var lb = translate(m[1]); if (lb != null) return lb + m[2] + m[3]; }
     // Бир нечта гапдан йиғилган матн: ҳар бир бўлак луғатда бўлса, бўлакларга ажратиб таржима қиламиз
     var seg = translateSegments(t);
     if (seg != null) return seg;
@@ -343,8 +354,8 @@
   }
 
   // Калькуляторлар матнлари таржимаси (фақат ўзбек тили танланганда юкланади)
-  var PACKS = ["uz/adult.js", "uz/child.js", "uz/compat.js", "uz/vedic.js", "uz/pyth.js", "uz/pythb.js", "uz/moonsun.js", "uz/lovecards.js", "uz/prognostika.js", "uz/codes.js"];
-  var VER = "20261119d";
+  var PACKS = ["uz/adult.js", "uz/child.js", "uz/compat.js", "uz/vedic.js", "uz/pyth.js", "uz/pythb.js", "uz/moonsun.js", "uz/lovecards.js", "uz/prognostika.js", "uz/codes.js", "uz/karmic.js"];
+  var VER = "20261119f";
   function loadPacks() {
     PACKS.forEach(function (src) {
       var s = document.createElement("script");
