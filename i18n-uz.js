@@ -343,8 +343,8 @@
   }
 
   // Калькуляторлар матнлари таржимаси (фақат ўзбек тили танланганда юкланади)
-  var PACKS = ["uz/adult.js", "uz/child.js", "uz/compat.js", "uz/vedic.js", "uz/pyth.js", "uz/pythb.js", "uz/moonsun.js", "uz/lovecards.js", "uz/prognostika.js"];
-  var VER = "20261119c";
+  var PACKS = ["uz/adult.js", "uz/child.js", "uz/compat.js", "uz/vedic.js", "uz/pyth.js", "uz/pythb.js", "uz/moonsun.js", "uz/lovecards.js", "uz/prognostika.js", "uz/codes.js"];
+  var VER = "20261119d";
   function loadPacks() {
     PACKS.forEach(function (src) {
       var s = document.createElement("script");
