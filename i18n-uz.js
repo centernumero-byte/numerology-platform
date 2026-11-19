@@ -164,6 +164,20 @@
       var rr = /[А-Яа-яЁё]/.test(m[2]) ? translate(m[2]) : m[2];
       if (rr != null) return nm(m[1]) + out(" учун муносабатлар сабоғи: ") + rr;
     }
+    // Прогностика: «Персональный год 2026 — число 9», «Меркурий, 14.03.2026 — 05.05.2026», «Январь, число 1»,
+    // «19 ноября, четверг — число дня 3», «Прогноз на 365 дней (…): числа дней повторяются…»
+    if ((m = t.match(/^Персональный год (\d{4}) — число (\d+)$/))) return out("Шахсий йил " + m[1] + " — " + m[2] + " сони");
+    if ((m = t.match(/^(Меркурий|Венера|Марс|Юпитер|Сатурн|Уран|Нептун), ([\d.]+ — [\d.]+)$/))) return out(m[1]) + ", " + m[2];
+    if ((m = t.match(/^(Январь|Февраль|Март|Апрель|Май|Июнь|Июль|Август|Сентябрь|Октябрь|Ноябрь|Декабрь), число (\d+)$/))) {
+      var mn = translate(m[1]); if (mn != null) return mn + ", " + out("сон ") + m[2];
+    }
+    if ((m = t.match(/^(\d{1,2}) (января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря), ([а-я]+) — число дня (\d+)$/))) {
+      var wd = translate(m[3]); if (wd != null) return out(m[1] + " " + MONTHS_GEN[m[2]] + ", ") + wd + out(" — кун сони ") + m[4];
+    }
+    if ((m = t.match(/^Прогноз на сегодня, ([\d.]+) \(([а-я]+)\) — число дня (\d+)$/))) {
+      var wd2 = translate(m[2]); if (wd2 != null) return out("Бугунги башорат, " + m[1] + " (") + wd2 + out(") — кун сони ") + m[3];
+    }
+    if ((m = t.match(/^Прогноз на 365 дней \(([\d.]+ — [\d.]+)\): числа дней повторяются циклом каждые 9 дней$/))) return out("365 кунлик башорат (" + m[1] + "): кун сонлари ҳар 9 кунда такрорланади");
     // Бир нечта гапдан йиғилган матн: ҳар бир бўлак луғатда бўлса, бўлакларга ажратиб таржима қиламиз
     var seg = translateSegments(t);
     if (seg != null) return seg;
@@ -329,8 +343,8 @@
   }
 
   // Калькуляторлар матнлари таржимаси (фақат ўзбек тили танланганда юкланади)
-  var PACKS = ["uz/adult.js", "uz/child.js", "uz/compat.js", "uz/vedic.js", "uz/pyth.js", "uz/pythb.js", "uz/moonsun.js", "uz/lovecards.js"];
-  var VER = "20261119a";
+  var PACKS = ["uz/adult.js", "uz/child.js", "uz/compat.js", "uz/vedic.js", "uz/pyth.js", "uz/pythb.js", "uz/moonsun.js", "uz/lovecards.js", "uz/prognostika.js"];
+  var VER = "20261119c";
   function loadPacks() {
     PACKS.forEach(function (src) {
       var s = document.createElement("script");
