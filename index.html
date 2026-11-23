@@ -526,7 +526,7 @@ body, body * { font-variant-numeric: lining-nums; }
 <script src="karmic-data.js?v=20261029"></script>
 <script src="karmic-engine.js?v=20261029"></script>
 <script src="biorhythm-engine.js"></script>
-<script src="usin-engine.js?v=20261105"></script>
+<script src="usin-engine.js?v=20261123"></script>
 <script src="chakra-data.js?v=20261104"></script>
 <script src="chakra-engine.js?v=20261104"></script>
 <script src="chakra-compat-data.js?v=20261106"></script>
@@ -1023,6 +1023,13 @@ async function openCalculator(type) {
           style="display:block;width:100%;padding:13px;margin:8px 0 20px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
         <div id="prognostikaYearError" style="color:#ff9b9b;min-height:22px;margin-bottom:10px;"></div>` : ""}
 
+        ${type === "usin" ? `
+        <label>Время рождения (по желанию)</label>
+        <input id="usinTime" type="text" placeholder="ЧЧ:ММ, например 07:45" maxlength="5" inputmode="numeric" oninput="formatUsinTime(this)"
+          style="display:block;width:100%;padding:13px;margin:8px 0 5px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
+        <div style="color:#c9bfa8;font-size:13px;margin:2px 0 4px;line-height:1.4;">Если время известно, расчёт покажет орган, который от рождения особенно силён, и орган, который особенно уязвим. Если не знаете — оставьте поле пустым.</div>
+        <div id="usinTimeError" style="color:#ff9b9b;min-height:22px;margin-bottom:10px;"></div>` : ""}
+
         ${type === "karmic" ? `
         <label>Алфавит имени</label>
         <select id="nameAlphabet" style="display:block;width:100%;padding:13px;margin:8px 0 6px;box-sizing:border-box;border:1px solid rgba(225,180,52,.5);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;font-size:16px;">
@@ -1150,6 +1157,21 @@ function calculate(type) {
     }
     window._loveCardsPartner = pRaw ? { date: pRaw, name: (document.getElementById("loveCardsPartnerName")?.value || "").trim() } : null;
   }
+  window._usinTime = null;
+  if (type === "usin") {
+    const tInput = document.getElementById("usinTime");
+    const tError = document.getElementById("usinTimeError");
+    if (tError) tError.textContent = "";
+    const tRaw = tInput ? tInput.value.trim() : "";
+    if (tRaw) {
+      const tm = /^(\d{1,2}):(\d{2})$/.exec(tRaw);
+      if (!tm || Number(tm[1]) > 23 || Number(tm[2]) > 59) {
+        if (tError) tError.textContent = "Введите время в формате ЧЧ:ММ, например 07:45, или оставьте поле пустым.";
+        return;
+      }
+      window._usinTime = String(Number(tm[1])).padStart(2, "0") + ":" + tm[2];
+    }
+  }
   let prognostikaYear = null;
   if (type === "prognostika") {
     const yearInput = document.getElementById("prognostikaYear");
@@ -1249,8 +1271,8 @@ function calculate(type) {
     return;
   }
   if (type === "usin" && window.UsinEngine) {
-    if (renderUsinResult(name, birthDate, result)) {
-      saveCalculationHistory({ direction: "usin", title: "У-Син - " + name + " - " + birthDate, personName: name, birthDate });
+    if (renderUsinResult(name, birthDate, result, window._usinTime)) {
+      saveCalculationHistory({ direction: "usin", title: "У-Син - " + name + " - " + birthDate + (window._usinTime ? " " + window._usinTime : ""), personName: name, birthDate });
     }
     return;
   }
@@ -3930,11 +3952,17 @@ function buildUsinChartSvg(res) {
     </div>`;
 }
 
-function renderUsinResult(name, birthDate, container) {
+function formatUsinTime(el) {
+  let v = el.value.replace(/\D/g, "").slice(0, 4);
+  if (v.length >= 3) v = v.slice(0, 2) + ":" + v.slice(2);
+  el.value = v;
+}
+
+function renderUsinResult(name, birthDate, container, birthTime) {
   const [day, month, year] = birthDate.split(".").map(Number);
   let res;
   try {
-    res = window.UsinEngine.getFullResult(day, month, year);
+    res = window.UsinEngine.getFullResult(day, month, year, birthTime || null);
   } catch (error) {
     console.error("Ошибка расчёта У-Син:", error);
     container.innerHTML = `<div style="color:#ff9d9d;padding:16px;">Не удалось выполнить расчёт: ${escapeHtml(error.message || String(error))}</div>`;

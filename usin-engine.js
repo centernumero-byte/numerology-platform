@@ -86,7 +86,28 @@
     return many;
   }
 
-  function getFullResult(day, month, year) {
+  // Часы органов: [начало, конец) пика; спад — ровно через 12 часов
+  const ORGAN_CLOCK = [
+    { from: 3, name: "лёгкие", el: "metal" }, { from: 5, name: "толстый кишечник", el: "metal" },
+    { from: 7, name: "желудок", el: "earth" }, { from: 9, name: "селезёнка и поджелудочная железа", el: "earth" },
+    { from: 11, name: "сердце", el: "fire" }, { from: 13, name: "тонкий кишечник", el: "fire" },
+    { from: 15, name: "мочевой пузырь", el: "water" }, { from: 17, name: "почки", el: "water" },
+    { from: 19, name: "перикард", el: "fire" }, { from: 21, name: "тройной обогреватель", el: "fire" },
+    { from: 23, name: "желчный пузырь", el: "wood" }, { from: 1, name: "печень", el: "wood" },
+  ];
+  function organsByTime(t) {
+    const m = /^(\d{1,2}):(\d{2})$/.exec(String(t || "").trim());
+    if (!m) return null;
+    const h = Number(m[1]), mi = Number(m[2]);
+    if (h > 23 || mi > 59) return null;
+    const pick = (hour) => ORGAN_CLOCK.find((o) => (hour - o.from + 24) % 24 < 2);
+    const strong = Object.assign({}, pick(h)), weak = Object.assign({}, pick((h + 12) % 24));
+    strong.to = (strong.from + 2) % 24;
+    weak.downFrom = (weak.from + 12) % 24; weak.downTo = (weak.from + 14) % 24;
+    return { time: String(h).padStart(2, "0") + ":" + m[2], strong, weak };
+  }
+
+  function getFullResult(day, month, year, birthTime) {
     const row = numericRow(day, month, year);
     const c = row.counts;
     const elements = ELEMENTS.map((e) => {
@@ -202,15 +223,35 @@
     }] });
 
     // Суточная активность органов
-    blocks.push({ title: "Суточная активность органов", entries: [{
+    const clockEntries = [{
       number: "Часы активности и спада",
       text: "Каждый орган в течение суток имеет два часа наибольшей и два часа наименьшей активности. Лёгкие — активны 3–5, спад 15–17; толстый кишечник — 5–7, спад 17–19; желудок — 7–9, спад 19–21; селезёнка и поджелудочная железа — 9–11, спад 21–23; сердце — 11–13, спад 23–1; тонкий кишечник — 13–15, спад 1–3; мочевой пузырь — 15–17, спад 3–5; почки — 17–19, спад 5–7; перикард — 19–21, спад 7–9; тройной обогреватель — 21–23, спад 9–11; желчный пузырь — 23–1, спад 11–13; печень — 1–3, спад 13–15. Если известно время рождения, по этой таблице можно определить орган, который от рождения особенно силён, и орган, который особенно уязвим. Если уязвимый по времени рождения орган совпадает с ослабленным по вашей карте, на его поддержку стоит обратить особое внимание.",
-    }] });
+    }];
+    const bt = organsByTime(birthTime);
+    if (bt) {
+      const elOf = (key) => elements.find((e) => e.key === key);
+      const sEl = elOf(bt.strong.el), wEl = elOf(bt.weak.el);
+      clockEntries.unshift({
+        number: `Время рождения ${bt.time}: сильный орган — ${bt.strong.name}`,
+        text: `Вы родились в ${bt.time} — это часы наибольшей активности органа «${bt.strong.name}» (${bt.strong.from}–${bt.strong.to}, первоэлемент ${sEl.name}). Этот орган от рождения особенно силён.` +
+          (sEl.regime.key === "max" ? ` По карте первоэлемент ${sEl.name} тоже в максимальном режиме — это одна из главных опор вашего организма.` : ""),
+      });
+      const weakEl = wEl.regime.key === "min" || wEl.regime.key === "midmin";
+      clockEntries.splice(1, 0, {
+        number: `Время рождения ${bt.time}: уязвимый орган — ${bt.weak.name}`,
+        text: `В ${bt.time} у органа «${bt.weak.name}» спад (${bt.weak.downFrom}–${bt.weak.downTo}, первоэлемент ${wEl.name}). Этот орган от рождения особенно уязвим.` +
+          (weakEl ? ` По вашей карте первоэлемент ${wEl.name} тоже ослаблен (${wEl.regime.name.toLowerCase()} режим) — уязвимый по времени рождения орган совпадает с ослабленным по карте, поэтому на его поддержку стоит обратить особое внимание.`
+            : wEl.regime.key === "den" ? ` По вашей карте первоэлемент ${wEl.name} в режиме дэн — это тоже зона особого внимания, поэтому заботьтесь об этом органе заранее.`
+            : "") +
+          " Это не диагноз, а подсказка, о чём заботиться.",
+      });
+    }
+    blocks.push({ title: "Суточная активность органов", entries: clockEntries });
 
     return { row, elements, yinTotal, yangTotal, blocks };
   }
 
-  const api = { getFullResult, numericRow, regime, ELEMENTS };
+  const api = { getFullResult, numericRow, regime, ELEMENTS, organsByTime };
   if (typeof window !== "undefined") window.UsinEngine = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })();
