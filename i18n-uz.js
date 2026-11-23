@@ -318,32 +318,42 @@
     return t == null ? s : t;
   }
 
-  /* ---------- Алмаштиргич ---------- */
-  var SWITCH_CSS = ".np-lang{display:flex;gap:4px;margin:6px 12px 14px;padding:4px;border:1px solid rgba(225,180,52,.35);border-radius:12px;background:rgba(0,0,0,.18)}" +
-    ".np-lang button{flex:1;padding:7px 4px;border:0;border-radius:9px;background:transparent;color:#cdbfa0;font-size:12px;line-height:1.15;cursor:pointer;font-family:inherit}" +
-    ".np-lang button small{display:block;font-size:10px;opacity:.75}" +
-    ".np-lang button.on{background:linear-gradient(90deg,#713199,#5d2789);color:#f8d96d}";
+  /* ---------- Алмаштиргич: кичкина белги, ўнг юқори бурчакда ---------- */
+  var SWITCH_CSS =
+    ".np-lang{position:fixed;top:14px;right:18px;z-index:1000;font-family:inherit}" +
+    ".np-lang-btn{border:1px solid rgba(225,180,52,.55);background:rgba(20,12,40,.75);color:#f8d96d;border-radius:999px;padding:4px 11px;font-size:12px;letter-spacing:.4px;cursor:pointer;font-family:inherit;backdrop-filter:blur(4px)}" +
+    ".np-lang-btn:hover{border-color:#f8d96d}" +
+    ".np-lang-menu{position:absolute;right:0;top:calc(100% + 6px);min-width:150px;padding:4px;border:1px solid rgba(225,180,52,.5);border-radius:12px;background:#2a1b4d;box-shadow:0 10px 30px rgba(0,0,0,.45)}" +
+    ".np-lang-menu button{display:block;width:100%;text-align:left;border:0;background:transparent;color:#f4e9cc;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:14px;font-family:inherit}" +
+    ".np-lang-menu button small{opacity:.6;font-size:11px;margin-left:4px}" +
+    ".np-lang-menu button:hover{background:rgba(146,73,182,.3)}" +
+    ".np-lang-menu button.on{color:#f8d96d}" +
+    "@media (max-width:800px){.np-lang{position:absolute;top:10px;right:12px}}";
+  var SHORT = { ru: "РУС", uzc: "ЎЗБ", uzl: "OʻZB" };
 
   function renderSwitch() {
     var old = document.getElementById("npLangSwitch");
     if (!state.allowed) { if (old) old.remove(); return; }
     if (old) return;
-    var logo = document.querySelector(".sidebar .logo");
-    if (!logo) return;
     if (!document.getElementById("npLangCss")) {
       var st = document.createElement("style"); st.id = "npLangCss"; st.textContent = SWITCH_CSS; document.head.appendChild(st);
     }
     var box = document.createElement("div");
     box.id = "npLangSwitch"; box.className = "np-lang"; box.setAttribute("data-noi18n", "");
     box.innerHTML =
+      '<button type="button" class="np-lang-btn">🌐 ' + SHORT[state.lang] + ' ▾</button>' +
+      '<div class="np-lang-menu" hidden>' +
       '<button type="button" data-l="ru">Русский</button>' +
       '<button type="button" data-l="uzc">Ўзбекча<small>кирилл</small></button>' +
-      '<button type="button" data-l="uzl">Oʻzbekcha<small>lotin</small></button>';
-    Array.prototype.forEach.call(box.querySelectorAll("button"), function (b) {
+      '<button type="button" data-l="uzl">Oʻzbekcha<small>lotin</small></button></div>';
+    var menu = box.querySelector(".np-lang-menu");
+    box.querySelector(".np-lang-btn").addEventListener("click", function (e) { e.stopPropagation(); menu.hidden = !menu.hidden; });
+    document.addEventListener("click", function () { menu.hidden = true; });
+    Array.prototype.forEach.call(menu.querySelectorAll("button"), function (b) {
       if (b.dataset.l === state.lang) b.classList.add("on");
-      b.addEventListener("click", function () { setLang(b.dataset.l); });
+      b.addEventListener("click", function () { menu.hidden = true; setLang(b.dataset.l); });
     });
-    logo.parentNode.insertBefore(box, logo.nextSibling);
+    document.body.appendChild(box);
   }
 
   function setLang(l) {
