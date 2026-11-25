@@ -329,7 +329,7 @@
     ".np-lang-menu button:hover{background:rgba(146,73,182,.3)}" +
     ".np-lang-menu button.on{color:#f8d96d}" +
     "@media (max-width:800px){.np-lang{position:absolute;top:10px;right:12px}}";
-  var SHORT = { ru: "РУС", uzc: "ЎЗБ", uzl: "OʻZB" };
+  var SHORT = { ru: "Русский", uzc: "Ўзбекча · кирилл", uzl: "Oʻzbekcha · lotin" };
 
   function renderSwitch() {
     var old = document.getElementById("npLangSwitch");
