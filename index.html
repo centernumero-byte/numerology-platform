@@ -4308,6 +4308,11 @@ const PLATFORM_MATERIALS_TABLE = "platform_materials";
 const PLATFORM_STORAGE_BUCKET = "methodicals";
 
 let materialManagerState = { section: "", direction: "", title: "" };
+
+/* Язык методичек: у русской, узбекской-кириллицы и узбекской-латиницы — свои отдельные файлы. */
+function materialsLang() {
+  try { return (window.NP_I18N && NP_I18N.lang()) || "ru"; } catch (_) { return "ru"; }
+}
 let currentMaterialsView = null;
 let currentDirectionMaterials = [];
 
@@ -4367,6 +4372,7 @@ async function loadDirectionMaterialsList() {
       .select("id, material_type, url, file_path, title, created_at, created_by")
       .eq("section", section)
       .eq("direction", direction)
+      .eq("lang", section === "manuals" ? materialsLang() : "ru")
       .order("created_at", { ascending: false });
     if (error) throw error;
 
@@ -4571,7 +4577,7 @@ async function savePlatformMaterialUrl() {
     if (!session) throw new Error("Сессия пользователя не найдена.");
 
     const { error } = await supabaseClient.from(PLATFORM_MATERIALS_TABLE).insert({
-      section, direction, material_type: "link", url, file_path: null, created_by: session.user.id
+      section, direction, material_type: "link", url, file_path: null, created_by: session.user.id, lang: section === "manuals" ? materialsLang() : "ru"
     });
     if (error) throw error;
 
@@ -4622,7 +4628,7 @@ async function uploadPlatformMaterialFile() {
     setMaterialManagerStatus("Файл загружен. Сохраняю запись...", "");
 
     const { error: insertError } = await supabaseClient.from(PLATFORM_MATERIALS_TABLE).insert({
-      section, direction, material_type: "file", url: null, file_path: path, title: file.name, created_by: session.user.id
+      section, direction, material_type: "file", url: null, file_path: path, title: file.name, created_by: session.user.id, lang: section === "manuals" ? materialsLang() : "ru"
     });
 
     if (insertError) {
