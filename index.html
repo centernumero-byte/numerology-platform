@@ -5653,7 +5653,7 @@ async function loadAdminUsers() {
   if (users.length) {
     const { data: periods } = await supabaseClient
       .from("access_periods")
-      .select("profile_id, status, ends_at, is_unlimited, payment_status, starts_at, created_at")
+      .select("profile_id, status, ends_at, is_unlimited, payment_status, starts_at, created_at, notes")
       .in("profile_id", users.map(u => u.id))
       .order("created_at", { ascending: false });
     (periods || []).forEach(function (p) {
@@ -5663,6 +5663,11 @@ async function loadAdminUsers() {
   function accessBadge(user) {
     if (user.role !== "student" && user.role !== "numerologist") return "";
     const latest = accessByUser[user.id];
+    const fromBot = latest && /Telegram-бот/.test(latest.notes || "")
+      ? `<div style="display:inline-block;font-size:11px;color:#9fd3ff;background:rgba(42,139,208,.18);border:1px solid rgba(42,139,208,.55);border-radius:8px;padding:1px 8px;margin-top:4px;">🤖 Через Telegram-бот</div>` : "";
+    return fromBot + accessBadgeMain(user, latest);
+  }
+  function accessBadgeMain(user, latest) {
     if (!latest) return `<div style="font-size:11px;color:#8a8098;margin-top:3px;">Доступ не выдавался</div>`;
     if (hasActivePlatformAccess(latest)) return `<div style="font-size:11px;color:#8fd18f;margin-top:3px;">Доступ активен${latest.is_unlimited ? "" : (latest.ends_at ? " до " + new Date(latest.ends_at).toLocaleDateString("ru-RU") : "")}</div>`;
     return `<div style="font-size:11px;color:#e8a94e;margin-top:3px;">Доступ истёк <button type="button" onclick='scrollToGrantAccess(${JSON.stringify(user.id)})' style="margin-left:4px;padding:2px 8px;font-size:11px;border-radius:8px;border:1px solid #d7aa31;background:linear-gradient(90deg,#713199,#5d2789);color:#f8d96d;cursor:pointer;">Возобновить</button></div>`;
